@@ -26,7 +26,7 @@ const source = [
   'const persistLedger = ()=>true;',
   'const renderLedger = ()=>{};',
   lock, jra, snapshot, save,
-  'return {assertForecastOpen,forecastCutoffMillis,jraDateTime,makeSnapshot,addPredictions,ledger};'
+  'return {assertForecastOpen,forecastCutoffMillis,jraDateTime,makeSnapshot,addPredictions,get ledger(){return ledger;}};'
 ].join('\n');
 const api = new Function(source)();
 const start='2026-11-07T15:40:00+09:00';
