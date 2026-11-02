@@ -28,6 +28,7 @@ MAX_DOWNLOAD = 30 * 1024 * 1024
 MAX_FILE = 20 * 1024 * 1024
 TRACK_FIELDS = ("競馬場", "日付", "レース番号")
 BET_TYPES = ("win", "quinella", "exacta", "trio", "trifecta")
+FORECAST_LOCK_BEFORE_START = dt.timedelta(minutes=10)
 
 
 def as_int(value):
@@ -225,6 +226,9 @@ def odds_market_index(zip_data):
 
 
 def forecast(race, timestamp):
+    deadline = race["start"] - FORECAST_LOCK_BEFORE_START
+    if timestamp >= deadline:
+        raise ValueError("発走10分前を過ぎたレースの予想は新規作成しません")
     horses = race["horses"]
     raw_scores = []
     for h in horses:
@@ -262,6 +266,8 @@ def forecast(race, timestamp):
         "race_no": race["race_no"], "name": race["name"],
         "start_at": race["start"].isoformat(timespec="minutes"),
         "predicted_at": timestamp.isoformat(timespec="seconds"),
+        "locked_at": timestamp.isoformat(timespec="seconds"),
+        "cutoff_at": deadline.isoformat(timespec="minutes"),
         "model": "form_heuristic_v1_untrained",
         "top3": pick,
         "ranking": [{"no": horses[i]["no"], "name": horses[i]["name"],
@@ -407,7 +413,7 @@ def update_data(races, now, previous, paybacks=None, odds_index=None):
         is_new = ident not in entries
         if is_new:
             # A forecast made after the race or shortly before off is not valid.
-            if now >= race["start"] - dt.timedelta(minutes=10):
+            if now >= race["start"] - FORECAST_LOCK_BEFORE_START:
                 continue
             # Strictly exclude races that already report results.
             if any(h["rank"] in (1, 2, 3) for h in race["horses"]):
@@ -476,6 +482,16 @@ def selftest():
     out, added, settled_count, payout_count = update_data(races, now, {})
     assert added == 1 and settled_count == 0 and out["summary"]["settled"] == 0
     pre = out["races"][0]
+    assert (dt.datetime.fromisoformat(pre["predicted_at"]) <=
+            dt.datetime.fromisoformat(pre["cutoff_at"]))
+    assert pre["locked_at"] == pre["predicted_at"]
+    for delta in (dt.timedelta(minutes=10), dt.timedelta(minutes=9)):
+        try:
+            forecast(races[0], races[0]["start"] - delta)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("10分前以降の予想作成が許可されました")
     assert len(pre["tickets"]) == 12 and abs(sum(x["win_probability"] for x in pre["top3"])) < 1.001
     assert len(pre["trio_tickets"]) == 8
     assert all(ticket == sorted(ticket) and len(ticket) == len(set(ticket)) == 3 for ticket in pre["trio_tickets"])
