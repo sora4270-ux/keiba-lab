@@ -369,7 +369,7 @@ def selftest():
     old = dict(pre)
     old.pop("trio_tickets")
     assert len(frozen_trio_tickets(old)) >= 1
-    assert all(ticket in (x["trio_tickets"] if "trio_tickets" in x else frozen_trio_tickets(old)) for ticket in frozen_trio_tickets(old))
+    assert {tuple(t) for t in frozen_trio_tickets(old)} == {tuple(sorted(t)) for t in old["tickets"]}
     print("PASS: frozen exacta/trio picks, top8 unordered triples, settled multi-hit, historic conversion, no late insertion")
 
 
