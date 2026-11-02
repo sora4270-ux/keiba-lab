@@ -3,7 +3,7 @@
   "scope": "NAR地方競馬のみ（中央JRAは対象外）",
   "source": "NAR公式CSVデータ（分析結果のみ表示）",
   "method": "過去成績の縮約率から計算する未学習ヒューリスティック。的中保証なし。",
-  "updated_at": "2026-11-02T19:32:24+09:00",
+  "updated_at": "2026-11-02T19:52:55+09:00",
   "races": [
     {
       "id": "nar-20261102-船橋-12",
@@ -461,9 +461,20 @@
           5
         ]
       ],
-      "result": null,
-      "settled_at": null,
-      "hits": null
+      "result": [
+        6,
+        5,
+        3
+      ],
+      "settled_at": "2026-11-02T19:52:55+09:00",
+      "hits": {
+        "win": false,
+        "quinella": true,
+        "exacta": false,
+        "trio": false,
+        "trio_multi": false,
+        "trifecta": false
+      }
     },
     {
       "id": "nar-20261102-帯広ば-10",
@@ -571,15 +582,15 @@
   ],
   "summary": {
     "predicted": 6,
-    "settled": 1,
-    "pending": 5,
+    "settled": 2,
+    "pending": 4,
     "win": 0.0,
-    "quinella": 0.0,
+    "quinella": 50.0,
     "exacta": 0.0,
-    "trio": 100.0,
-    "trio_multi": 100.0,
-    "trio_multi_settled": 1,
-    "trifecta": 100.0,
+    "trio": 50.0,
+    "trio_multi": 50.0,
+    "trio_multi_settled": 2,
+    "trifecta": 50.0,
     "note": "発走前に予想した確定レースのみ。三連複本線1点と三連複候補最大8点は別集計。以前のレースの三連複候補は保存済み三連単12点を順不同に換算。三連単候補は12点。"
   }
 }
