@@ -211,6 +211,45 @@ def forecast(race, timestamp):
     }
 
 
+def payback_index(tables):
+    """Official NAR payback.csv rows keyed by race; missing files stay unknown."""
+    found = {}
+    for item in tables.get("payback", []):
+        key = row_key(item, TRACK_FIELDS)
+        if key is not None:
+            found.setdefault(key, []).append(item)
+    return found
+
+
+def official_payouts(paybacks, race, result):
+    """Read confirmed winning numbers and amounts (JPY per 100 yen).
+    Index positions follow NAR's May 2026 official CSV specification.
+    Never estimate a payout from win odds.
+    """
+    key = (race["venue"], race["date"].replace("-", ""), race["race_no"])
+    rows = paybacks.get(key, [])
+    specs = {
+        "win": ((4,), 5, False),
+        "quinella": ((24, 25), 26, True),
+        "exacta": ((28, 29), 30, False),
+        "trio": ((44, 45, 46), 47, True),
+        "trifecta": ((49, 50, 51), 52, False),
+    }
+    amounts = {}
+    for raw, fields in rows:
+        for bet, (number_columns, money_column, unordered) in specs.items():
+            numbers = [as_int(raw[i]) if i < len(raw) else None for i in number_columns]
+            expected = result[:len(numbers)]
+            if any(n is None for n in numbers):
+                continue
+            if (sorted(numbers) if unordered else numbers) != (sorted(expected) if unordered else expected):
+                continue
+            amount = as_int(raw[money_column]) if money_column < len(raw) else None
+            if amount is not None and 0 < amount <= 100000000:
+                amounts[bet] = amount
+    return amounts
+
+
 def settled_order(horses):
     ranked = {i: [] for i in (1, 2, 3)}
     for horse in horses:
@@ -291,13 +330,15 @@ def summary(predictions):
     }
 
 
-def update_data(races, now, previous):
+def update_data(races, now, previous, paybacks=None):
     old = previous.get("races", [])
     if not isinstance(old, list):
         raise ValueError("保存された予想履歴の形式が不正です")
     entries = {p["id"]: p for p in old if isinstance(p, dict) and p.get("id")}
     added = 0
     settled = 0
+    payout_updated = 0
+    paybacks = paybacks or {}
     for race in races:
         ident = race["id"]
         if ident not in entries:
@@ -313,15 +354,25 @@ def update_data(races, now, previous):
             order = settled_order(race["horses"])
             if order and settle(entries[ident], order, now):
                 settled += 1
+            # Payback CSV can arrive after the race results; add amounts later
+            # without altering originally published pre-race predictions.
+            record = entries[ident]
+            if isinstance(record.get("result"), list):
+                verified = official_payouts(paybacks, race, record["result"])
+                if verified:
+                    old_amounts = record.get("payouts") or {}
+                    if any(old_amounts.get(k) != v for k, v in verified.items()):
+                        record["payouts"] = {**old_amounts, **verified}
+                        payout_updated += 1
     # Prevent unbounded site data growth. Keep latest 5000 independently timestamped forecasts.
     predictions = sorted(entries.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)[:5000]
     return {
         "schema_version": 1, "scope": "NAR地方競馬のみ（中央JRAは対象外）",
         "source": "NAR公式CSVデータ（分析結果のみ表示）",
         "method": "過去成績の縮約率から計算する未学習ヒューリスティック。的中保証なし。",
-        "updated_at": now.isoformat(timespec="seconds") if added or settled or not previous else previous.get("updated_at"),
+        "updated_at": now.isoformat(timespec="seconds") if added or settled or payout_updated or not previous else previous.get("updated_at"),
         "races": predictions, "summary": summary(predictions)
-    }, added, settled
+    }, added, settled, payout_updated
 
 
 def fetch_daily_zip():
@@ -348,7 +399,7 @@ def selftest():
     row[0], row[1], row[2], row[3] = "門別", "20261102", "1", "1540"
     races = parse_races({"racelist": [(row, {})], "horselist": horse_template})
     assert len(races) == 1
-    out, added, settled_count = update_data(races, now, {})
+    out, added, settled_count, payout_count = update_data(races, now, {})
     assert added == 1 and settled_count == 0 and out["summary"]["settled"] == 0
     pre = out["races"][0]
     assert len(pre["tickets"]) == 12 and abs(sum(x["win_probability"] for x in pre["top3"])) < 1.001
@@ -359,18 +410,30 @@ def selftest():
         horse_template[i][0][31] = str(i+1) if i < 3 else ""
     races = parse_races({"racelist": [(row, {})], "horselist": horse_template})
     late = dt.datetime(2026, 11, 2, 16, 0, tzinfo=JST)
-    out2, a, s = update_data(races, late, out)
+    out2, a, s, p = update_data(races, late, out)
     assert a == 0 and s == 1 and out2["summary"]["settled"] == 1
     assert out2["summary"]["trio_multi_settled"] == 1
     assert out2["races"][0]["hits"]["trio_multi"] == trio_multi_hit(out2["races"][0], [1, 2, 3])
-    out3, a, s = update_data(races, late, out2)
+    out3, a, s, p = update_data(races, late, out2)
     assert a == 0 and s == 0 and out3["races"][0]["predicted_at"] == pre["predicted_at"]
     assert update_data(races, late, {})[1] == 0
+    # A verified payback can be added in a subsequent refresh.
+    payrow = [""] * 54
+    payrow[0], payrow[1], payrow[2] = "門別", "20261102", "1"
+    for pos, value in {4:1, 5:430, 24:1, 25:2, 26:810, 28:1, 29:2, 30:1420,
+                       44:1, 45:2, 46:3, 47:2750, 49:1, 50:2, 51:3, 52:14820}.items():
+        payrow[pos] = str(value)
+    paybacks = payback_index({"payback": [(payrow, {})]})
+    enriched, a, s, p = update_data(races, late, out3, paybacks)
+    assert (a, s, p) == (0, 0, 1)
+    assert enriched["races"][0]["payouts"] == {
+        "win": 430, "quinella": 810, "exacta": 1420, "trio": 2750, "trifecta": 14820}
+    assert update_data(races, late, enriched, paybacks)[3] == 0
     old = dict(pre)
     old.pop("trio_tickets")
     assert len(frozen_trio_tickets(old)) >= 1
     assert {tuple(t) for t in frozen_trio_tickets(old)} == {tuple(sorted(t)) for t in old["tickets"]}
-    print("PASS: frozen exacta/trio picks, top8 unordered triples, settled multi-hit, historic conversion, no late insertion")
+    print("PASS: frozen pre-race picks, result scoring, verified NAR 5-type payouts, delayed enrichment")
 
 
 def main():
@@ -384,11 +447,11 @@ def main():
     if not races:
         raise RuntimeError("有効なレースがありません。CSV形式か配信状況を確認してください")
     previous = json.loads(DATA_PATH.read_text(encoding="utf-8")) if DATA_PATH.exists() else {}
-    out, added, settled_count = update_data(races, now, previous)
-    if added or settled_count or not DATA_PATH.exists():
+    out, added, settled_count, payout_count = update_data(races, now, previous, payback_index(tables))
+    if added or settled_count or payout_count or not DATA_PATH.exists():
         DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
         DATA_PATH.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"NAR races: {len(races)}, newly predicted: {added}, newly settled: {settled_count}; total: {out['summary']['predicted']}, settled: {out['summary']['settled']}")
+    print(f"NAR races: {len(races)}, newly predicted: {added}, newly settled: {settled_count}, payout updates: {payout_count}; total: {out['summary']['predicted']}, settled: {out['summary']['settled']}")
 
 
 if __name__ == "__main__":
