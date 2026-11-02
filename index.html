@@ -463,7 +463,7 @@ function setCatalog(data,source,updated){catalog=data;catalogUpdated=updated||''
 function drawCatalogPreview(){const idx=Number($('catalog-select').value);if(!catalog.length||!Number.isInteger(idx)||!catalog[idx]){$('catalog-preview').innerHTML='';return;}
  const r=catalog[idx],hasAll=!oddsOnly(r.horses);$('catalog-preview').innerHTML=`<div class="data-pill">${r.horses.length}頭 ／ ${hasAll?'全指数あり':'オッズ参照モード'}</div>`+r.horses.map(h=>`<div class="item"><span><b>${h.no}番 ${esc(h.name)}</b></span><span>単勝 ${fmt(h.odds)}倍</span></div>`).join('');}
 $('catalog-select').addEventListener('change',drawCatalogPreview);
-$('apply-race').addEventListener('click',()=>{const r=catalog[Number($('catalog-select').value)];if(!r)return;horses=clone(r.horses);demo=!!r.is_demo;currentRaceKey=raceKey(r);dataOrigin=$('catalog-state').textContent.slice(0,200);$('race-name').value=raceOptionName(r);$('manual-race-date').value=r.date||'';$('manual-race-time').value=r.start_at&&Number.isFinite(Date.parse(r.start_at))?new Date(r.start_at).toLocaleTimeString('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hour12:false}):'';drawHorses();save();switchTab('predict');toast(`${r.name} を選択しました`);});
+$('apply-race').addEventListener('click',()=>{const r=catalog[Number($('catalog-select').value)];if(!r)return;horses=clone(r.horses);demo=!!r.is_demo;currentRaceKey=raceKey(r);dataOrigin=$('catalog-state').textContent.slice(0,200);$('race-name').value=raceOptionName(r);$('manual-race-date').value=r.date||'';$('manual-race-time').value=r.start_at&&Number.isFinite(Date.parse(r.start_at))?new Date(r.start_at).toLocaleTimeString('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hour12:false}):'';if([...$('manual-venue').options].some(o=>o.value===r.venue))$('manual-venue').value=r.venue;else $('manual-venue').value='';drawHorses();save();switchTab('predict');toast(`${r.name} を選択しました`);});
 $('insert-example').addEventListener('click',()=>{$('paste-race-name').value='形式確認用（架空）';$('race-paste').value='1 架空サンプルA 3.2\n2 架空サンプルB 5.7\n3 架空サンプルC 9.6\n4 架空サンプルD 15.4';showFeedMessage('これは入力形式の確認用の架空データです。',false)});
 $('import-paste').addEventListener('click',()=>{try{let data=parsePasted($('race-paste').value,$('paste-race-name').value);setCatalog(data,'手動貼り付け（出典未確認）',new Date().toLocaleString('ja-JP'));showFeedMessage('貼り付けを解析しました。下のレースを選んで予想画面へ進んでください。');}catch(e){showFeedMessage(e.message,true)}});
 $('feed-file-button').addEventListener('click',()=>$('feed-file').click());
@@ -875,7 +875,7 @@ function narRender(data,localCopy=false){
  const status=['配信元：NAR公式CSV','予想モデル：過去成績による未学習推定'];
  if(Number.isFinite(stamp))status.push('最後の新規予想・結果更新：'+new Date(stamp).toLocaleString('ja-JP'));
  if(old)status.push('データが24時間以上更新されていません');
- if(localCopy)status.push('端末に保存された古いデータを表示しています');
+ if(localCopy)status.push('端末内キャッシュから表示中（最大70件のため競馬場別集計が一部になる場合があります）');
  $('nar-status').textContent=status.join(' ／ ');
  const venue=updateVenueOptions($('nar-view-venue'),arr,NAR_VENUES);
  const viewed=venue==='all'?arr:arr.filter(r=>r.venue===venue);
@@ -891,7 +891,7 @@ function narRender(data,localCopy=false){
  }
  const den=Number(ss.settled)||0;
  $('nar-venue-breakdown').innerHTML=venueBreakdownHtml(arr,narHitRecord,narReferenceWager);
- $('nar-kpis').innerHTML='<div class="metric"><small>予想記録</small><strong>'+Number(ss.predicted||arr.length).toLocaleString('ja-JP')+'件</strong><small>結果照合 '+den+'件 ／ 結果待ち '+Number(ss.pending||0)+'件</small></div>'+cards.map(([key,label])=>'<div class="metric"><small>'+label+'</small><strong>'+narPct(ss[key])+'</strong><small>母数：照合済み '+(key==='trio_multi'?Number(ss.trio_multi_settled||0):den)+'レース</small></div>').join('');
+ $('nar-kpis').innerHTML='<div class="metric"><small>予想記録</small><strong>'+Number(ss.predicted??arr.length).toLocaleString('ja-JP')+'件</strong><small>結果照合 '+den+'件 ／ 結果待ち '+Number(ss.pending||0)+'件</small></div>'+cards.map(([key,label])=>'<div class="metric"><small>'+label+'</small><strong>'+narPct(ss[key])+'</strong><small>母数：照合済み '+(key==='trio_multi'?Number(ss.trio_multi_settled||0):den)+'レース</small></div>').join('');
  const period=$("nar-roi-period").value;
  const roiRaces=settledOnly(narPeriodRaces(viewed,period));
  const basket=completeBasket(roiRaces,narReferenceWager);
@@ -907,7 +907,7 @@ function narRender(data,localCopy=false){
  const pending=viewed.filter(r=>!r.result&&Date.parse(r.start_at)<=Date.now()).sort((a,b)=>Date.parse(b.start_at)-Date.parse(a.start_at));
  const shown=[...upcoming.slice(0,30),...pending.slice(0,5),...finished.slice(0,20)];
  $('nar-count').textContent='発走前 '+upcoming.length+' ／ 結果待ち '+pending.length+' ／ 照合済み '+finished.length;
- if(!shown.length){$('nar-races').innerHTML='<div class="empty">まだ予想が登録されていません。公式データが配信され、GitHub Actionsの処理が成功するとここに表示されます。</div>';return;}
+ if(!shown.length){$('nar-races').innerHTML='<div class="empty">'+(venue==='all'?'まだ予想が登録されていません。公式データが配信され、GitHub Actionsの処理が成功するとここに表示されます。':esc(venue)+'の予想記録はまだありません。')+'</div>';return;}
  $('nar-races').innerHTML=shown.map(r=>{
   const top=Array.isArray(r.top3)?r.top3:[],tickets=Array.isArray(r.tickets)?r.tickets:[],hits=r.hits||{},trio=savedTrioList(r);
   const displayDate=String(r.date||'')+' '+String(r.venue||'')+' '+String(r.race_no||'')+'R';
