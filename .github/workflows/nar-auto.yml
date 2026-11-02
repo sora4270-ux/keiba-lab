@@ -1,0 +1,39 @@
+name: NAR every-race forecast and verification
+on:
+  schedule:
+    # UTC 00:00-13:55 = JST 09:00-22:55; GitHub may delay scheduled jobs.
+    - cron: '*/5 0-13 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: nar-forecasts
+  cancel-in-progress: false
+jobs:
+  forecast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Self-test (no external services)
+        run: python scripts/update_nar.py --selftest
+      - name: Obtain NAR official day CSV and update predictions
+        run: python scripts/update_nar.py
+      - name: Save frozen forecasts and settled hit rates
+        shell: bash
+        run: |
+          if ! git diff --quiet -- data/auto/nar_predictions.json || [ -n "$(git ls-files --others --exclude-standard data/auto/nar_predictions.json)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/auto/nar_predictions.json
+            git commit -m "Update NAR pre-race forecasts and confirmed hit rates"
+            git pull --rebase
+            git push
+          else
+            echo "No new forecasts or settled results."
+          fi
