@@ -473,8 +473,34 @@ function payoutValue(r,key){const x=r?.payouts?.[key];return Number.isInteger(x)
 function amount(v){return Number(v).toLocaleString("ja-JP")+"円";}
 function ticketHit(r,key){if(!r.result)return false;if(key==="trio")return savedTrioList(r).some(t=>t.join("-")===[...r.result].sort((a,b)=>a-b).join("-"));return resultMatches(r)?.[key]===true;}
 function referenceWager(r,key){const pay=payoutValue(r,key);if(!r.result||pay===null)return null;const count=key==="trio"?savedTrioList(r).length:key==="trifecta"?Number(r.betCount||r.tickets?.length||0):1;if(count<=0)return null;const spent=count*100,returned=ticketHit(r,key)?pay:0;return {spent,returned,profit:returned-spent};}
+const ROI_BASKET_KEYS=["win","quinella","exacta","trio","trifecta"];
+function roiStatistics(bets){
+ const spent=bets.reduce((a,b)=>a+b.spent,0),returned=bets.reduce((a,b)=>a+b.returned,0);
+ return {n:bets.length,spent,returned,profit:returned-spent,rate:spent?100*returned/spent:null};
+}
+function roiLabel(stat){return stat.rate===null?"—":stat.rate.toFixed(1)+"%";}
+function roiSigned(v){return (v>0?"+":"")+amount(v);}
+function roiOverview(stat,detail){
+ return '<div class="metric"><small>参考回収率</small><strong>'+roiLabel(stat)+'</strong><div class="roi-detail">'+detail+'</div></div>'
+ +'<div class="metric"><small>参考収支</small><strong>'+(stat.n?roiSigned(stat.profit):"—")+'</strong><div class="roi-detail">仮想購入 '+amount(stat.spent)+' ／ 仮想払戻 '+amount(stat.returned)+'</div></div>';
+}
+function completeBasket(records,betFunction){
+ const complete=records.map(r=>{
+  const bets=ROI_BASKET_KEYS.map(k=>betFunction(r,k));
+  return bets.every(Boolean)?bets:null;
+ }).filter(Boolean);
+ return {stats:roiStatistics(complete.flat()),races:complete.length};
+}
 function payoutDetails(r){if(!r.result)return '<span class="muted">結果待ち</span>';return BET_TYPES.map(([key,label])=>'<span style="display:inline-block;margin-right:9px">'+label+' <b>'+(payoutValue(r,key)===null?'未登録':amount(payoutValue(r,key)))+'</b></span>').join("");}
-function profitDetails(r){if(!r.result)return '<span class="muted">未確定</span>';return [["trio","三連複"],["trifecta","三連単"]].map(([key,label])=>{const v=referenceWager(r,key);return '<span style="display:block">'+label+'：'+(v?(v.profit>=0?'+':'')+amount(v.profit):'未計算')+'</span>';}).join("");}
+function profitDetails(r){
+ if(!r.result)return '<span class="muted">未確定</span>';
+ const types=[["trio","三連複"],["trifecta","三連単"]].map(([key,label])=>{
+  const w=referenceWager(r,key),rate=w?roiLabel(roiStatistics([w])):"—";
+  return '<span style="display:block">'+label+'：回収率 '+rate+' ／ 参考収支 '+(w?roiSigned(w.profit):'未計算')+'</span>';
+ }).join('');
+ const basket=completeBasket([r],referenceWager);
+ return types+(basket.races?'<b>全5券種合計：'+roiLabel(basket.stats)+' ／ '+roiSigned(basket.stats.profit)+'</b>':'');
+}
 function recordResult(rec,top,payouts={}){
  if(rec.result)throw Error(`${rec.name} の結果は既に記録済みです。誤入力は全記録JSONをバックアップしてから履歴を作り直してください。`);
  if(!Array.isArray(top)||top.length!==3||top.some(n=>!Number.isInteger(n)||n<1||n>24)||new Set(top).size!==3)throw Error('1着・2着・3着には異なる1〜24の馬番を入力してください。');
@@ -517,12 +543,10 @@ function renderLedger(){
  $("kpi-win-detail").textContent=sum.win+" / "+n;$("kpi-tri-detail").textContent=sum.trifecta+" / "+n;
  $("ledger-status").textContent=n?n+"レース照合済み":"結果待ち";$("history-count").textContent=ledger.length+"件";
  $("ticket-metrics").innerHTML=BET_TYPES.map(([key,label])=>'<div class="metric-card"><small>'+label+'</small><b>'+rate(sum[key])+'</b><small>'+sum[key]+' / '+n+' レース</small></div>').join("");
- const roi=key=>{
-  const recs=settled.map(r=>referenceWager(r,key)).filter(Boolean);
-  const spent=recs.reduce((t,x)=>t+x.spent,0),returned=recs.reduce((t,x)=>t+x.returned,0);
-  return {n:recs.length,spent,returned,profit:returned-spent,rate:spent?(100*returned/spent).toFixed(1)+"%":"—"};
- };
- $("roi-metrics").innerHTML=[["win","単勝（1点）"],["quinella","馬連（1点）"],["exacta","馬単（1点）"],["trio","三連複（保存候補全点）"],["trifecta","三連単（保存候補全点）"]].map(([k,label])=>{const x=roi(k);return '<div class="metric-card"><small>'+label+'</small><b>'+x.rate+'</b><small>払戻登録 '+x.n+'レース ／ 仮想購入 '+amount(x.spent)+' ／ 仮想払戻 '+amount(x.returned)+' ／ 参考収支 '+(x.profit>=0?'+':'')+amount(x.profit)+'</small></div>';}).join("");
+ const roi=key=>roiStatistics(settled.map(r=>referenceWager(r,key)).filter(Boolean));
+ $("roi-metrics").innerHTML=[["win","単勝（1点）"],["quinella","馬連（1点）"],["exacta","馬単（1点）"],["trio","三連複（保存候補全点）"],["trifecta","三連単（保存候補全点）"]].map(([k,label])=>{const x=roi(k);return '<div class="metric-card"><small>'+label+'</small><b>'+roiLabel(x)+'</b><small>払戻登録 '+x.n+'レース ／ 仮想購入 '+amount(x.spent)+' ／ 仮想払戻 '+amount(x.returned)+' ／ 参考収支 '+roiSigned(x.profit)+'</small></div>';}).join("");
+ const total=completeBasket(settled,referenceWager);
+ $("ledger-roi-total").innerHTML=roiOverview(total.stats,"5券種の払戻が揃った "+total.races+"レースのみ集計（同じレースを重複集計せず、5券種の買い目をすべて購入と仮定）");
  const rows=ledger.slice().sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
  $("ledger-rows").innerHTML=rows.length?rows.map(r=>{
   const score=resultMatches(r),fmtHit=k=>score?'<span class="'+(score[k]?'hit':'miss')+'">'+(score[k]?'的中':'不的中')+'</span>':'<span class="muted">未確定</span>';
@@ -769,13 +793,11 @@ function jraRender(){
   }).length;
   return (100*hits/n).toFixed(1)+'%';
  };
- const jraRoi=key=>{
-  const settledBets=settled.map(r=>referenceWager(r,key)).filter(Boolean);
-  const spent=settledBets.reduce((t,b)=>t+b.spent,0),returned=settledBets.reduce((t,b)=>t+b.returned,0);
-  return spent?(100*returned/spent).toFixed(1)+'%':'—';
- };
+ const jraRoi=key=>roiLabel(roiStatistics(settled.map(r=>referenceWager(r,key)).filter(Boolean)));
  const metrics=[['記録済みJRA',records.length+'レース'],['結果照合済み',n+'レース'],['三連複・本線1点',ratio('trio')],['三連複・複数点',ratio('trio_multi')],['三連単・全候補',ratio('trifecta')],['三連複・仮想回収率',jraRoi('trio')],['三連単・仮想回収率',jraRoi('trifecta')]];
  $('jra-summary').innerHTML=metrics.map(([label,value])=>'<div class="metric"><small>'+esc(label)+'</small><strong>'+esc(value)+'</strong></div>').join('');
+ const jraBasket=completeBasket(settled,referenceWager);
+ $('jra-roi-total').innerHTML=roiOverview(jraBasket.stats,"5券種の払戻が揃った "+jraBasket.races+"レースのみ集計");
  if(!records.length){$('jra-list').innerHTML='<div class="empty">まだJRAの予想記録がありません。上の入力欄で出馬表を登録してください。</div>';return;}
  $('jra-list').innerHTML=records.slice(0,20).map(r=>{
   const trio=savedTrioList(r),result=r.result,top=Array.isArray(r.top3)?r.top3:[];
