@@ -3,7 +3,7 @@
   "scope": "NAR地方競馬のみ（中央JRAは対象外）",
   "source": "NAR公式CSVデータ（分析結果のみ表示）",
   "method": "過去成績の縮約率から計算する未学習ヒューリスティック。的中保証なし。",
-  "updated_at": "2026-11-02T20:24:45+09:00",
+  "updated_at": "2026-11-02T20:58:22+09:00",
   "races": [
     {
       "id": "nar-20261102-船橋-12",
@@ -93,9 +93,27 @@
           1
         ]
       ],
-      "result": null,
-      "settled_at": null,
-      "hits": null
+      "result": [
+        2,
+        7,
+        1
+      ],
+      "settled_at": "2026-11-02T20:58:22+09:00",
+      "hits": {
+        "win": false,
+        "quinella": false,
+        "exacta": false,
+        "trio": false,
+        "trio_multi": false,
+        "trifecta": false
+      },
+      "payouts": {
+        "win": 290,
+        "quinella": 620,
+        "exacta": 970,
+        "trio": 3360,
+        "trifecta": 10640
+      }
     },
     {
       "id": "nar-20261102-帯広ば-12",
@@ -185,9 +203,27 @@
           6
         ]
       ],
-      "result": null,
-      "settled_at": null,
-      "hits": null
+      "result": [
+        9,
+        10,
+        4
+      ],
+      "settled_at": "2026-11-02T20:58:22+09:00",
+      "hits": {
+        "win": false,
+        "quinella": false,
+        "exacta": false,
+        "trio": false,
+        "trio_multi": false,
+        "trifecta": false
+      },
+      "payouts": {
+        "win": 740,
+        "quinella": 1240,
+        "exacta": 2670,
+        "trio": 2040,
+        "trifecta": 14790
+      }
     },
     {
       "id": "nar-20261102-船橋-11",
@@ -632,15 +668,15 @@
   ],
   "summary": {
     "predicted": 6,
-    "settled": 4,
-    "pending": 2,
-    "win": 25.0,
-    "quinella": 50.0,
-    "exacta": 25.0,
-    "trio": 25.0,
-    "trio_multi": 50.0,
-    "trio_multi_settled": 4,
-    "trifecta": 50.0,
+    "settled": 6,
+    "pending": 0,
+    "win": 16.7,
+    "quinella": 33.3,
+    "exacta": 16.7,
+    "trio": 16.7,
+    "trio_multi": 33.3,
+    "trio_multi_settled": 6,
+    "trifecta": 33.3,
     "note": "発走前に予想した確定レースのみ。三連複本線1点と三連複候補最大8点は別集計。以前のレースの三連複候補は保存済み三連単12点を順不同に換算。三連単候補は12点。"
   }
 }
