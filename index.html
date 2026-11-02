@@ -625,6 +625,19 @@ function savedTrioList(r){
 }
 function trioTokens(tickets){return tickets.map((t,i)=>'<span class="nar-trio-item" title="'+(i===0?'本線':'三連複候補')+'">'+esc(t.join(' - '))+'</span>').join('');}
 function narPct(v){return typeof v==='number'&&Number.isFinite(v)?v.toFixed(1)+'%':'—';}
+function narPayoutHtml(r,trioMultiHit){
+ if(!Array.isArray(r.result))return '';
+ const payouts=r.payouts||{},kinds=[["win","単勝"],["quinella","馬連"],["exacta","馬単"],["trio","三連複"],["trifecta","三連単"]];
+ const lines=kinds.map(([key,label])=>{
+  const v=payouts[key];return '<span style="display:inline-block;margin-right:9px">'+label+' <b>'+(Number.isInteger(v)&&v>=0?amount(v):'未取得')+'</b></span>';
+ }).join("");
+ const note=[["trio","三連複",savedTrioList(r).length,trioMultiHit],["trifecta","三連単",Array.isArray(r.tickets)?r.tickets.length:0,r.hits?.trifecta===true]].map(([key,label,count,hit])=>{
+  const val=payouts[key];if(!Number.isInteger(val)||val<0||count<1)return '';
+  const spent=count*100,returned=hit?val:0,profit=returned-spent;
+  return label+' '+count+'点（各100円）：仮想払戻 '+amount(returned)+' ／ 参考収支 '+(profit>=0?'+':'')+amount(profit);
+ }).filter(Boolean);
+ return '<div class="nar-result"><b>確定払戻（100円あたり）</b><div>'+lines+'</div>'+(note.length?'<div class="muted tiny">'+note.join(' ／ ')+'</div>':'')+'</div>';
+}
 function narRender(data,localCopy=false){
  const now=new Date(),arr=Array.isArray(data?.races)?data.races:[];
  const stamp=typeof data?.updated_at==='string'?Date.parse(data.updated_at):NaN;
@@ -649,7 +662,7 @@ function narRender(data,localCopy=false){
   const actual=Array.isArray(r.result)?'確定 '+r.result.join(' → '):Date.parse(r.start_at)<Date.now()?'結果待ち':'発走前';
   const trioMultiHit=Array.isArray(r.result)&&trio.some(t=>t.join('-')===[...r.result].sort((a,b)=>a-b).join('-'));
   const simple=Array.isArray(r.result)?'<span class="'+(hits.win?'hit':'miss')+'">単勝 '+(hits.win?'的中':'不的中')+'</span> ／ <span class="'+(trioMultiHit?'hit':'miss')+'">三連複候補 '+(trioMultiHit?'的中':'不的中')+'</span> ／ <span class="'+(hits.trifecta?'hit':'miss')+'">三連単 '+(hits.trifecta?'的中':'不的中')+'</span>':'';
-  return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></div><div class="muted tiny">発走予定 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ 予想固定 '+esc(String(r.predicted_at||'').replace('T',' ').slice(0,16))+'</div><div class="nar-line">'+top.map((p,i)=>'<span class="nar-pick">'+(i===0?'◎':i===1?'○':'▲')+' '+esc(p.no)+'番 '+esc(p.name)+' <b>'+narPct(100*Number(p.win_probability))+'</b></span>').join('')+'</div><div class="nar-trio-title">三連複の買い目 <span class="pill">'+trio.length+'点</span></div><div class="nar-trio-list">'+trioTokens(trio)+'</div><div class="nar-trio-note">'+(Array.isArray(r.trio_tickets)?'順位に関係なく3頭が入れば的中。候補上位8点までを発走前に固定。':'旧予想の保存済み三連単候補を順不同に換算（新規予想ではありません）。')+'</div><div class="nar-result">'+simple+'</div><details><summary>三連単候補12点を確認</summary><p>'+tickets.map((t,i)=>esc(Array.isArray(t)?t.join('→'):t)).join(' ／ ')+'</p></details></div>';
+  return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></div><div class="muted tiny">発走予定 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ 予想固定 '+esc(String(r.predicted_at||'').replace('T',' ').slice(0,16))+'</div><div class="nar-line">'+top.map((p,i)=>'<span class="nar-pick">'+(i===0?'◎':i===1?'○':'▲')+' '+esc(p.no)+'番 '+esc(p.name)+' <b>'+narPct(100*Number(p.win_probability))+'</b></span>').join('')+'</div><div class="nar-trio-title">三連複の買い目 <span class="pill">'+trio.length+'点</span></div><div class="nar-trio-list">'+trioTokens(trio)+'</div><div class="nar-trio-note">'+(Array.isArray(r.trio_tickets)?'順位に関係なく3頭が入れば的中。候補上位8点までを発走前に固定。':'旧予想の保存済み三連単候補を順不同に換算（新規予想ではありません）。')+'</div><div class="nar-result">'+simple+'</div>'+narPayoutHtml(r,trioMultiHit)+'<details><summary>三連単候補12点を確認</summary><p>'+tickets.map((t,i)=>esc(Array.isArray(t)?t.join('→'):t)).join(' ／ ')+'</p></details></div>';
  }).join('');
 }
 async function narRefresh(){
@@ -707,13 +720,18 @@ function jraRender(){
   }).length;
   return (100*hits/n).toFixed(1)+'%';
  };
- const metrics=[['記録済みJRA',records.length+'レース'],['結果照合済み',n+'レース'],['三連複・本線1点',ratio('trio')],['三連複・複数点',ratio('trio_multi')],['三連単・全候補',ratio('trifecta')]];
+ const jraRoi=key=>{
+  const settledBets=settled.map(r=>referenceWager(r,key)).filter(Boolean);
+  const spent=settledBets.reduce((t,b)=>t+b.spent,0),returned=settledBets.reduce((t,b)=>t+b.returned,0);
+  return spent?(100*returned/spent).toFixed(1)+'%':'—';
+ };
+ const metrics=[['記録済みJRA',records.length+'レース'],['結果照合済み',n+'レース'],['三連複・本線1点',ratio('trio')],['三連複・複数点',ratio('trio_multi')],['三連単・全候補',ratio('trifecta')],['三連複・仮想回収率',jraRoi('trio')],['三連単・仮想回収率',jraRoi('trifecta')]];
  $('jra-summary').innerHTML=metrics.map(([label,value])=>'<div class="metric"><small>'+esc(label)+'</small><strong>'+esc(value)+'</strong></div>').join('');
  if(!records.length){$('jra-list').innerHTML='<div class="empty">まだJRAの予想記録がありません。上の入力欄で出馬表を登録してください。</div>';return;}
  $('jra-list').innerHTML=records.slice(0,20).map(r=>{
   const trio=savedTrioList(r),result=r.result,top=Array.isArray(r.top3)?r.top3:[];
   const match=resultMatches(r),multi=result&&trio.some(t=>t.join('-')===[...result].sort((a,b)=>a-b).join('-'));
-  return '<div class="jra-card"><div class="jra-card-head"><strong>'+esc(r.date+' '+r.venue+' '+(r.raceNo||'')+'R')+'</strong><span class="pill '+(result?'':'gray')+'">'+(result?'確定 '+esc(result.join(' → ')):'予想保存済み')+'</span></div><small>'+esc(r.name)+' ／ 保存 '+esc(new Date(r.createdAt).toLocaleString('ja-JP'))+(r.marketMode?' ／ オッズ参照（学習AIではない）':' ／ 指数モデル')+'</small><div class="nar-trio-title">三連複 '+trio.length+'点 '+(result?(multi?'<span class="hit">的中</span>':'<span class="miss">不的中</span>'):'')+'</div><div class="nar-trio-list">'+trioTokens(trio)+'</div><details style="margin-top:9px"><summary style="cursor:pointer">三連単 '+r.tickets.length+'点の買い目を見る '+(result?(match?.trifecta?'（的中）':'（不的中）'):'')+'</summary><p class="tiny muted">'+r.tickets.map(x=>esc(x.join('→'))).join(' ／ ')+'</p></details><p class="tiny muted">◎ '+esc(top[0]??'—')+' ／ ○ '+esc(top[1]??'—')+' ／ ▲ '+esc(top[2]??'—')+'</p></div>';
+  return '<div class="jra-card"><div class="jra-card-head"><strong>'+esc(r.date+' '+r.venue+' '+(r.raceNo||'')+'R')+'</strong><span class="pill '+(result?'':'gray')+'">'+(result?'確定 '+esc(result.join(' → ')):'予想保存済み')+'</span></div><small>'+esc(r.name)+' ／ 保存 '+esc(new Date(r.createdAt).toLocaleString('ja-JP'))+(r.marketMode?' ／ オッズ参照（学習AIではない）':' ／ 指数モデル')+'</small><div class="nar-trio-title">三連複 '+trio.length+'点 '+(result?(multi?'<span class="hit">的中</span>':'<span class="miss">不的中</span>'):'')+'</div><div class="nar-trio-list">'+trioTokens(trio)+'</div><details style="margin-top:9px"><summary style="cursor:pointer">三連単 '+r.tickets.length+'点の買い目を見る '+(result?(match?.trifecta?'（的中）':'（不的中）'):'')+'</summary><p class="tiny muted">'+r.tickets.map(x=>esc(x.join('→'))).join(' ／ ')+'</p></details><div class="nar-result"><b>確定払戻（100円あたり）</b><div>'+payoutDetails(r)+'</div><div class="tiny muted">参考収支（各買い目100円）：'+profitDetails(r)+'</div></div><p class="tiny muted">◎ '+esc(top[0]??'—')+' ／ ○ '+esc(top[1]??'—')+' ／ ▲ '+esc(top[2]??'—')+'</p></div>';
  }).join('');
 }
 $('jra-date').value=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Tokyo'});
