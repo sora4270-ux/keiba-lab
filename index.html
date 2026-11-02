@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <meta name="description" content="全レース予想、予想の日時記録、単勝・馬連・馬単・三連複・三連単の的中率集計、過去レースからの学習に対応。">
-  <title>KEIBA LAB v3.2 | 全レース予想・的中率・参考回収率</title>
+  <title>KEIBA LAB v3.3 | 全レース予想・的中率・参考回収率</title>
   <style>
     :root{--navy:#0b1628;--navy2:#14243a;--surface:#fff;--bg:#f5f7fb;--ink:#132338;--sub:#677488;--line:#e4eaf2;--green:#087957;--mint:#dff7ec;--blue:#235ad2;--ice:#eaf0ff;--amber:#a65e10;--shadow:0 8px 28px rgba(20,42,75,.075)}
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.65}button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.5}a{color:var(--blue)}
@@ -75,6 +75,20 @@
     .continuity strong{display:block;font-size:14px;color:#1b4962}.continuity p{margin:4px 0 0;font-size:12px;color:#476378;line-height:1.65}
     .continuity .status{margin-top:5px;font-weight:700;font-size:11px;color:#1c6657}.continuity .btn{background:#fff}
     @media(max-width:760px){.continuity{align-items:stretch}.continuity .controls{width:100%}.continuity .controls .btn{flex:1}}
+  
+    #nar-automated{border-top:4px solid #10a477}
+    .nar-race{border:1px solid var(--line);border-radius:12px;padding:14px;margin:10px 0;background:#fff}
+    .nar-race-head{display:flex;justify-content:space-between;flex-wrap:wrap;align-items:center;gap:6px}
+    .nar-race-head strong{font-size:15px}
+    .nar-line{display:flex;flex-wrap:wrap;gap:5px;margin:9px 0}
+    .nar-pick{background:#f3f6fb;padding:7px 10px;border-radius:8px;font-size:12px}
+    .nar-pick:first-child{background:#e6f6ed;color:#105f48}
+    .nar-race details{font-size:12px;color:#52657e;margin-top:9px}
+    .nar-race summary{cursor:pointer;font-weight:700}
+    .nar-race .nar-result{font-size:12px;margin-top:8px}
+    .nar-race .nar-result b{color:var(--green)}
+    @media(max-width:620px){#nar-automated{padding:15px 13px}.nar-race{padding:12px}.nar-pick{font-size:11px}.nar-race-head strong{font-size:14px}}
+
   </style>
 </head>
 <body>
@@ -83,6 +97,17 @@
  <div class="hero"><div class="eyebrow">RACE PREDICTION / MACHINE LEARNING</div><h1>競馬予想を、<br><span>もっと手軽に。</span></h1><p>出馬表を取り込んでレースを選択。単勝オッズだけなら市場支持率、指数がそろえばモデルによる推定を表示。過去レースCSVで学習もできます。</p><div class="caps"><span>◎ レース選択</span><span>◎ 三連単の買い目候補</span><span>◎ データ連携・CSV学習</span><span>◎ 全レース一括予想</span><span>◎ 的中率の追跡</span><span>◎ スマホ対応</span></div></div>
 </div></header>
 <main class="wrap">
+ <section id="nar-automated" class="panel" aria-label="地方競馬の自動予想と的中率">
+   <div class="hrow"><h2>🏇 地方競馬・全レース自動予想</h2><span class="pill">NEW v3.3</span></div>
+   <p class="intro" style="margin-top:10px">地方競馬の公式配布CSVを使い、発走前の予想を保存・結果確定後に照合します。<b>中央競馬（JRA）は対象外</b>です。</p>
+   <div class="controls"><button type="button" class="btn primary sm" id="nar-refresh">最新の予想と結果を表示</button><a class="btn sm" style="text-decoration:none" href="https://www.keiba.go.jp/" target="_blank" rel="noopener noreferrer">地方競馬公式</a></div>
+   <p id="nar-status" class="hint" role="status" aria-live="polite">自動予想データを読み込み中...</p>
+   <div id="nar-kpis" class="metric-grid" aria-label="自動予想の的中率"></div>
+   <div class="hrow"><h3 style="margin:15px 0 8px">予想一覧・確定結果</h3><span id="nar-count" class="muted tiny"></span></div>
+   <div id="nar-races"><div class="empty">データ読み込み待ち</div></div>
+   <p class="section-note">自動予想は毎回のデータ取得とGitHub Actionsの稼働状況によって遅延・欠測する場合があります。実際の発走・確定結果は主催者発表でご確認ください。初期予測は未学習の過去成績ベース推定で、的中や収益を保証しません。公開された予想は後から書き換えません。</p>
+ </section>
+
  <div class="tabs" role="tablist" aria-label="機能"><button type="button" class="tab active" data-tab="sync" role="tab" aria-selected="true">レース取込</button><button type="button" class="tab" data-tab="predict" role="tab" aria-selected="true">レース予想</button><button type="button" class="tab" data-tab="train" role="tab" aria-selected="false">AIを学習</button><button type="button" class="tab" data-tab="ledger" role="tab" aria-selected="false">全レース・的中率</button><button type="button" class="tab" data-tab="guide" role="tab" aria-selected="false">使い方</button></div>
  <div class="continuity" role="region" aria-label="継続利用とバックアップ">
    <div><strong>ホーム画面から継続利用・データ保管</strong><p>予想履歴・AIモデル・出馬表をこの端末に保存。機種変更やSafariのデータ削除に備えて、定期的にバックアップしてください。</p><p class="status" id="pwa-state">接続状態を確認中...</p></div>
@@ -91,7 +116,7 @@
  </div>
  <section id="sync" class="section active">
   <div class="panel">
-   <div class="hrow"><h2>01. レースを取り込む</h2><span class="pill gray">Ver. 3.2</span></div>
+   <div class="hrow"><h2>01. レースを取り込む</h2><span class="pill gray">Ver. 3.3</span></div>
    <p class="muted">使いたい出馬表を取り込んで、レースを選ぶと予想画面へ反映します。実在レースのデータは最初から入っていません。<b>自動同期は利用許可されたJSON配信先を設定した場合のみ</b>可能です。</p>
    <div class="source-links"><a href="https://www.jra.go.jp/keiba/" target="_blank" rel="noopener noreferrer">JRA 公式出馬表・オッズ</a><a href="https://www.keiba.go.jp/" target="_blank" rel="noopener noreferrer">地方競馬 公式出馬表</a></div>
    <div class="feed-grid">
@@ -188,9 +213,9 @@
  </section>
  <section id="guide" class="section"><div class="panel"><h2>使い方は3ステップ</h2><div class="step"><span class="num">1</span><div><strong>出馬表を入力</strong><p>「レース予想」に移動し、馬番・馬名・単勝オッズ・各指数を入力します。出馬表CSVから一括入力も可能です。</p></div></div><div class="step"><span class="num">2</span><div><strong>勝率と買い目候補を表示</strong><p>「予想する」を押すと、勝率・本命・対抗・穴馬・三連単候補を計算します。予算は1点100円として組み合わせを表示。</p></div></div><div class="step"><span class="num">3</span><div><strong>過去の実績で精度を改善</strong><p>「AIを学習」で実際の過去レース結果CSVを読み込みます。学習すると指数ごとの重みを調整し、未使用レースで検証した成績も表示します。</p></div></div></div>
  <div class="panel"><h2>各項目の意味</h2><ul class="guide-list"><li><b>近走指数（0〜100）</b>：過去3〜5走の着差・レース水準などから自身で統一基準で算出した能力値。</li><li><b>距離適性（1〜5）</b>：今回の距離に合うほど高評価。</li><li><b>馬場適性（1〜5）</b>：今回の良・稍重・重・不良などへの相性。</li><li><b>騎手勝率（%）</b>：同じ集計期間で算出した騎手の勝率。</li><li><b>調教評価（1〜5）</b>：追い切りや近況からの統一基準での評価。</li><li><b>単勝オッズ</b>：直近で確認した数値を入力。オッズ補正をONにすると推定勝率へ市場情報を混ぜます。</li></ul></div>
- <div class="panel"><h2>重要な注意点</h2><p class="muted">このアプリは予測の検証とデータ分析を目的としたツールです。初期状態は開発者が設定した仮の重みであり、機械学習済みではありません。学習後も予測値の適切な校正や検証が必要であり、勝率・買い目の的中や利益は保証しません。出馬表・オッズは、ユーザー入力や許諾済みデータフィードで取り込みます。公式ページからの無断自動取得は行いません。実際の馬券は20歳以上が法律・施設のルールに従い、生活費に影響しない範囲でご自身の判断で購入してください。</p></div></section>
+ <div class="panel"><h2>重要な注意点</h2><p class="muted">このアプリは予測の検証とデータ分析を目的としたツールです。初期状態は開発者が設定した仮の重みであり、機械学習済みではありません。学習後も予測値の適切な校正や検証が必要であり、勝率・買い目の的中や利益は保証しません。出馬表・オッズは、ユーザー入力や許諾済みデータフィードで取り込みます。地方競馬の公式配布CSVに基づく自動予想機能を追加しました。中央競馬の公式データ自動取得は未対応です。実際の馬券は20歳以上が法律・施設のルールに従い、生活費に影響しない範囲でご自身の判断で購入してください。</p></div></section>
  <div class="panel" style="margin-top:10px"><strong>Ver.3.1の追加機能</strong><p class="muted tiny">「全レース・的中率」で取り込んだレースを一括予想し、予想日時を保存。確定結果をCSV/JSONまたは手入力で照合すると5券種の的中率が出ます。確定払戻金を登録した対象レースでは参考回収率も表示します。予想の自動取得・定期実行は、許諾済みの配信先と常時稼働環境が必要です。</p></div>
- <footer class="footer">KEIBA LAB v3.1 ・ ブラウザだけで動く競馬分析ツール ・ 投票機能なし</footer>
+ <footer class="footer">KEIBA LAB v3.3 ・ ブラウザだけで動く競馬分析ツール ・ 投票機能なし</footer>
 </main>
 <div class="toast" id="toast" role="status"></div>
 <input type="file" id="result-file" accept=".csv,.json,text/csv,application/json" hidden><input type="file" id="ledger-file" accept=".json,application/json" hidden><input type="file" id="feed-file" accept=".json,.csv,application/json,text/csv" hidden><input type="file" id="race-file" accept=".csv,text/csv" hidden><input type="file" id="history-file" accept=".csv,text/csv" hidden><input type="file" id="model-file" accept=".json,application/json" hidden>
@@ -509,6 +534,54 @@ $('restore-all-file').addEventListener('change',async e=>{
   location.reload();
  }catch(err){toast('復元できません：'+err.message)}finally{e.target.value='';}
 });
+
+
+const NAR_AUTO_URL='./data/auto/nar_predictions.json';
+function narPct(v){return typeof v==='number'&&Number.isFinite(v)?v.toFixed(1)+'%':'—';}
+function narRender(data,localCopy=false){
+ const now=new Date(),arr=Array.isArray(data?.races)?data.races:[];
+ const stamp=typeof data?.updated_at==='string'?Date.parse(data.updated_at):NaN;
+ const old=Number.isFinite(stamp)&&now.getTime()-stamp>24*60*60*1000;
+ const status=['配信元：NAR公式CSV','予想モデル：過去成績による未学習推定'];
+ if(Number.isFinite(stamp))status.push('最後の新規予想・結果更新：'+new Date(stamp).toLocaleString('ja-JP'));
+ if(old)status.push('データが24時間以上更新されていません');
+ if(localCopy)status.push('端末に保存された古いデータを表示しています');
+ $('nar-status').textContent=status.join(' ／ ');
+ const ss=data?.summary||{},den=Number(ss.settled)||0;
+ const cards=[['win','単勝・本命1点'],['quinella','馬連・上位2頭'],['exacta','馬単・上位2頭'],['trio','三連複・上位3頭'],['trifecta','三連単・12点']];
+ $('nar-kpis').innerHTML='<div class="metric"><small>予想記録</small><strong>'+Number(ss.predicted||arr.length).toLocaleString('ja-JP')+'件</strong><small>結果照合 '+den+'件 ／ 結果待ち '+Number(ss.pending||0)+'件</small></div>'+cards.map(([key,label])=>'<div class="metric"><small>'+label+'</small><strong>'+narPct(ss[key])+'</strong><small>母数：確定 '+den+'レース</small></div>').join('');
+ const upcoming=arr.filter(r=>!r.result&&Date.parse(r.start_at)>Date.now()).sort((a,b)=>Date.parse(a.start_at)-Date.parse(b.start_at));
+ const finished=arr.filter(r=>Array.isArray(r.result)).sort((a,b)=>Date.parse(b.start_at)-Date.parse(a.start_at));
+ const pending=arr.filter(r=>!r.result&&Date.parse(r.start_at)<=Date.now()).sort((a,b)=>Date.parse(b.start_at)-Date.parse(a.start_at));
+ const shown=[...upcoming.slice(0,30),...pending.slice(0,5),...finished.slice(0,20)];
+ $('nar-count').textContent='発走前 '+upcoming.length+' ／ 結果待ち '+pending.length+' ／ 照合済み '+finished.length;
+ if(!shown.length){$('nar-races').innerHTML='<div class="empty">まだ予想が登録されていません。公式データが配信され、GitHub Actionsの処理が成功するとここに表示されます。</div>';return;}
+ $('nar-races').innerHTML=shown.map(r=>{
+  const top=Array.isArray(r.top3)?r.top3:[],tickets=Array.isArray(r.tickets)?r.tickets:[],hits=r.hits||{};
+  const displayDate=String(r.date||'')+' '+String(r.venue||'')+' '+String(r.race_no||'')+'R';
+  const actual=Array.isArray(r.result)?'確定 '+r.result.join(' → '):Date.parse(r.start_at)<Date.now()?'結果待ち':'発走前';
+  const simple=Array.isArray(r.result)?'<span class="'+(hits.win?'hit':'miss')+'">単勝 '+(hits.win?'的中':'不的中')+'</span> ／ <span class="'+(hits.trifecta?'hit':'miss')+'">三連単 '+(hits.trifecta?'的中':'不的中')+'</span>':'';
+  return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></div><div class="muted tiny">発走予定 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ 予想固定 '+esc(String(r.predicted_at||'').replace('T',' ').slice(0,16))+'</div><div class="nar-line">'+top.map((p,i)=>'<span class="nar-pick">'+(i===0?'◎':i===1?'○':'▲')+' '+esc(p.no)+'番 '+esc(p.name)+' <b>'+narPct(100*Number(p.win_probability))+'</b></span>').join('')+'</div><div class="nar-result">'+simple+'</div><details><summary>三連単候補12点を確認</summary><p>'+tickets.map((t,i)=>esc(Array.isArray(t)?t.join('→'):t)).join(' ／ ')+'</p></details></div>';
+ }).join('');
+}
+async function narRefresh(){
+ const btn=$('nar-refresh');btn.disabled=true;$('nar-status').textContent='公式データ由来の予想・集計を取得中...';
+ try{
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);
+  let res;try{res=await fetch(NAR_AUTO_URL+'?v='+Date.now(),{cache:'no-store',credentials:'omit',signal:controller.signal});}finally{clearTimeout(timer);}
+  if(!res.ok)throw Error(res.status===404?'自動予想ファイルがまだ作成されていません':'HTTP '+res.status);
+  const text=await res.text();if(text.length>4*1024*1024)throw Error('自動予想データが大きすぎます');
+  const data=JSON.parse(text);if(data?.schema_version!==1||!Array.isArray(data.races)||!data.summary)throw Error('データの形式が不正です');
+  narRender(data);
+  try{localStorage.setItem('keiba_lab_nar_auto_preview',JSON.stringify({...data,races:data.races.slice(0,70)}));}catch(e){}
+ }catch(e){
+  let cached;try{cached=JSON.parse(localStorage.getItem('keiba_lab_nar_auto_preview')||'null');}catch(e){}
+  if(cached&&Array.isArray(cached.races)){narRender(cached,true);$('nar-status').textContent+=' ／ 最新版の取得失敗：'+e.message;}
+  else{$('nar-status').textContent='まだ自動予想データを取得できません：'+e.message+'。GitHub Actionsの稼働状況を確認してください。';$('nar-races').innerHTML='<div class="empty">自動予想の初回生成待ちです。地方競馬の公式データ取得が成功すると表示されます。</div>';}
+ }finally{btn.disabled=false;}
+}
+$('nar-refresh').addEventListener('click',narRefresh);
+narRefresh();
 
 loadLedger();renderLedger();
 
