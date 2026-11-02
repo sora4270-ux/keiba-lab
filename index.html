@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <meta name="description" content="全レース予想、予想の日時記録、単勝・馬連・馬単・三連複・三連単の的中率集計、過去レースからの学習に対応。">
-  <title>KEIBA LAB v3.4 | 全レース予想・的中率・参考回収率</title>
+  <title>KEIBA LAB v3.5 | 全レース予想・的中率・参考回収率</title>
   <style>
     :root{--navy:#0b1628;--navy2:#14243a;--surface:#fff;--bg:#f5f7fb;--ink:#132338;--sub:#677488;--line:#e4eaf2;--green:#087957;--mint:#dff7ec;--blue:#235ad2;--ice:#eaf0ff;--amber:#a65e10;--shadow:0 8px 28px rgba(20,42,75,.075)}
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.65}button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.5}a{color:var(--blue)}
@@ -96,6 +96,18 @@
     .nar-race .nar-result b{color:var(--green)}
     @media(max-width:620px){#nar-automated{padding:15px 13px}.nar-race{padding:12px}.nar-pick{font-size:11px}.nar-race-head strong{font-size:14px}}
 
+
+    /* v3.5 JRA integration: user-provided or expressly licensed data only */
+    #jra-center{border-top:4px solid #255ed2}
+    .jra-input-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:9px;margin-top:12px}
+    .jra-input-grid .field select,.jra-input-grid .field input{width:100%}
+    .jra-textarea{display:block;margin:12px 0 10px;width:100%;min-height:118px;background:#fff;border:1px solid #cfdae7;border-radius:9px;padding:11px;font:12px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace}
+    .jra-card{padding:13px;border:1px solid var(--line);border-radius:10px;margin-top:9px;background:#fafcff}
+    .jra-card-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+    .jra-card small{color:var(--sub)}
+    .jra-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}
+    .jra-summary .metric{padding:12px}
+    @media(max-width:720px){.jra-input-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.jra-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
   </style>
 </head>
 <body>
@@ -105,14 +117,40 @@
 </div></header>
 <main class="wrap">
  <section id="nar-automated" class="panel" aria-label="地方競馬の自動予想と的中率">
-   <div class="hrow"><h2>🏇 地方競馬・全レース自動予想</h2><span class="pill">NEW v3.4</span></div>
-   <p class="intro" style="margin-top:10px">地方競馬の公式配布CSVを使い、発走前の予想を保存・結果確定後に照合します。<b>中央競馬（JRA）は対象外</b>です。</p>
+   <div class="hrow"><h2>🏇 地方競馬・全レース自動予想</h2><span class="pill">NAR 自動予想</span></div>
+   <p class="intro" style="margin-top:10px">地方競馬の公式配布CSVを使い、発走前の予想を保存・結果確定後に照合します。中央競馬（JRA）の入力予想は下の専用欄をご利用ください。</p>
    <div class="controls"><button type="button" class="btn primary sm" id="nar-refresh">最新の予想と結果を表示</button><a class="btn sm" style="text-decoration:none" href="https://www.keiba.go.jp/" target="_blank" rel="noopener noreferrer">地方競馬公式</a></div>
    <p id="nar-status" class="hint" role="status" aria-live="polite">自動予想データを読み込み中...</p>
    <div id="nar-kpis" class="metric-grid" aria-label="自動予想の的中率"></div>
    <div class="hrow"><h3 style="margin:15px 0 8px">予想一覧・確定結果</h3><span id="nar-count" class="muted tiny"></span></div>
    <div id="nar-races"><div class="empty">データ読み込み待ち</div></div>
    <p class="section-note">自動予想は毎回のデータ取得とGitHub Actionsの稼働状況によって遅延・欠測する場合があります。実際の発走・確定結果は主催者発表でご確認ください。初期予測は未学習の過去成績ベース推定で、的中や収益を保証しません。公開された予想は後から書き換えません。</p>
+ </section>
+
+
+ <section id="jra-center" class="panel" aria-label="JRA中央競馬のレース予想と成績">
+  <div class="hrow"><h2>🏆 中央競馬（JRA）予想</h2><span class="pill amber">v3.5 ・ 入力/許諾データ</span></div>
+  <p class="intro" style="margin-top:9px">東京・中山・京都・阪神などJRA10競馬場に対応。入力された出馬表から<b>三連複・三連単の買い目</b>を発走前に保存し、確定結果との的中率を集計します。</p>
+  <div class="live-warning">JRA公式の出馬表を自動取得する接続は未設定です。JRA-VAN Data Lab.はWindows向けで、通常契約のデータをWebサイトへ再配信できません。<b>自分で入力した情報または公開利用が許可されたデータ</b>のみ取り込みます。オッズのみではAI学習予測でなく市場支持率による推定です。</div>
+  <div class="hrow" style="margin-top:18px"><h3 style="margin:0">① かんたん入力</h3><span class="muted tiny">発走10分前まで・3頭以上</span></div>
+  <div class="jra-input-grid">
+    <div class="field"><label for="jra-venue">競馬場</label><select id="jra-venue"><option>東京</option><option>中山</option><option>京都</option><option>阪神</option><option>中京</option><option>新潟</option><option>福島</option><option>小倉</option><option>札幌</option><option>函館</option></select></div>
+    <div class="field"><label for="jra-race-no">レース</label><select id="jra-race-no"><option value="1">1R</option><option value="2">2R</option><option value="3">3R</option><option value="4">4R</option><option value="5">5R</option><option value="6">6R</option><option value="7">7R</option><option value="8">8R</option><option value="9">9R</option><option value="10">10R</option><option value="11" selected>11R</option><option value="12">12R</option></select></div>
+    <div class="field"><label for="jra-date">開催日</label><input id="jra-date" type="date"></div>
+    <div class="field"><label for="jra-time">発走予定時刻</label><input id="jra-time" type="time" value="15:40"></div>
+  </div>
+  <label for="jra-entries" class="tiny muted" style="display:block;margin-top:12px"><strong>出走馬：</strong>馬番、馬名、単勝オッズを1行ずつ（スペース区切りまたはCSV形式）</label>
+  <textarea id="jra-entries" class="jra-textarea" spellcheck="false" placeholder="1 馬名A 3.2&#10;2 馬名B 5.8&#10;3 馬名C 12.4&#10;4 馬名D 18.6"></textarea>
+  <div class="controls"><button type="button" class="btn primary" id="jra-predict">JRAレースの予想・買い目を保存</button><a href="https://www.jra.go.jp/keiba/" target="_blank" rel="noopener noreferrer" class="btn sm" style="text-decoration:none">JRA公式出馬表を見る</a></div>
+  <div class="hrow" style="margin-top:19px"><h3 style="margin:0">② 複数レースをまとめて登録</h3></div>
+  <p class="muted tiny" style="margin:5px 0 10px">CSV/JSONに race_id、date、venue、race_no、start_at、horse_no、horse_name、odds を入力。許諾済みのデータに限ります。</p>
+  <div class="controls"><button type="button" class="btn sm" id="jra-upload-btn">JRAのCSV / JSONを読み込む</button><button type="button" class="btn sm" id="jra-template-btn">入力用CSVひな型</button><button type="button" class="btn sm" id="jra-authorized-feed">許諾済みJSONフィード設定</button></div>
+  <input id="jra-file" type="file" accept=".csv,.json,text/csv,application/json" hidden>
+  <p id="jra-message" class="hint" role="status" aria-live="polite">JRAの出走馬は自動では入力されません。日付・発走時刻・馬番などを確認してください。</p>
+  <div class="hrow" style="margin-top:17px"><h3 style="margin:0">③ 中央競馬の予想と的中率</h3><button type="button" class="btn sm" id="jra-results-btn">確定結果を入力・取込</button></div>
+  <div id="jra-summary" class="jra-summary" aria-label="JRAの的中率"></div>
+  <div id="jra-list" aria-label="JRAレースの予想買い目"><div class="empty">JRAの予想記録はまだありません</div></div>
+  <p class="section-note">JRAの記録はこの端末に保存。JRAの予想と地方競馬のクラウド自動予想は別管理です。予想済みレースの買い目は上書きしません。確定結果を照合できたレースのみ的中率を算出します。</p>
  </section>
 
  <div class="tabs" role="tablist" aria-label="機能"><button type="button" class="tab active" data-tab="sync" role="tab" aria-selected="true">レース取込</button><button type="button" class="tab" data-tab="predict" role="tab" aria-selected="true">レース予想</button><button type="button" class="tab" data-tab="train" role="tab" aria-selected="false">AIを学習</button><button type="button" class="tab" data-tab="ledger" role="tab" aria-selected="false">全レース・的中率</button><button type="button" class="tab" data-tab="guide" role="tab" aria-selected="false">使い方</button></div>
@@ -181,7 +219,7 @@
      <p class="intro">「レース取込」のCSV / JSON・許諾済みフィードで取り込んだ<strong>全レース</strong>を予想して日時付きで保存。3頭以上・オッズありのレースを対象にします。デモ・架空レースは集計しません。</p>
      <div class="controls"><button type="button" class="btn primary" id="predict-all">取り込んだ全レースを予想・記録</button><button type="button" class="btn" id="record-current">表示中の1レースを記録</button></div>
      <p class="ledger-note" id="batch-status">まだ予想が保存されていません。先に「レース取込」でレースデータを読み込んでください。</p>
-     <div class="live-warning">このアプリは単体でJRA・地方競馬の全レースを定時取得しません。利用許可されたデータ配信またはCSV/JSONの取り込みが必要です。オッズだけで計算した順位は<strong>AIの学習予測ではなく市場支持率</strong>です。学習に使った過去レースを本番の的中率に混ぜないでください。</div>
+     <div class="live-warning">このアプリはJRAの出馬表を無許可で自動取得しません。地方競馬の公式CSVに基づく自動予想はページ上部の専用欄をご利用ください。利用許可されたデータ配信またはCSV/JSONの取り込みが必要です。オッズだけで計算した順位は<strong>AIの学習予測ではなく市場支持率</strong>です。学習に使った過去レースを本番の的中率に混ぜないでください。</div>
    </div>
    <div class="panel"><div class="hrow"><h2>許諾済みフィードから定期更新（任意）</h2><span class="pill gray">アプリを開いている間</span></div>
       <p class="intro tiny">「レース取込」で指定したJSON配信先から新しいレースを取得し、予想記録を追加します。下に別途許諾済みの確定結果JSONフィードを設定すると照合もできます。バックグラウンドや閉じた画面では動きません。</p>
@@ -434,6 +472,7 @@ function renderLedger(){
  $('ledger-rows').innerHTML=rows.length?rows.map(r=>{const score=resultMatches(r),fmtHit=k=>score?`<span class="${score[k]?'hit':'miss'}">${score[k]?'的中':'不的中'}</span>`:'<span class="muted">未確定</span>';
   return `<tr><td>${esc(`${r.date||''} ${r.venue||''} ${r.name}`)}<span class="sub">${esc(new Date(r.createdAt).toLocaleString('ja-JP'))}</span></td><td>${r.marketMode?'オッズ参照':r.trained?'学習AI':'初期モデル'}</td><td>${esc(r.top3[0])}番 <span class="sub">${(100*r.probTop).toFixed(1)}%</span></td><td>${r.betCount}点<span class="sub">${r.startAt?'発走予定時刻あり':'発走時刻未確認'}</span></td><td>${r.result?esc(r.result.join(' → ')):'未確定'}</td><td>${fmtHit('win')}</td><td>${fmtHit('trifecta')}</td></tr>`;}).join(''):'<tr><td colspan="7" class="muted">まだ記録がありません。レース取込後に全レースを一括予想してください。</td></tr>';
  drawResultSelect();
+ if(document.getElementById('jra-center'))jraRender();
 }
 $('save-result').addEventListener('click',()=>{
  try{const rec=ledger.find(x=>x.key===$('settlement-race').value);if(!rec)throw Error('照合対象のレースを選択してください。');const top=['first-horse','second-horse','third-horse'].map(id=>Number($(id).value));if(['first-horse','second-horse','third-horse'].some(id=>$(id).value.trim()===''))throw Error('1着〜3着の馬番をすべて入力してください。');recordResult(rec,top,{win:$('win-payout').value,trifecta:$('trifecta-payout').value});if(!persistLedger()){rec.result=null;rec.payouts={win:null,trifecta:null};rec.settledAt=null;throw Error('結果を保存できませんでした');}renderLedger();$('result-feedback').textContent=`${rec.name}：${top.join(' → ')} を記録しました。単勝：${resultMatches(rec).win?'的中':'不的中'} ／ 三連単：${resultMatches(rec).trifecta?'的中':'不的中'}`;['first-horse','second-horse','third-horse','win-payout','trifecta-payout'].forEach(id=>$(id).value='');toast('結果を照合しました');}catch(e){$('result-feedback').textContent=e.message;}
@@ -605,6 +644,82 @@ async function narRefresh(){
 }
 $('nar-refresh').addEventListener('click',narRefresh);
 narRefresh();
+
+const JRA_VENUES=new Set(['東京','中山','京都','阪神','中京','新潟','福島','小倉','札幌','函館']);
+function jraDateTime(r){
+ if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(r.date||'')))throw Error('JRA開催日はYYYY-MM-DDの形式で入力してください');
+ if(!JRA_VENUES.has(String(r.venue||'')))throw Error('中央競馬の競馬場を選択してください：'+String(r.venue||''));
+ if(!Number.isInteger(Number(r.race_no))||Number(r.race_no)<1||Number(r.race_no)>12)throw Error('中央競馬のレース番号は1〜12にしてください');
+ const start=String(r.start_at||'');
+ if(!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(?::\\d{2})?(?:\\+09:00|Z)$/.test(start))throw Error('start_at は 2026-11-07T15:40:00+09:00 の形式で指定してください');
+ if(start.slice(0,10)!==r.date)throw Error('開催日と発走時刻の日付が一致しません');
+ const millis=Date.parse(start);
+ if(!Number.isFinite(millis)||millis-Date.now()<10*60*1000)throw Error('発走10分前までのレースだけ予想記録できます');
+}
+function jraValidRaces(races){if(!Array.isArray(races)||!races.length)throw Error('出馬表がありません');races.forEach(jraDateTime);return races;}
+function jraMessage(message,warning=false){const elem=$('jra-message');elem.textContent=message;elem.className='hint'+(warning?' warning':'');}
+function jraAutoPredict(races,label){
+ jraValidRaces(races);
+ // This is a local, opt-in snapshot. Only user-provided data, no hidden scraping.
+ const saved=new Set(ledger.map(x=>x.key)),fresh=races.filter(r=>!saved.has(raceKey(r)));
+ if(!fresh.length)throw Error('すべて予想保存済みです。予想済みレースは上書きしません');
+ setCatalog(races,label,new Date().toLocaleString('ja-JP'));
+ const predictions=fresh.map(r=>makeSnapshot(r,'JRA本人入力・許諾済みファイル'));
+ addPredictions(predictions);
+ jraMessage(predictions.length+'レースを発走前予想として保存しました。三連複と三連単の買い目をご確認ください。');
+ jraRender();
+ document.getElementById('jra-list').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function jraRender(){
+ const records=ledger.filter(r=>JRA_VENUES.has(String(r.venue||''))).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
+ const settled=records.filter(r=>Array.isArray(r.result)&&r.result.length===3),n=settled.length;
+ const ratio=(type)=>{
+  if(!n)return '—';
+  const hits=settled.filter(r=>{
+   if(type==='trio_multi')return savedTrioList(r).some(t=>t.join('-')===[...r.result].sort((a,b)=>a-b).join('-'));
+   return resultMatches(r)?.[type]===true;
+  }).length;
+  return (100*hits/n).toFixed(1)+'%';
+ };
+ const metrics=[['記録済みJRA',records.length+'レース'],['結果照合済み',n+'レース'],['三連複・本線1点',ratio('trio')],['三連複・複数点',ratio('trio_multi')],['三連単・全候補',ratio('trifecta')]];
+ $('jra-summary').innerHTML=metrics.map(([label,value])=>'<div class="metric"><small>'+esc(label)+'</small><strong>'+esc(value)+'</strong></div>').join('');
+ if(!records.length){$('jra-list').innerHTML='<div class="empty">まだJRAの予想記録がありません。上の入力欄で出馬表を登録してください。</div>';return;}
+ $('jra-list').innerHTML=records.slice(0,20).map(r=>{
+  const trio=savedTrioList(r),result=r.result,top=Array.isArray(r.top3)?r.top3:[];
+  const match=resultMatches(r),multi=result&&trio.some(t=>t.join('-')===[...result].sort((a,b)=>a-b).join('-'));
+  return '<div class="jra-card"><div class="jra-card-head"><strong>'+esc(r.date+' '+r.venue+' '+(r.raceNo||'')+'R')+'</strong><span class="pill '+(result?'':'gray')+'">'+(result?'確定 '+esc(result.join(' → ')):'予想保存済み')+'</span></div><small>'+esc(r.name)+' ／ 保存 '+esc(new Date(r.createdAt).toLocaleString('ja-JP'))+(r.marketMode?' ／ オッズ参照（学習AIではない）':' ／ 指数モデル')+'</small><div class="nar-trio-title">三連複 '+trio.length+'点 '+(result?(multi?'<span class="hit">的中</span>':'<span class="miss">不的中</span>'):'')+'</div><div class="nar-trio-list">'+trioTokens(trio)+'</div><details style="margin-top:9px"><summary style="cursor:pointer">三連単 '+r.tickets.length+'点の買い目を見る '+(result?(match?.trifecta?'（的中）':'（不的中）'):'')+'</summary><p class="tiny muted">'+r.tickets.map(x=>esc(x.join('→'))).join(' ／ ')+'</p></details><p class="tiny muted">◎ '+esc(top[0]??'—')+' ／ ○ '+esc(top[1]??'—')+' ／ ▲ '+esc(top[2]??'—')+'</p></div>';
+ }).join('');
+}
+$('jra-date').value=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Tokyo'});
+$('jra-predict').addEventListener('click',()=>{
+ try{
+  const venue=$('jra-venue').value,number=Number($('jra-race-no').value),date=$('jra-date').value,start=$('jra-time').value;
+  if(!date||!start)throw Error('開催日と発走予定時刻を入力してください');
+  const parsed=parsePasted($('jra-entries').value,venue+number+'R');
+  const list=normalizeRaces([{id:'JRA-'+date+'-'+venue+'-'+String(number).padStart(2,'0'),name:venue+number+'R',venue,race_no:number,date,start_at:date+'T'+start+':00+09:00',horses:parsed[0].horses}]);
+  jraAutoPredict(list,'JRAかんたん入力（提供元は利用者が確認）');
+ }catch(e){jraMessage(e.message,true);}
+});
+$('jra-upload-btn').addEventListener('click',()=>$('jra-file').click());
+$('jra-file').addEventListener('change',async e=>{
+ const file=e.target.files?.[0];if(!file)return;
+ try{
+  if(file.size>2*1024*1024)throw Error('ファイルは2MB以内にしてください');
+  const text=await file.text();
+  const races=file.name.toLowerCase().endsWith('.json')?normalizeRaces(JSON.parse(text)):parseCatalogCsv(text);
+  jraAutoPredict(races,'JRAファイル：'+file.name.slice(0,75));
+ }catch(err){jraMessage(err.message,true);}finally{e.target.value='';}
+});
+$('jra-template-btn').addEventListener('click',()=>saveText('jra_race_input_template.csv',csvLines([
+ ['race_id','race_name','date','venue','race_no','start_at','horse_no','horse_name','odds','recent_index','distance_fit','ground_fit','jockey_win_rate','training_score'],
+ ['jra-example-20990101-11','架空サンプル11R','2099-01-01','東京','11','2099-01-01T15:40:00+09:00',1,'架空A',3.2,'','','','',''],
+ ['jra-example-20990101-11','架空サンプル11R','2099-01-01','東京','11','2099-01-01T15:40:00+09:00',2,'架空B',5.6,'','','','',''],
+ ['jra-example-20990101-11','架空サンプル11R','2099-01-01','東京','11','2099-01-01T15:40:00+09:00',3,'架空C',8.8,'','','','','']
+])));
+$('jra-results-btn').addEventListener('click',()=>switchTab('ledger'));
+$('jra-authorized-feed').addEventListener('click',()=>{switchTab('sync');$('feed-url').focus()});
+jraRender();
+
 
 loadLedger();renderLedger();
 
