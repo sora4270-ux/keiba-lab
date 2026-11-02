@@ -487,8 +487,20 @@ $('save-result').addEventListener('click',()=>{
  try{const rec=ledger.find(x=>x.key===$('settlement-race').value);if(!rec)throw Error('照合対象のレースを選択してください。');const top=['first-horse','second-horse','third-horse'].map(id=>Number($(id).value));if(['first-horse','second-horse','third-horse'].some(id=>$(id).value.trim()===''))throw Error('1着〜3着の馬番をすべて入力してください。');recordResult(rec,top,Object.fromEntries(BET_TYPES.map(([k])=>[k,$(k+'-payout').value])));if(!persistLedger()){rec.result=null;rec.payouts=normalizePayouts({});rec.settledAt=null;throw Error('結果を保存できませんでした');}renderLedger();$('result-feedback').textContent=`${rec.name}：${top.join(' → ')} を記録しました。単勝：${resultMatches(rec).win?'的中':'不的中'} ／ 三連単：${resultMatches(rec).trifecta?'的中':'不的中'}`;['first-horse','second-horse','third-horse',...BET_TYPES.map(([k])=>k+'-payout')].forEach(id=>$(id).value='');toast('結果を照合しました');}catch(e){$('result-feedback').textContent=e.message;}
 });
 function parseResultFile(text,isJson){
- if(isJson){const obj=JSON.parse(text),list=Array.isArray(obj)?obj:Array.isArray(obj?.results)?obj.results:null;if(!list)throw Error('JSONの形式は {"results":[{"race_id":"...","first":1,"second":2,"third":3}]} です。');return list.filter(x=>x&&x.confirmed!==false&&!(['unconfirmed','preliminary','速報','未確定','取消','cancelled'].includes(String(x.status??'').toLowerCase()))).map(x=>({id:String(x.race_id??x.id??''),date:String(x.date??''),top:[Number(x.first),Number(x.second),Number(x.third)],payouts:{win:x.win_payout,trifecta:x.trifecta_payout}}));}
- const rows=parseCsv(text);if(rows.length<2)throw Error('結果CSVにはヘッダーとデータ行が必要です。');const h=rows[0].map(x=>x.trim().toLowerCase());const idx=(...names)=>h.findIndex(c=>names.includes(c));const ix={id:idx('race_id','レースid','レースID'.toLowerCase()),date:idx('date','日付'),a:idx('first','1着','1着馬番'),b:idx('second','2着','2着馬番'),c:idx('third','3着','3着馬番'),win:idx('win_payout','単勝払戻'),trifecta:idx('trifecta_payout','三連単払戻')};if(['id','a','b','c'].some(k=>ix[k]<0))throw Error('結果CSVには race_id,first,second,third の列が必要です');return rows.slice(1).map(r=>({id:String(r[ix.id]??'').trim(),date:ix.date<0?'':String(r[ix.date]??'').trim(),top:[Number(r[ix.a]),Number(r[ix.b]),Number(r[ix.c])],payouts:{win:ix.win>=0?r[ix.win]:'',trifecta:ix.trifecta>=0?r[ix.trifecta]:''}}));
+ const keys=["win","quinella","exacta","trio","trifecta"];
+ if(isJson){
+  const obj=JSON.parse(text),list=Array.isArray(obj)?obj:Array.isArray(obj?.results)?obj.results:null;
+  if(!list)throw Error('JSON形式は {"results":[{"race_id":"...","first":1,"second":2,"third":3,"trio_payout":2750}]} です。');
+  return list.filter(x=>x&&x.confirmed!==false&&!["unconfirmed","preliminary","速報","未確定","取消","cancelled"].includes(String(x.status??"").toLowerCase()))
+   .map(x=>({id:String(x.race_id??x.id??""),date:String(x.date??""),top:[Number(x.first),Number(x.second),Number(x.third)],payouts:Object.fromEntries(keys.map(k=>[k,x[k+"_payout"]??x.payouts?.[k]??""]))}));
+ }
+ const rows=parseCsv(text);if(rows.length<2)throw Error("結果CSVにはヘッダーとデータ行が必要です");
+ const h=rows[0].map(x=>x.trim().toLowerCase()),idx=(...names)=>h.findIndex(c=>names.includes(c));
+ const ix={id:idx("race_id","レースid"),date:idx("date","日付"),a:idx("first","1着","1着馬番"),b:idx("second","2着","2着馬番"),c:idx("third","3着","3着馬番")};
+ const names={win:"単勝払戻",quinella:"馬連払戻",exacta:"馬単払戻",trio:"三連複払戻",trifecta:"三連単払戻"};
+ for(const k of keys)ix[k]=idx(k+"_payout",names[k]);
+ if(["id","a","b","c"].some(k=>ix[k]<0))throw Error("結果CSVには race_id,first,second,third の列が必要です");
+ return rows.slice(1).map(r=>({id:String(r[ix.id]??"").trim(),date:ix.date<0?"":String(r[ix.date]??"").trim(),top:[Number(r[ix.a]),Number(r[ix.b]),Number(r[ix.c])],payouts:Object.fromEntries(keys.map(k=>[k,ix[k]<0?"":r[ix[k]]??""]))}));
 }
 $('result-file-button').addEventListener('click',()=>$('result-file').click());
 $('result-file').addEventListener('change',async e=>{
@@ -501,11 +513,16 @@ $('result-file').addEventListener('change',async e=>{
   renderLedger();$('result-feedback').textContent=`${patches.length}レースの確定結果を照合しました。対象外：${miss}件。`;toast(`${patches.length}レースを照合しました`);
  }catch(err){$('result-feedback').textContent=err.message;}finally{e.target.value='';}
 });
-$('results-csv-template').addEventListener('click',()=>saveText('race_results_v3_template.csv',csvLines([['race_id','date','first','second','third','win_payout','trifecta_payout'],['sample-001','2099-01-01',1,2,3,460,12840]])));
+$('results-csv-template').addEventListener('click',()=>saveText('race_results_v3_template.csv',csvLines([['race_id','date','first','second','third','win_payout','quinella_payout','exacta_payout','trio_payout','trifecta_payout'],['sample-001','2099-01-01',1,2,3,460,1180,2400,3690,12840]])));
 $('export-ledger-csv').addEventListener('click',()=>{
- const header=['race_id','date','venue','race_name','predicted_at','method','top1','top2','top3','trifecta_ticket_count','final_first','final_second','final_third','win_hit','quinella_hit','exacta_hit','trio_hit','trifecta_hit','win_payout_per100','trifecta_payout_per100','reference_win_stake','reference_win_return','reference_trifecta_stake','reference_trifecta_return'];
- const out=ledger.map(r=>{const score=resultMatches(r),get=k=>score===null?'':score[k]?1:0;return [r.id,r.date,r.venue,r.name,r.createdAt,r.marketMode?'odds_market':r.trained?'trained_ai':'untrained_model',...r.top3,r.betCount,...(r.result??['','','']),get('win'),get('quinella'),get('exacta'),get('trio'),get('trifecta'),r.payouts?.win??'',r.payouts?.trifecta??'',r.result&&r.payouts?.win!=null?100:'',r.result&&r.payouts?.win!=null?(score.win?r.payouts.win:0):'',r.result&&r.payouts?.trifecta!=null?r.betCount*100:'',r.result&&r.payouts?.trifecta!=null?(score.trifecta?r.payouts.trifecta:0):''];});
- saveText('keiba_v3_hit_rate_history.csv',csvLines([header,...out]));
+ const types=BET_TYPES.map(([k])=>k);
+ const header=['race_id','date','venue','race_name','predicted_at','method','top1','top2','top3','trifecta_ticket_count','trio_ticket_count','final_first','final_second','final_third',...types.map(k=>k+'_hit'),...types.map(k=>k+'_payout_per100'),...types.map(k=>'reference_'+k+'_stake'),...types.map(k=>'reference_'+k+'_return'),...types.map(k=>'reference_'+k+'_profit')];
+ const out=ledger.map(r=>{
+  const score=resultMatches(r),get=k=>score===null?'':(k==='trio'?ticketHit(r,k):score[k])?1:0;
+  const bets=types.map(k=>referenceWager(r,k));
+  return [r.id,r.date,r.venue,r.name,r.createdAt,r.marketMode?'odds_market':r.trained?'trained_ai':'untrained_model',...r.top3,r.betCount,savedTrioList(r).length,...(r.result??['','','']),...types.map(get),...types.map(k=>payoutValue(r,k)??''),...bets.map(b=>b?.spent??''),...bets.map(b=>b?.returned??''),...bets.map(b=>b?.profit??'')];
+ });
+ saveText('keiba_v36_hit_rate_payouts.csv',csvLines([header,...out]));
 });
 $('backup-ledger').addEventListener('click',()=>saveText('keiba_v3_predictions_backup.json',JSON.stringify({format:'keiba-lab-ledger-v3',exportedAt:new Date().toISOString(),records:ledger},null,2),'application/json;charset=utf-8'));
 $('restore-ledger').addEventListener('click',()=>$('ledger-file').click());
