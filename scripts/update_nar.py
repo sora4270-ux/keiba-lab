@@ -507,6 +507,37 @@ def selftest():
     old.pop("trio_tickets")
     assert len(frozen_trio_tickets(old)) >= 1
     assert {tuple(t) for t in frozen_trio_tickets(old)} == {tuple(sorted(t)) for t in old["tickets"]}
+    # Official ten-column NAR odds format: include only single-win odds.
+    mem = io.BytesIO()
+    with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as z:
+        rows = [
+            ["競馬場", "競走年月日", "レース番号", "賭式", "番号1",
+             "番号2", "番号3", "オッズ", "オッズ（最大）", "人気"],
+            ["門別", "20261102", "1", "単勝", "2", "", "", "3.4", "", "1"],
+            ["門別", "20261102", "1", "単勝", "1", "", "", "10.8", "", "4"],
+            ["門別", "20261102", "1", "３連単", "1", "2", "3", "88.5", "", "3"],
+        ]
+        stream = io.StringIO()
+        writer = csv.writer(stream)
+        writer.writerows(rows)
+        z.writestr("20261102_odds.csv", stream.getvalue().encode("utf-8-sig"))
+    market = odds_market_index(mem.getvalue())
+    assert market[("門別", "20261102", 1)] == {
+        2: {"no": 2, "odds": 3.4, "popularity": 1},
+        1: {"no": 1, "odds": 10.8, "popularity": 4},
+    }
+    again, a, settled_again, changed = update_data(
+        races, late, enriched, paybacks, market)
+    assert (a, settled_again, changed) == (0, 0, 1)
+    assert again["races"][0]["market"]["horses"] == [
+        {"no": 1, "odds": 10.8, "popularity": 4},
+        {"no": 2, "odds": 3.4, "popularity": 1},
+    ]
+    assert again["races"][0]["top3"] == pre["top3"]
+    assert again["races"][0]["tickets"] == pre["tickets"]
+    assert update_data(races, late, again, paybacks, market)[3] == 0
+    assert "ranking" in pre and len(pre["ranking"]) == len(races[0]["horses"])
+    print("PASS: official NAR single-win odds, popularity and frozen ranking")
     print("PASS: frozen pre-race picks, result scoring, verified NAR 5-type payouts, delayed enrichment")
 
 
