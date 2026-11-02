@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <meta name="description" content="全レース予想、予想の日時記録、単勝・馬連・馬単・三連複・三連単の的中率集計、過去レースからの学習に対応。">
-  <title>KEIBA LAB v3.5 | 全レース予想・的中率・参考回収率</title>
+  <title>KEIBA LAB v3.6 | 全レース予想・的中率・参考回収率</title>
   <style>
     :root{--navy:#0b1628;--navy2:#14243a;--surface:#fff;--bg:#f5f7fb;--ink:#132338;--sub:#677488;--line:#e4eaf2;--green:#087957;--mint:#dff7ec;--blue:#235ad2;--ice:#eaf0ff;--amber:#a65e10;--shadow:0 8px 28px rgba(20,42,75,.075)}
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.65}button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.5}a{color:var(--blue)}
@@ -124,12 +124,13 @@
    <div id="nar-kpis" class="metric-grid" aria-label="自動予想の的中率"></div>
    <div class="hrow"><h3 style="margin:15px 0 8px">予想一覧・確定結果</h3><span id="nar-count" class="muted tiny"></span></div>
    <div id="nar-races"><div class="empty">データ読み込み待ち</div></div>
-   <p class="section-note">自動予想は毎回のデータ取得とGitHub Actionsの稼働状況によって遅延・欠測する場合があります。実際の発走・確定結果は主催者発表でご確認ください。初期予測は未学習の過去成績ベース推定で、的中や収益を保証しません。公開された予想は後から書き換えません。</p>
+   <p class="section-note">確定済みレースはNAR公式CSVに払戻が掲載されると券種別の確定金額（100円あたり）と、保存済み買い目を各100円購入した場合の参考収支を表示します。払戻未取得時は金額を表示しません。</p>
+    <p class="section-note">自動予想は毎回のデータ取得とGitHub Actionsの稼働状況によって遅延・欠測する場合があります。実際の発走・確定結果は主催者発表でご確認ください。初期予測は未学習の過去成績ベース推定で、的中や収益を保証しません。公開された予想は後から書き換えません。</p>
  </section>
 
 
  <section id="jra-center" class="panel" aria-label="JRA中央競馬のレース予想と成績">
-  <div class="hrow"><h2>🏆 中央競馬（JRA）予想</h2><span class="pill amber">v3.5 ・ 入力/許諾データ</span></div>
+  <div class="hrow"><h2>🏆 中央競馬（JRA）予想</h2><span class="pill amber">v3.6 ・ 払戻表示対応</span></div>
   <p class="intro" style="margin-top:9px">東京・中山・京都・阪神などJRA10競馬場に対応。入力された出馬表から<b>三連複・三連単の買い目</b>を発走前に保存し、確定結果との的中率を集計します。</p>
   <div class="live-warning">JRA公式の出馬表を自動取得する接続は未設定です。JRA-VAN Data Lab.はWindows向けで、通常契約のデータをWebサイトへ再配信できません。<b>自分で入力した情報または公開利用が許可されたデータ</b>のみ取り込みます。オッズのみではAI学習予測でなく市場支持率による推定です。</div>
   <div class="hrow" style="margin-top:18px"><h3 style="margin:0">① かんたん入力</h3><span class="muted tiny">発走10分前まで・3頭以上</span></div>
@@ -147,10 +148,11 @@
   <div class="controls"><button type="button" class="btn sm" id="jra-upload-btn">JRAのCSV / JSONを読み込む</button><button type="button" class="btn sm" id="jra-template-btn">入力用CSVひな型</button><button type="button" class="btn sm" id="jra-authorized-feed">許諾済みJSONフィード設定</button></div>
   <input id="jra-file" type="file" accept=".csv,.json,text/csv,application/json" hidden>
   <p id="jra-message" class="hint" role="status" aria-live="polite">JRAの出走馬は自動では入力されません。日付・発走時刻・馬番などを確認してください。</p>
-  <div class="hrow" style="margin-top:17px"><h3 style="margin:0">③ 中央競馬の予想と的中率</h3><button type="button" class="btn sm" id="jra-results-btn">確定結果を入力・取込</button></div>
+  <div class="hrow" style="margin-top:17px"><h3 style="margin:0">③ 中央競馬の予想・的中率・払戻金</h3><button type="button" class="btn sm" id="jra-results-btn">確定結果を入力・取込</button></div>
   <div id="jra-summary" class="jra-summary" aria-label="JRAの的中率"></div>
   <div id="jra-list" aria-label="JRAレースの予想買い目"><div class="empty">JRAの予想記録はまだありません</div></div>
-  <p class="section-note">JRAの記録はこの端末に保存。JRAの予想と地方競馬のクラウド自動予想は別管理です。予想済みレースの買い目は上書きしません。確定結果を照合できたレースのみ的中率を算出します。</p>
+  <p class="section-note">確定払戻金は結果入力後に表示します（100円あたり）。結果データを入力していない券種は「未登録」と表示します。払戻金は実際の購入額・利益ではありません。</p>
+   <p class="section-note">JRAの記録はこの端末に保存。JRAの予想と地方競馬のクラウド自動予想は別管理です。予想済みレースの買い目は上書きしません。確定結果を照合できたレースのみ的中率を算出します。</p>
  </section>
 
  <div class="tabs" role="tablist" aria-label="機能"><button type="button" class="tab active" data-tab="sync" role="tab" aria-selected="true">レース取込</button><button type="button" class="tab" data-tab="predict" role="tab" aria-selected="true">レース予想</button><button type="button" class="tab" data-tab="train" role="tab" aria-selected="false">AIを学習</button><button type="button" class="tab" data-tab="ledger" role="tab" aria-selected="false">全レース・的中率</button><button type="button" class="tab" data-tab="guide" role="tab" aria-selected="false">使い方</button></div>
@@ -231,19 +233,19 @@
       <div class="kpi-grid"><div class="kpi"><small>記録した予想</small><b id="kpi-pred">0</b><small>架空データは対象外</small></div><div class="kpi"><small>結果照合済み</small><b id="kpi-settled">0</b><small>分母は確定済み予想</small></div><div class="kpi"><small>本命の1着的中率</small><b id="kpi-win">—</b><small id="kpi-win-detail">0 / 0</small></div><div class="kpi"><small>三連単買い目の的中率</small><b id="kpi-tri">—</b><small id="kpi-tri-detail">0 / 0</small></div></div>
       <div class="metric-stack" id="ticket-metrics"></div>
       <p class="section-note">的中率＝該当券種で当たったレース数 ÷ 結果照合済みの予想レース数 ×100。三連単は<strong>保存時点の全買い目のうち1点でも的中したレース</strong>を1件と数えます。単勝・馬連・馬単・三連複は本命順からの1点予想です。点数が異なる券種や戦略の的中率は単純比較できません。</p>
-      <h3 class="roi-title">参考回収率（100円仮想購入）</h3><p class="roi-hint">確定払戻金（100円あたり）を入力したレースのみ計算。単勝は本命1点×100円、三連単は保存した候補全点×100円を仮想購入したと仮定します。<b>実際の購入・収支とは異なります。</b></p>
+      <h3 class="roi-title">参考回収率・払戻金（100円仮想購入）</h3><p class="roi-hint">確定払戻金（100円あたり）を登録したレースのみ集計。単勝・馬連・馬単は1点×100円、三連複は保存した候補全点×100円、三連単も保存した全点×100円を仮想購入した想定です。<b>実際の購入・収支とは異なります。</b></p>
       <div class="metric-stack roi-grid" id="roi-metrics"></div>
    </div>
    <div class="panel"><div class="hrow"><h2>確定結果を登録</h2><span class="pill gray">着順の確認後</span></div>
       <p class="intro tiny">1〜3着の馬番で照合します。<b>結果の入力前に予想記録が必要です。</b>配信時点ですでに確定結果が得られるレースは新規予想から除外します。結果未確定・同着・競走取消・返還がある場合、この簡易判定の対象外として扱ってください。</p>
       <div class="slim-form"><div class="field"><label for="settlement-race">予想を記録したレース</label><select id="settlement-race"><option value="">予想なし</option></select></div><div class="field"><label for="first-horse">1着馬番</label><input type="number" min="1" max="24" id="first-horse" placeholder="1"></div><div class="field"><label for="second-horse">2着馬番</label><input type="number" min="1" max="24" id="second-horse" placeholder="2"></div><div class="field"><label for="third-horse">3着馬番</label><input type="number" min="1" max="24" id="third-horse" placeholder="3"></div></div>
-      <div class="payout-fields"><div class="field"><label for="win-payout">単勝の確定払戻（100円あたり・任意）</label><input id="win-payout" type="number" min="0" max="100000000" step="1" placeholder="例：430円"></div><div class="field"><label for="trifecta-payout">三連単の確定払戻（100円あたり・任意）</label><input id="trifecta-payout" type="number" min="0" max="100000000" step="1" placeholder="例：14820円"></div></div>
+      <div class="payout-fields"><div class="field"><label for="win-payout">単勝の確定払戻（100円あたり・任意）</label><input id="win-payout" type="number" min="0" max="100000000" step="1" placeholder="確定金額（円）"></div><div class="field"><label for="quinella-payout">馬連の確定払戻（100円あたり・任意）</label><input id="quinella-payout" type="number" min="0" max="100000000" step="1" placeholder="確定金額（円）"></div><div class="field"><label for="exacta-payout">馬単の確定払戻（100円あたり・任意）</label><input id="exacta-payout" type="number" min="0" max="100000000" step="1" placeholder="確定金額（円）"></div><div class="field"><label for="trio-payout">三連複の確定払戻（100円あたり・任意）</label><input id="trio-payout" type="number" min="0" max="100000000" step="1" placeholder="確定金額（円）"></div><div class="field"><label for="trifecta-payout">三連単の確定払戻（100円あたり・任意）</label><input id="trifecta-payout" type="number" min="0" max="100000000" step="1" placeholder="確定金額（円）"></div></div>
       <div class="controls" style="margin-top:13px"><button type="button" class="btn primary" id="save-result">着順を確定・照合</button><button type="button" class="btn" id="result-file-button">結果CSV / JSON取込</button><button type="button" class="btn sm" id="results-csv-template">結果CSVひな型</button></div>
-      <p class="ledger-note" id="result-feedback">結果CSVは race_id,date,first,second,third,win_payout,trifecta_payout を使用（払戻列は省略可）。必ず確定結果を確認してください。</p>
+      <p class="ledger-note" id="result-feedback">結果CSVは race_id,date,first,second,third,win_payout,quinella_payout,exacta_payout,trio_payout,trifecta_payout を使用（払戻列は省略可）。必ず確定結果を確認してください。</p>
    </div>
    <div class="panel"><div class="hrow"><h2>予想履歴・照合結果</h2><span class="pill gray" id="history-count">0件</span></div>
       <div class="controls" style="margin:13px 0"><button type="button" class="btn sm" id="export-ledger-csv">的中成績CSVを保存</button><button type="button" class="btn sm" id="backup-ledger">全記録JSONをバックアップ</button><button type="button" class="btn sm" id="restore-ledger">バックアップを復元</button><button type="button" class="btn sm red" id="clear-ledger">予想・結果をすべて削除</button></div>
-      <div class="scroll"><table class="ledger-table"><thead><tr><th>レース / 予想日時</th><th>モード</th><th>本命</th><th>三連単候補</th><th>確定1〜3着</th><th>単勝</th><th>三連単</th></tr></thead><tbody id="ledger-rows"><tr><td colspan="7" class="muted">まだ記録がありません</td></tr></tbody></table></div>
+      <div class="scroll"><table class="ledger-table"><thead><tr><th>レース / 予想日時</th><th>モード</th><th>本命</th><th>三連単候補</th><th>確定1〜3着</th><th>単勝</th><th>三連単</th><th>確定払戻（100円）</th><th>参考収支</th></tr></thead><tbody id="ledger-rows"><tr><td colspan="9" class="muted">まだ記録がありません</td></tr></tbody></table></div>
       <p class="section-note">発走時刻のない出馬表は事前予想かどうかを確認できません。利用者が端末時計やデータを編集できるため、成績は監査済みの実績ではありません。データはこの端末・ブラウザ内に保存されます。ブラウザのデータ削除や別端末では消える可能性があります。定期的にバックアップを保存してください。サーバー側での予想日時・確定結果の検証はしていません。</p>
    </div>
  </section>
