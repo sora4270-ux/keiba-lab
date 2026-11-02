@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <meta name="description" content="全レース予想、予想の日時記録、単勝・馬連・馬単・三連複・三連単の的中率集計、過去レースからの学習に対応。">
-  <title>KEIBA LAB v3.8 | 全レース予想・購入金額・払戻・回収率</title>
+  <title>KEIBA LAB v3.9 | 展開予想・単勝オッズ・人気順・回収率</title>
   <style>
     :root{--navy:#0b1628;--navy2:#14243a;--surface:#fff;--bg:#f5f7fb;--ink:#132338;--sub:#677488;--line:#e4eaf2;--green:#087957;--mint:#dff7ec;--blue:#235ad2;--ice:#eaf0ff;--amber:#a65e10;--shadow:0 8px 28px rgba(20,42,75,.075)}
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.65}button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.5}a{color:var(--blue)}
@@ -117,6 +117,28 @@
     .jra-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}
     .jra-summary .metric{padding:12px}
     @media(max-width:720px){.jra-input-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.jra-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+    /* v3.9: prediction, win odds, popularity, pace */
+    .race-intel{margin:11px 0;padding:12px;border:1px solid #dbe6f4;border-radius:12px;background:#f8fbff}
+    .race-intel-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;color:#123b67;font-weight:850}
+    .race-intel-head .pace-tag{font-size:11px;border-radius:20px;background:#dff1fd;color:#17537a;padding:3px 8px}
+    .pace-note{font-size:12px;color:#415874;margin:7px 0 10px;line-height:1.6}
+    .pace-note small{display:block;font-size:10px;color:#718198;margin-top:3px}
+    .intel-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .intel-col{min-width:0;background:#fff;border:1px solid #e2eaf4;border-radius:10px;padding:9px}
+    .intel-col h4{margin:0 0 6px;font-size:12px;color:#375476}
+    .intel-item{display:grid;grid-template-columns:25px minmax(0,1fr) auto;align-items:center;gap:4px;padding:6px 0;border-top:1px solid #eef2f7;font-size:11px}
+    .intel-rank{font-weight:900;color:#1b5cad}
+    .intel-horse{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .intel-horse b{color:#102b49}
+    .intel-odds{text-align:right;white-space:nowrap;font-weight:800;color:#163e68}
+    .intel-odds small{font-size:9px;display:block;color:#78869b;font-weight:500}
+    .intel-foot{font-size:10px;color:#738198;margin:8px 0 0}
+    .intel-all{margin-top:7px;font-size:11px}.intel-all summary{cursor:pointer;color:#2158a9;font-weight:750}
+    .intel-all-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
+    .intel-all-table th,.intel-all-table td{padding:6px 4px;border-bottom:1px solid #e7edf4;text-align:left}
+    .intel-all-table th:last-child,.intel-all-table td:last-child{text-align:right}
+    @media(max-width:440px){.race-intel{padding:9px}.intel-col{padding:7px}.intel-item{grid-template-columns:20px minmax(0,1fr) auto;font-size:10px;gap:3px}.intel-odds small{font-size:9px}}
   </style>
 </head>
 <body>
@@ -138,13 +160,14 @@
     <p id="nar-roi-footnote" class="roi-hint"></p>
    <div class="hrow"><h3 style="margin:15px 0 8px">予想一覧・確定結果</h3><span id="nar-count" class="muted tiny"></span></div>
    <div id="nar-races"><div class="empty">データ読み込み待ち</div></div>
+   <p class="section-note">地方競馬の単勝オッズ・人気は公式オッズCSVを取得できた場合のみ表示。未取得の場合は空欄とし、保存済みの買い目には影響しません。</p>
    <p class="section-note">確定済みレースはNAR公式CSVに払戻が掲載されると券種別の確定金額（100円あたり）と、保存済み買い目を各100円購入した場合の参考収支を表示します。払戻未取得時は金額を表示しません。</p>
     <p class="section-note">自動予想は毎回のデータ取得とGitHub Actionsの稼働状況によって遅延・欠測する場合があります。実際の発走・確定結果は主催者発表でご確認ください。初期予測は未学習の過去成績ベース推定で、的中や収益を保証しません。公開された予想は後から書き換えません。</p>
  </section>
 
 
  <section id="jra-center" class="panel" aria-label="JRA中央競馬のレース予想と成績">
-  <div class="hrow"><h2>🏆 中央競馬（JRA）予想</h2><span class="pill amber">v3.8 ・ 購入金額・回収率</span></div>
+  <div class="hrow"><h2>🏆 中央競馬（JRA）予想</h2><span class="pill amber">v3.9 ・ 展開・オッズ・人気</span></div>
   <p class="intro" style="margin-top:9px">東京・中山・京都・阪神などJRA10競馬場に対応。入力された出馬表から<b>三連複・三連単の買い目</b>を発走前に保存し、確定結果との的中率を集計します。</p>
   <div class="live-warning">JRA公式の出馬表を自動取得する接続は未設定です。JRA-VAN Data Lab.はWindows向けで、通常契約のデータをWebサイトへ再配信できません。<b>自分で入力した情報または公開利用が許可されたデータ</b>のみ取り込みます。オッズのみではAI学習予測でなく市場支持率による推定です。</div>
   <div class="hrow" style="margin-top:18px"><h3 style="margin:0">① かんたん入力</h3><span class="muted tiny">発走10分前まで・3頭以上</span></div>
@@ -154,13 +177,14 @@
     <div class="field"><label for="jra-date">開催日</label><input id="jra-date" type="date"></div>
     <div class="field"><label for="jra-time">発走予定時刻</label><input id="jra-time" type="time" value="15:40"></div>
   </div>
-  <label for="jra-entries" class="tiny muted" style="display:block;margin-top:12px"><strong>出走馬：</strong>馬番、馬名、単勝オッズを1行ずつ（スペース区切りまたはCSV形式）</label>
-  <textarea id="jra-entries" class="jra-textarea" spellcheck="false" placeholder="1 馬名A 3.2&#10;2 馬名B 5.8&#10;3 馬名C 12.4&#10;4 馬名D 18.6"></textarea>
+  <label for="jra-entries" class="tiny muted" style="display:block;margin-top:12px"><strong>出走馬：</strong>馬番、馬名、単勝オッズ、任意で脚質を1行ずつ（スペース区切りまたはCSV形式）</label>
+  <textarea id="jra-entries" class="jra-textarea" spellcheck="false" placeholder="1 馬名A 3.2 逃げ&#10;2 馬名B 5.8 先行&#10;3 馬名C 12.4 差し&#10;4 馬名D 18.6 追込"></textarea>
   <div class="controls"><button type="button" class="btn primary" id="jra-predict">JRAレースの予想・買い目を保存</button><a href="https://www.jra.go.jp/keiba/" target="_blank" rel="noopener noreferrer" class="btn sm" style="text-decoration:none">JRA公式出馬表を見る</a></div>
   <div class="hrow" style="margin-top:19px"><h3 style="margin:0">② 複数レースをまとめて登録</h3></div>
   <p class="muted tiny" style="margin:5px 0 10px">CSV/JSONに race_id、date、venue、race_no、start_at、horse_no、horse_name、odds を入力。許諾済みのデータに限ります。</p>
   <div class="controls"><button type="button" class="btn sm" id="jra-upload-btn">JRAのCSV / JSONを読み込む</button><button type="button" class="btn sm" id="jra-template-btn">入力用CSVひな型</button><button type="button" class="btn sm" id="jra-authorized-feed">許諾済みJSONフィード設定</button></div>
   <input id="jra-file" type="file" accept=".csv,.json,text/csv,application/json" hidden>
+  <p class="tiny muted">脚質は「逃げ・先行・差し・追込」から任意入力。未入力ならペース判定不可と表示します。人気順は入力した単勝オッズから算出します。</p>
   <p id="jra-message" class="hint" role="status" aria-live="polite">JRAの出走馬は自動では入力されません。日付・発走時刻・馬番などを確認してください。</p>
   <div class="hrow" style="margin-top:17px"><h3 style="margin:0">③ 中央競馬の予想・的中率・払戻金</h3><button type="button" class="btn sm" id="jra-results-btn">確定結果を入力・取込</button></div>
   <div id="jra-summary" class="jra-summary" aria-label="JRAの的中率と回収率"></div>
@@ -222,7 +246,7 @@
    <div id="error" class="hint warning" style="display:none" role="alert"></div>
    <div id="results" class="results" aria-live="polite"><div class="stat-grid"><div class="stat"><small>出走頭数</small><strong id="stat-count">—</strong></div><div class="stat"><small id="stat-win-label">本命馬の推定勝率</small><strong class="accent" id="stat-win">—</strong></div><div class="stat"><small>三連単の候補点数</small><strong id="stat-combos">—</strong></div></div>
      <div class="predict-layout"><div>
-       <div class="panel"><div class="hrow"><h2>02. 勝率ランキング</h2><div class="controls"><button type="button" class="btn sm primary" id="record-from-predict">この予想を履歴に保存</button><button type="button" class="btn sm" id="export-ranking">CSV保存</button></div></div><p id="result-race" class="intro tiny"></p><div class="list-head"><span>順位</span><span>馬番</span><span>馬名</span><span style="text-align:right" id="rank-prob-label">勝率推定</span><span style="text-align:right">単勝</span></div><div id="rank-list"></div><p class="section-note" id="ranking-disclaimer">※数値はモデルによる推定値です。的中率や利益は保証しません。</p></div>
+       <div class="panel"><div class="hrow"><h2>02. 勝率ランキング</h2><div class="controls"><button type="button" class="btn sm primary" id="record-from-predict">この予想を履歴に保存</button><button type="button" class="btn sm" id="export-ranking">CSV保存</button></div></div><p id="result-race" class="intro tiny"></p><div id="manual-race-overview"></div><div class="list-head"><span>順位</span><span>馬番</span><span>馬名</span><span style="text-align:right" id="rank-prob-label">勝率推定</span><span style="text-align:right">単勝</span></div><div id="rank-list"></div><p class="section-note" id="ranking-disclaimer">※数値はモデルによる推定値です。的中率や利益は保証しません。</p></div>
        <div class="panel"><div class="hrow"><h2>03. 三連単の候補</h2><button type="button" class="btn sm" id="export-tickets">全買い目CSV</button></div><p class="intro tiny" id="ticket-caption"></p><div class="tickets-list" id="ticket-list"></div><p class="section-note">※各組み合わせの確率は、推定勝率から順位を重複なしで抽選する近似方式です。三連単オッズを取得していないため収支期待値は算定していません。実際の投票・購入機能はありません。</p></div>
        <div class="panel"><div class="hrow"><h2>04. 三連複の買い目</h2><span id="manual-trio-count" class="pill gray">—</span></div><p class="intro tiny">三連単候補から順不同の3頭組を取り出し、重複をまとめた買い目。各組100円の場合の参考金額を表示。</p><div id="manual-trio-list" class="manual-trio-grid"></div><p id="manual-trio-stake" class="stake-summary"></p><p class="section-note">三連単と三連複は別の券種です。ここには三連複の払戻オッズは反映していません。</p></div>
      </div><div>
@@ -291,6 +315,7 @@
 </main>
 <div class="toast" id="toast" role="status"></div>
 <input type="file" id="result-file" accept=".csv,.json,text/csv,application/json" hidden><input type="file" id="ledger-file" accept=".json,application/json" hidden><input type="file" id="feed-file" accept=".json,.csv,application/json,text/csv" hidden><input type="file" id="race-file" accept=".csv,text/csv" hidden><input type="file" id="history-file" accept=".csv,text/csv" hidden><input type="file" id="model-file" accept=".json,application/json" hidden>
+<script src="./race-intel.js"></script>
 <script>
 (()=>{'use strict';
 const DEFAULT_W=[0.85,0.45,0.32,0.37,0.26];
