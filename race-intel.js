@@ -1,0 +1,73 @@
+'use strict';
+// KEIBA LAB 3.9: Race pace, pre-race forecast and market snapshot display.
+// Odds/popularity are factual observations, never calculated from win probability.
+function raceInsightHtml(record, source = 'NAR') {
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[ch]));
+  const runners = Array.isArray(record?.runners) ? record.runners :
+    Array.isArray(record?.ranking) ? record.ranking :
+    Array.isArray(record?.top3) ? record.top3 : [];
+  if (!runners.length) return '';
+  const marketRows = Array.isArray(record?.market?.horses) ? record.market.horses :
+    (source === 'input' || source === 'JRA') ? runners : [];
+  const market = new Map(marketRows.filter(x => Number.isInteger(Number(x.no)))
+    .map(x => [Number(x.no), x]));
+  const entries = runners.map((horse, i) => {
+    const found = market.get(Number(horse.no)) || {};
+    const rawOdd = found.odds;
+    const odd = rawOdd === null || rawOdd === undefined || rawOdd === '' ? NaN : Number(rawOdd);
+    const pop = Number(found.popularity);
+    return {
+      no: Number(horse.no), name: String(horse.name || ''), predictedRank: i + 1,
+      p: Number(horse.win_probability), odd: Number.isFinite(odd) && odd >= 1 ? odd : null,
+      popularity: Number.isInteger(pop) && pop >= 1 && pop <= 50 ? pop : null,
+      style: String(horse.runningStyle || horse.running_style || '').trim()
+    };
+  });
+  const oddsSorted = entries.filter(x => x.odd !== null)
+    .sort((a, b) => a.odd - b.odd || a.no - b.no);
+  // Derive ties only when an official popularity number isn't supplied.
+  oddsSorted.forEach(x => {
+    if (x.popularity === null) x.popularity = oddsSorted.findIndex(y => y.odd === x.odd) + 1;
+  });
+  const styles = {'逃げ':[], '先行':[], '差し':[], '追込':[]};
+  entries.forEach(x => {if (Object.prototype.hasOwnProperty.call(styles, x.style)) styles[x.style].push(x);});
+  const covered = Object.values(styles).reduce((sum, rows) => sum + rows.length, 0);
+  let pace = 'ペース判定不可';
+  let paceText = '脚質データが不足しています。脚質を入力すると、逃げ・先行争いをもとに簡易展開を表示します。';
+  if (covered >= Math.ceil(entries.length * 0.6)) {
+    const escapees = styles['逃げ'].length;
+    pace = escapees >= 3 ? '速い流れ寄り' : escapees === 2 ? 'やや速め' : escapees === 1 ? '平均ペース寄り' : 'スロー寄り';
+    const nos = key => styles[key].slice(0, 4).map(x => x.no + '番').join('・') || '—';
+    const late = [...styles['差し'], ...styles['追込']].slice(0, 4).map(x => x.no + '番').join('・') || '—';
+    paceText = '逃げ候補 ' + nos('逃げ') + ' ／ 先行 ' + nos('先行') + ' ／ 差し・追込 ' + late;
+  }
+  const topGap = entries.length >= 2 && Number.isFinite(entries[0].p) && Number.isFinite(entries[1].p)
+    ? ' ／ 予想1・2位の勝率推定差 ' + (100 * (entries[0].p - entries[1].p)).toFixed(1) + 'pt' : '';
+  const formatItem = (x, i, kind) =>
+    '<div class="intel-item"><span class="intel-rank">' + (i + 1) +
+    '</span><span class="intel-horse"><b>' + esc(x.no) + '番</b> ' + esc(x.name) +
+    '</span><span class="intel-odds">' + (x.odd === null ? '—' : esc(x.odd.toFixed(1)) + '倍') +
+    '<small>' + (kind === 'predict' ? (x.popularity === null ? '人気未取得' : esc(x.popularity) + '番人気') :
+    '予想' + x.predictedRank + '位') + '</small></span></div>';
+  const predicted = entries.slice(0, 5).map((x,i) => formatItem(x, i, 'predict')).join('');
+  const popular = oddsSorted.length ? oddsSorted.slice(0, 5).map((x,i) => formatItem(x, i, 'pop')).join('') :
+    '<p class="tiny muted">単勝オッズ未取得のため人気順を表示できません。</p>';
+  const complete = oddsSorted.length ?
+    '<details class="intel-all"><summary>全頭の人気順と予想順位を見る</summary>' +
+    '<table class="intel-all-table"><thead><tr><th>人気</th><th>馬番・馬名</th><th>予想</th><th>単勝</th></tr></thead><tbody>' +
+    oddsSorted.map(x => '<tr><td>' + esc(x.popularity) + '人気</td><td>' + esc(x.no) +
+      ' ' + esc(x.name) + '</td><td>' + x.predictedRank + '位</td><td>' +
+      esc(x.odd.toFixed(1)) + '倍</td></tr>').join('') + '</tbody></table></details>' : '';
+  const savedAt = record?.market?.updated_at ? new Date(record.market.updated_at).toLocaleString('ja-JP') : '予想保存・入力時点';
+  const label = source === 'NAR' ? '地方競馬公式の単勝オッズ' :
+    source === 'JRA' ? '利用者が登録した単勝オッズ' : '入力した単勝オッズ';
+  return '<div class="race-intel"><div class="race-intel-head"><span>🏁 展開予想・単勝オッズ・人気順</span><span class="pace-tag">' +
+    esc(pace) + '</span></div><p class="pace-note">' + esc(paceText + topGap) +
+    '<small>脚質からの簡易判断。騎手の作戦や実際のペースを予測できるとは限りません。</small></p>' +
+    '<div class="intel-cols"><div class="intel-col"><h4>◎ 予想上位</h4>' + predicted +
+    '</div><div class="intel-col"><h4>★ 人気順</h4>' + popular + '</div></div>' + complete +
+    '<div class="intel-foot">' + esc(label + ' ／ ' + savedAt) +
+    '。オッズは変動します。保存済みの予想や買い目には反映しません。</div></div>';
+}
