@@ -235,8 +235,8 @@
 <section id="predict" class="section">
    <div class="panel">
      <div class="hrow"><h2>01. 出馬表を入力</h2><div class="model-status"><span id="model-badge" class="pill gray">初期モデル・未学習</span></div></div>
-     <div class="race-top"><div class="field"><label for="race-name">レース名</label><input id="race-name" type="text" maxlength="100" placeholder="例：東京11R 秋のG1"></div><div class="field"><label for="manual-race-date">開催日</label><input id="manual-race-date" type="date" aria-label="開催日"></div><div class="field"><label for="budget">三連単の予算</label><select id="budget"><option value="1000">1,000円</option><option value="3000" selected>3,000円</option><option value="5000">5,000円</option><option value="10000">10,000円</option></select></div></div>
-     <div id="data-mode" class="data-pill">デモ・架空データ</div><div class="hint" id="demo-hint">現在は<strong>架空のサンプルデータ</strong>です。実際の予想には出走馬データを入力・CSV読込してください。</div>
+     <div class="race-top"><div class="field"><label for="race-name">レース名</label><input id="race-name" type="text" maxlength="100" placeholder="例：東京11R 秋のG1"></div><div class="field"><label for="manual-race-date">開催日</label><input id="manual-race-date" type="date" aria-label="開催日"></div><div class="field"><label for="manual-race-time">発走予定（JST）</label><input id="manual-race-time" type="time" aria-label="発走予定時刻（日本時間）"></div><div class="field"><label for="budget">三連単の予算</label><select id="budget"><option value="1000">1,000円</option><option value="3000" selected>3,000円</option><option value="5000">5,000円</option><option value="10000">10,000円</option></select></div></div>
+     <p class="hint" id="manual-deadline">実レースの予想は発走10分前が締切。発走時刻を入力し、締切前に履歴へ保存してください。</p><div id="data-mode" class="data-pill">デモ・架空データ</div><div class="hint" id="demo-hint">現在は<strong>架空のサンプルデータ</strong>です。実際の予想には出走馬データを入力・CSV読込してください。</div>
      <div class="scroll" id="horse-list"><div class="horse-header"><span>馬番</span><span>馬名</span><span>単勝</span><span>近走指数</span><span>距離適性</span><span>馬場適性</span><span>騎手勝率%</span><span>調教評価</span><span>脚質</span><span></span></div><div id="horses"></div></div>
      <div class="hint">目安：近走指数 0〜100／距離・馬場・調教 1〜5（5が高評価）／騎手勝率 0〜100%。指数は<strong>同じ基準</strong>で全頭入力してください。欠損値は自動推測しません。</div>
      <div class="bottom-actions"><div class="controls"><button type="button" class="btn sm" id="add-horse">＋ 馬を追加</button><button type="button" class="btn sm" id="load-sample">サンプル</button><button type="button" class="btn sm" id="clear-horses">全頭クリア</button></div><div class="controls"><button type="button" class="btn sm" id="race-import">出馬表CSV読込</button><button type="button" class="btn sm" id="race-csv-template">CSVひな型</button></div></div>
@@ -338,8 +338,8 @@ const fmt=(n,k=1)=>Number(n).toFixed(k);
 function toast(s){const el=$('toast');el.textContent=s;el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),2700)}
 function setError(msg){$('error').style.display=msg?'block':'none';$('error').textContent=msg; if(msg)$('error').scrollIntoView({behavior:'smooth',block:'center'});}
 let currentRaceKey=null;let horses=clone(SAMPLE),demo=true,model={weights:clone(DEFAULT_W),trained:false},historyData=[],lastResult=null;let dataOrigin='架空サンプル（実レースではありません）',catalog=[],catalogUpdated='';
-function loadSaved(){try{let s=JSON.parse(localStorage.getItem('keiba_lab_v1'));if(!s)return;if(Array.isArray(s.horses)&&s.horses.length<=24){horses=s.horses;demo=!!s.demo}if(typeof s.race==='string')$('race-name').value=s.race;if(typeof s.raceDate==='string')$('manual-race-date').value=s.raceDate;if([1000,3000,5000,10000].includes(+s.budget))$('budget').value=s.budget;if(Array.isArray(s.model?.weights)&&s.model.weights.length===5&&s.model.weights.every(x=>Number.isFinite(x)&&Math.abs(x)<=20)){model=s.model;}if(typeof s.market==='boolean')$('use-market').checked=s.market;if(typeof s.dataOrigin==='string')dataOrigin=s.dataOrigin.slice(0,250);if(['main','mix','long'].includes(s.strategy))$('strategy').value=s.strategy;}catch(e){}}
-function save(){try{localStorage.setItem('keiba_lab_v1',JSON.stringify({horses,model,demo,race:$('race-name').value,raceDate:$('manual-race-date').value,budget:$('budget').value,market:$('use-market').checked,strategy:$('strategy').value,dataOrigin}));}catch(e){}}
+function loadSaved(){try{let s=JSON.parse(localStorage.getItem('keiba_lab_v1'));if(!s)return;if(Array.isArray(s.horses)&&s.horses.length<=24){horses=s.horses;demo=!!s.demo}if(typeof s.race==='string')$('race-name').value=s.race;if(typeof s.raceDate==='string')$('manual-race-date').value=s.raceDate;if(typeof s.raceTime==='string')$('manual-race-time').value=s.raceTime;if([1000,3000,5000,10000].includes(+s.budget))$('budget').value=s.budget;if(Array.isArray(s.model?.weights)&&s.model.weights.length===5&&s.model.weights.every(x=>Number.isFinite(x)&&Math.abs(x)<=20)){model=s.model;}if(typeof s.market==='boolean')$('use-market').checked=s.market;if(typeof s.dataOrigin==='string')dataOrigin=s.dataOrigin.slice(0,250);if(['main','mix','long'].includes(s.strategy))$('strategy').value=s.strategy;}catch(e){}}
+function save(){try{localStorage.setItem('keiba_lab_v1',JSON.stringify({horses,model,demo,race:$('race-name').value,raceDate:$('manual-race-date').value,raceTime:$('manual-race-time').value,budget:$('budget').value,market:$('use-market').checked,strategy:$('strategy').value,dataOrigin}));}catch(e){}}
 function switchTab(name){document.querySelectorAll('.tab').forEach(el=>{let a=el.dataset.tab===name;el.classList.toggle('active',a);el.setAttribute('aria-selected',a?'true':'false')});document.querySelectorAll('.section').forEach(el=>el.classList.toggle('active',el.id===name)); window.scrollTo({top:Math.max(0,document.querySelector('.tabs').getBoundingClientRect().top+window.scrollY-12),behavior:'smooth'});}
 document.querySelectorAll('.tab').forEach(el=>el.addEventListener('click',()=>switchTab(el.dataset.tab)));$('go-train').addEventListener('click',()=>switchTab('train'));
 const COLS=[['no','馬番','number',1,24],['name','馬名','text',null,null],['odds','単勝','number',1,null],['speed','近走指数','number',0,100],['distance','距離適性','number',1,5],['ground','馬場適性','number',1,5],['jockey','騎手勝率%','number',0,100],['training','調教評価','number',1,5],['runningStyle','脚質','select',null,null]];
@@ -351,7 +351,7 @@ $('horses').addEventListener('click',e=>{if(!e.target.matches('.del'))return;let
 $('add-horse').addEventListener('click',()=>{if(horses.length>=24)return toast('最大24頭まで入力できます');let used=new Set(horses.map(h=>Number(h.no)));let n=1;while(used.has(n))n++;horses.push({no:n,name:'',odds:'',speed:'',distance:3,ground:3,jockey:'',training:3});demo=false;currentRaceKey=null;drawHorses();save();});
 $('load-sample').addEventListener('click',()=>{horses=clone(SAMPLE);demo=true;currentRaceKey=null;dataOrigin='架空サンプル（実レースではありません）';$('race-name').value='サンプルレース（架空）';drawHorses();save();toast('架空データを読み込みました');});
 $('clear-horses').addEventListener('click',()=>{if(!confirm('現在の出馬表を全て消去しますか？'))return;horses=[];demo=false;currentRaceKey=null;dataOrigin='手入力';$('race-name').value='';drawHorses();save();});
-['race-name','manual-race-date','budget','use-market'].forEach(id=>$(id).addEventListener('change',()=>{invalidate();save()}));$('strategy').addEventListener('change',save);
+['race-name','manual-race-date','manual-race-time','budget','use-market'].forEach(id=>$(id).addEventListener('change',()=>{invalidate();save()}));$('strategy').addEventListener('change',save);
 function validateHorse(h,i,allowMissing=false){let p=`${i+1}行目`;if(!Number.isInteger(+h.no)||h.no<1||h.no>24)throw Error(`${p}：馬番は1〜24の整数にしてください`);if(!h.name||!String(h.name).trim())throw Error(`${p}：馬名を入力してください`);for(let [key,title,min,max] of [['odds','単勝オッズ',1,10000],['speed','近走指数',0,100],['distance','距離適性',1,5],['ground','馬場適性',1,5],['jockey','騎手勝率',0,100],['training','調教評価',1,5]]){if(allowMissing&&key!=='odds'&&(h[key]===''||h[key]===null||h[key]===undefined))continue;if(h[key]===''||h[key]===null||h[key]===undefined||!Number.isFinite(Number(h[key]))||+h[key]<min||+h[key]>max)throw Error(`${p}：${title}は${min}〜${max}の数値が必要です`);} }
 function validateRace(arr,allowMissing=false){if(arr.length<3)throw Error('予想には3頭以上の出走馬を入力してください');if(arr.length>24)throw Error('出走頭数は24頭までです');let nums=new Set();arr.forEach((h,i)=>{validateHorse(h,i,allowMissing);if(nums.has(+h.no))throw Error(`馬番${h.no}が重複しています`);nums.add(+h.no)});}
 function feature(h){return [(+h.speed-70)/15,(+h.distance-3),(+h.ground-3),(+h.jockey-10)/10,(+h.training-3)];}
@@ -359,7 +359,12 @@ function probs(arr,weights,market=false){const z=arr.map(h=>feature(h).reduce((s
 function exactCombinations(arr,p){let out=[];let n=arr.length;for(let a=0;a<n;a++)for(let b=0;b<n;b++){if(b===a)continue;for(let c=0;c<n;c++){if(c===a||c===b)continue;let denom=Math.max(1e-9,1-p[a]-p[b]);let chance=p[a]*(p[b]/(1-p[a]))*(p[c]/denom);if(!Number.isFinite(chance)||chance<0)continue;let odds=[+arr[a].odds,+arr[b].odds,+arr[c].odds];let long=odds.filter(x=>x>=10).length;let value=chance*(1+Math.log1p(odds.reduce((s,v)=>s+Math.log(v),0))*.34);out.push({a,b,c,prob:chance,long,value});}}return out;}
 function chooseTickets(combos,budget,strategy){const count=Math.min(Math.floor(budget/100),combos.length);let sorted=[...combos];if(strategy==='main')sorted.sort((a,b)=>b.prob-a.prob);else if(strategy==='mix')sorted.sort((a,b)=>(b.prob*(1+.3*b.long))-(a.prob*(1+.3*a.long)));else sorted.sort((a,b)=>(b.prob*(1+1.25*b.long))-(a.prob*(1+1.25*a.long)));return sorted.slice(0,count);}
 const pct=x=>`${fmt(100*x)}%`;
-function analyze(){setError('');try{const marketMode=oddsOnly(horses);validateRace(horses,marketMode);let p=marketMode?(()=>{let x=horses.map(h=>1/Number(h.odds)),sum=x.reduce((a,b)=>a+b,0);return x.map(v=>v/sum)})():probs(horses,model.weights,$('use-market').checked);const ranks=horses.map((h,i)=>({...h,index:i,p:p[i],ev:p[i]*(+h.odds)-1})).sort((a,b)=>b.p-a.p);const combos=exactCombinations(horses,p),budget=+$('budget').value,tickets=chooseTickets(combos,budget,$('strategy').value);lastResult={p,ranks,combos,tickets,horseList:clone(horses),race:$('race-name').value||'レース名なし',budget,marketMode};renderResults(lastResult);$('results').classList.add('show');$('results').scrollIntoView({behavior:'smooth',block:'start'});save();}catch(e){setError(e.message);}}
+function manualStartAt(){
+ const date=$('manual-race-date').value,time=$('manual-race-time').value;
+ if(!date||!time)throw Error('開催日・発走予定時刻を入力してください。発走10分前が確定締切です。');
+ return date+'T'+time+':00+09:00';
+}
+function analyze(){setError('');try{if(!demo)assertForecastOpen(manualStartAt());const marketMode=oddsOnly(horses);validateRace(horses,marketMode);let p=marketMode?(()=>{let x=horses.map(h=>1/Number(h.odds)),sum=x.reduce((a,b)=>a+b,0);return x.map(v=>v/sum)})():probs(horses,model.weights,$('use-market').checked);const ranks=horses.map((h,i)=>({...h,index:i,p:p[i],ev:p[i]*(+h.odds)-1})).sort((a,b)=>b.p-a.p);const combos=exactCombinations(horses,p),budget=+$('budget').value,tickets=chooseTickets(combos,budget,$('strategy').value);lastResult={p,ranks,combos,tickets,horseList:clone(horses),race:$('race-name').value||'レース名なし',budget,marketMode};renderResults(lastResult);$('results').classList.add('show');$('results').scrollIntoView({behavior:'smooth',block:'start'});save();}catch(e){setError(e.message);}}
 $('run-prediction').addEventListener('click',analyze);
 function renderResults(r){const ranks=r.ranks;$('stat-win-label').textContent=r.marketMode?'1位馬の市場支持率':'本命馬の推定勝率';$('rank-prob-label').textContent=r.marketMode?'市場支持率':'推定勝率';$('ranking-disclaimer').textContent=r.marketMode?'単勝オッズの逆数を合計1に正規化した市場支持率。AIの予想ではなく、控除率・払戻変動を考慮した予測値でもありません。':'機械学習モデルによる推定値。校正や検証前は信頼できません。';$('stat-count').textContent=`${horses.length}頭`;$('stat-win').textContent=pct(ranks[0].p);$('stat-combos').textContent=`${r.tickets.length}点`;$('result-race').textContent=`${r.race}${demo?' ・ 架空のデモ':''}${r.marketMode?' ・ オッズ参照（AI不使用）':''}`;
 $('manual-race-overview').innerHTML=raceInsightHtml({ranking:ranks.map(h=>({no:h.no,name:h.name,win_probability:h.p,runningStyle:h.runningStyle||''})),market:{horses:r.horseList.map(h=>({no:h.no,odds:Number(h.odds)}))}},'input');
@@ -435,7 +440,7 @@ function setCatalog(data,source,updated){catalog=data;catalogUpdated=updated||''
 function drawCatalogPreview(){const idx=Number($('catalog-select').value);if(!catalog.length||!Number.isInteger(idx)||!catalog[idx]){$('catalog-preview').innerHTML='';return;}
  const r=catalog[idx],hasAll=!oddsOnly(r.horses);$('catalog-preview').innerHTML=`<div class="data-pill">${r.horses.length}頭 ／ ${hasAll?'全指数あり':'オッズ参照モード'}</div>`+r.horses.map(h=>`<div class="item"><span><b>${h.no}番 ${esc(h.name)}</b></span><span>単勝 ${fmt(h.odds)}倍</span></div>`).join('');}
 $('catalog-select').addEventListener('change',drawCatalogPreview);
-$('apply-race').addEventListener('click',()=>{const r=catalog[Number($('catalog-select').value)];if(!r)return;horses=clone(r.horses);demo=!!r.is_demo;currentRaceKey=raceKey(r);dataOrigin=$('catalog-state').textContent.slice(0,200);$('race-name').value=raceOptionName(r);$('manual-race-date').value=r.date||'';drawHorses();save();switchTab('predict');toast(`${r.name} を選択しました`);});
+$('apply-race').addEventListener('click',()=>{const r=catalog[Number($('catalog-select').value)];if(!r)return;horses=clone(r.horses);demo=!!r.is_demo;currentRaceKey=raceKey(r);dataOrigin=$('catalog-state').textContent.slice(0,200);$('race-name').value=raceOptionName(r);$('manual-race-date').value=r.date||'';$('manual-race-time').value=r.start_at?new Date(r.start_at).toLocaleTimeString('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hour12:false}):'';drawHorses();save();switchTab('predict');toast(`${r.name} を選択しました`);});
 $('insert-example').addEventListener('click',()=>{$('paste-race-name').value='形式確認用（架空）';$('race-paste').value='1 架空サンプルA 3.2\n2 架空サンプルB 5.7\n3 架空サンプルC 9.6\n4 架空サンプルD 15.4';showFeedMessage('これは入力形式の確認用の架空データです。',false)});
 $('import-paste').addEventListener('click',()=>{try{let data=parsePasted($('race-paste').value,$('paste-race-name').value);setCatalog(data,'手動貼り付け（出典未確認）',new Date().toLocaleString('ja-JP'));showFeedMessage('貼り付けを解析しました。下のレースを選んで予想画面へ進んでください。');}catch(e){showFeedMessage(e.message,true)}});
 $('feed-file-button').addEventListener('click',()=>$('feed-file').click());
@@ -447,6 +452,21 @@ $('feed-refresh').addEventListener('click',async()=>{const raw=$('feed-url').val
 
 
 // v3: real prediction snapshots and result scoring. This is local, not a background service.
+// Deadline shared by manual, batch, licensed feeds and JRA.
+const FORECAST_LOCK_MINUTES=10;
+const FORECAST_TIME_RE=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:\+09:00|Z)$/;
+function forecastCutoffMillis(startAt){
+ const time=String(startAt||'');
+ if(!FORECAST_TIME_RE.test(time))throw Error('発走日時は必須です。YYYY-MM-DDTHH:MM:SS+09:00 形式で入力してください。');
+ const start=Date.parse(time);if(!Number.isFinite(start))throw Error('発走日時が不正です。');
+ return start-FORECAST_LOCK_MINUTES*60000;
+}
+function assertForecastOpen(startAt,now=Date.now()){
+ const cutoff=forecastCutoffMillis(startAt);
+ if(now>=cutoff)throw Error('発走10分前の確定締切を過ぎました。新しい予想は作成・保存できません。');
+ return cutoff;
+}
+function forecastCutoffLabel(startAt){try{return new Date(forecastCutoffMillis(startAt)).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+' JST';}catch(e){return '未設定';}}
 const LEDGER_KEY='keiba_lab_v3_ledger';
 const BET_TYPES=[['win','単勝'],['quinella','馬連'],['exacta','馬単'],['trio','三連複'],['trifecta','三連単']];
 let ledger=[];
@@ -457,7 +477,7 @@ function makeSnapshot(r,origin,meta={}){
  validateRace(r.horses,oddsOnly(r.horses));
  if(r.is_demo||r.horses.some(h=>/架空|サンプル|sample|demo/i.test(h.name))||/架空|サンプル|sample|demo/i.test(r.name))throw Error('架空のレースは実績に記録できません。');
  const nowJst=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Tokyo'});if(/^\d{4}-\d{2}-\d{2}$/.test(r.date||'')&&r.date<nowJst)throw Error('過去開催日は事前予想実績に追加できません。');
- if(r.start_at){const t=Date.parse(r.start_at);if(!Number.isFinite(t))throw Error('start_at の日時が不正です。');if(t<=Date.now())throw Error('発走予定時刻を過ぎたレースは追加できません。');}
+ const frozenCutoff=assertForecastOpen(r.start_at);
  const key=raceKey(r);if(ledger.some(x=>x.key===key))throw Error(`${r.name}：このレースは既に予想記録があります（上書き不可）。`);
  if(ledger.length>=1000)throw Error('保存上限1000レースです。JSONバックアップしてから古い履歴を整理してください。');
  const marketMode=oddsOnly(r.horses),h=r.horses;
@@ -465,7 +485,7 @@ function makeSnapshot(r,origin,meta={}){
  const indexes=h.map((x,i)=>({i,p:p[i]})).sort((a,b)=>b.p-a.p).map(x=>x.i);
  const b=Number($('budget').value),strategy=$('strategy').value;
  const ts=chooseTickets(exactCombinations(h,p),b,strategy).map(t=>[h[t.a].no,h[t.b].no,h[t.c].no]);
- return {key,id:r.id,name:r.name||r.id,date:r.date||'',venue:r.venue||'',raceNo:r.race_no||'',origin:origin.slice(0,180),createdAt:new Date().toISOString(),marketMode,trained:!marketMode&&!!model.trained,horseNos:h.map(x=>x.no),horseNames:h.map(x=>x.name),top3:indexes.slice(0,3).map(i=>h[i].no),probTop:p[indexes[0]],runners:h.map((x,i)=>({no:x.no,name:x.name,odds:Number(x.odds),win_probability:Number(p[i].toFixed(5)),runningStyle:x.runningStyle||''})),tickets:ts,betCount:ts.length,budget:b,strategy,marketAdjusted:!marketMode&&$('use-market').checked,startAt:r.start_at||'', result:null,payouts:{win:null,quinella:null,exacta:null,trio:null,trifecta:null}};
+ return {key,id:r.id,name:r.name||r.id,date:r.date||'',venue:r.venue||'',raceNo:r.race_no||'',origin:origin.slice(0,180),createdAt:new Date().toISOString(),marketMode,trained:!marketMode&&!!model.trained,horseNos:h.map(x=>x.no),horseNames:h.map(x=>x.name),top3:indexes.slice(0,3).map(i=>h[i].no),probTop:p[indexes[0]],runners:h.map((x,i)=>({no:x.no,name:x.name,odds:Number(x.odds),win_probability:Number(p[i].toFixed(5)),runningStyle:x.runningStyle||''})),tickets:ts,betCount:ts.length,budget:b,strategy,marketAdjusted:!marketMode&&$('use-market').checked,startAt:r.start_at,cutoffAt:new Date(frozenCutoff).toISOString(),lockedAt:new Date().toISOString(), result:null,payouts:{win:null,quinella:null,exacta:null,trio:null,trifecta:null}};
 }
 function addPredictions(records){const prev=ledger;ledger=[...records,...ledger];if(!persistLedger()){ledger=prev;throw Error('予想を保存できませんでした。ブラウザの保存容量を確認してください。');}renderLedger();}
 function batchPredict(){
@@ -481,11 +501,12 @@ $('record-current').addEventListener('click',()=>{
  try{
   if(demo)throw Error('架空サンプルは記録できません。');
   let r=catalog.find(x=>raceKey(x)===currentRaceKey);
-  if(!r){const date=$('manual-race-date').value,name=$('race-name').value.trim();if(!date||!name)throw Error('手入力レースの保存にはレース名と開催日が必要です。');r={id:'manual-'+name,date,name,venue:'手入力',race_no:'',horses:clone(horses),is_demo:demo};}
+  if(!r){const date=$('manual-race-date').value,name=$('race-name').value.trim();if(!date||!name)throw Error('手入力レースの保存にはレース名と開催日が必要です。');r={id:'manual-'+name,date,name,venue:'手入力',race_no:'',start_at:manualStartAt(),horses:clone(horses),is_demo:demo};}
   else {const current=JSON.stringify(horses.map(x=>[x.no,x.name,x.odds,x.speed,x.distance,x.ground,x.jockey,x.training]));
    const original=JSON.stringify(r.horses.map(x=>[x.no,x.name,x.odds,x.speed,x.distance,x.ground,x.jockey,x.training]));
    if(current!==original)throw Error('出馬表を編集したため、取り込み済みデータと一致しません。データを再取り込みするか、手入力レースとして保存してください。');
    if($('manual-race-date').value&&r.date&&r.date!==$('manual-race-date').value)throw Error('選択したレースの開催日が変更されました。再度レースを選択してください。');
+   if(r.start_at&&Date.parse(manualStartAt())!==Date.parse(r.start_at))throw Error('出馬表と発走予定時刻が一致しません。再取り込みしてください。');
   }
   addPredictions([makeSnapshot(r,$('catalog-state').textContent)]);$('batch-status').textContent=`${r.name} の予想を保存しました。`;toast('1レースを保存しました');switchTab('ledger');
  }catch(e){$('batch-status').textContent=e.message;switchTab('ledger');}
@@ -846,8 +867,7 @@ function jraDateTime(r){
  const start=String(r.start_at||'');
  if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:\+09:00|Z)$/.test(start))throw Error('start_at は 2026-11-07T15:40:00+09:00 の形式で指定してください');
  if(start.slice(0,10)!==r.date)throw Error('開催日と発走時刻の日付が一致しません');
- const millis=Date.parse(start);
- if(!Number.isFinite(millis)||millis-Date.now()<10*60*1000)throw Error('発走10分前までのレースだけ予想記録できます');
+ assertForecastOpen(start);
 }
 function jraValidRaces(races){if(!Array.isArray(races)||!races.length)throw Error('出馬表がありません');races.forEach(jraDateTime);return races;}
 function jraMessage(message,warning=false){const elem=$('jra-message');elem.textContent=message;elem.className='hint'+(warning?' warning':'');}
