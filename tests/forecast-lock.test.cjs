@@ -13,7 +13,7 @@ const jra = between('function jraDateTime(', 'function jraValidRaces(');
 const snapshot = between('function makeSnapshot(', 'function addPredictions(');
 const save = between('function addPredictions(', 'function batchPredict(');
 const source = [
-  'const ledger = [];',
+  'let ledger = [];',
   "const JRA_VENUES = new Set(['東京','中山','京都','阪神','中京','新潟','福島','小倉','札幌','函館']);",
   'const validateRace = ()=>{};',
   'const oddsOnly = ()=>true;',
