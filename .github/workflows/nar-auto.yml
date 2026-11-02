@@ -5,6 +5,7 @@ on:
     paths:
       - 'scripts/update_nar.py'
       - '.github/workflows/nar-auto.yml'
+      - 'index.html'
   schedule:
     # UTC 00:00-13:55 = JST 09:00-22:55; GitHub may delay scheduled jobs.
     - cron: '*/5 0-13 * * *'
@@ -25,6 +26,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Verify website JavaScript syntax and feature elements
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          html = Path('index.html').read_text(encoding='utf-8')
+          js = html.rsplit('<script>', 1)[1].split('</script>', 1)[0]
+          Path('/tmp/keiba-lab-inline.js').write_text(js, encoding='utf-8')
+          for token in ('id="nar-races"', 'function savedTrioList(', 'id="manual-trio-list"', 'id="manual-trio-count"'):
+              assert token in html, f'Feature missing: {token}'
+          print('All trio UI elements found')
+          PY
+          node --check /tmp/keiba-lab-inline.js
       - name: Self-test (no external services)
         run: python scripts/update_nar.py --selftest
       - name: Obtain NAR official day CSV and update predictions
