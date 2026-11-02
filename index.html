@@ -647,11 +647,11 @@ narRefresh();
 
 const JRA_VENUES=new Set(['東京','中山','京都','阪神','中京','新潟','福島','小倉','札幌','函館']);
 function jraDateTime(r){
- if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(r.date||'')))throw Error('JRA開催日はYYYY-MM-DDの形式で入力してください');
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(String(r.date||'')))throw Error('JRA開催日はYYYY-MM-DDの形式で入力してください');
  if(!JRA_VENUES.has(String(r.venue||'')))throw Error('中央競馬の競馬場を選択してください：'+String(r.venue||''));
  if(!Number.isInteger(Number(r.race_no))||Number(r.race_no)<1||Number(r.race_no)>12)throw Error('中央競馬のレース番号は1〜12にしてください');
  const start=String(r.start_at||'');
- if(!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(?::\\d{2})?(?:\\+09:00|Z)$/.test(start))throw Error('start_at は 2026-11-07T15:40:00+09:00 の形式で指定してください');
+ if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:\+09:00|Z)$/.test(start))throw Error('start_at は 2026-11-07T15:40:00+09:00 の形式で指定してください');
  if(start.slice(0,10)!==r.date)throw Error('開催日と発走時刻の日付が一致しません');
  const millis=Date.parse(start);
  if(!Number.isFinite(millis)||millis-Date.now()<10*60*1000)throw Error('発走10分前までのレースだけ予想記録できます');
