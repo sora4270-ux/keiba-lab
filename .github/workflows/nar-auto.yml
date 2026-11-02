@@ -8,6 +8,7 @@ on:
       - 'index.html'
       - 'tests/roi.test.cjs'
       - 'tests/race-intel.test.cjs'
+      - 'tests/forecast-lock.test.cjs'
       - 'race-intel.js'
   schedule:
     # UTC 00:00-13:55 = JST 09:00-22:55; GitHub may delay scheduled jobs.
@@ -63,6 +64,7 @@ jobs:
         run: |
           node tests/roi.test.cjs
           node tests/race-intel.test.cjs
+          node tests/forecast-lock.test.cjs
       - name: Obtain NAR official day CSV and update predictions
         run: python scripts/update_nar.py
       - name: Save frozen forecasts and settled hit rates
