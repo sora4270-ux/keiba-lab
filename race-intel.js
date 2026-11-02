@@ -5,9 +5,14 @@ function raceInsightHtml(record, source = 'NAR') {
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
     '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
   }[ch]));
-  const runners = Array.isArray(record?.runners) ? record.runners :
+  const rawRunners = Array.isArray(record?.runners) ? record.runners :
     Array.isArray(record?.ranking) ? record.ranking :
     Array.isArray(record?.top3) ? record.top3 : [];
+  // JRA saved runners use source/input order; sort by the frozen win estimate.
+  // Older JRA ledgers only saved top3 numbers and names (no historical odds).
+  const runners = rawRunners.map(x => typeof x === 'number' ?
+    {no:x,name:record.horseNames?.[record.horseNos?.indexOf(x)] || '馬名未保存'} : x)
+    .sort((a,b) => Number(b.win_probability ?? -1) - Number(a.win_probability ?? -1));
   if (!runners.length) return '';
   const marketRows = Array.isArray(record?.market?.horses) ? record.market.horses :
     (source === 'input' || source === 'JRA') ? runners : [];
