@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <meta name="description" content="全レース予想、予想の日時記録、単勝・馬連・馬単・三連複・三連単の的中率集計、過去レースからの学習に対応。">
-  <title>KEIBA LAB v3.6 | 全レース予想・的中率・参考回収率</title>
+  <title>KEIBA LAB v3.7 | 全レース予想・的中率・参考回収率</title>
   <style>
     :root{--navy:#0b1628;--navy2:#14243a;--surface:#fff;--bg:#f5f7fb;--ink:#132338;--sub:#677488;--line:#e4eaf2;--green:#087957;--mint:#dff7ec;--blue:#235ad2;--ice:#eaf0ff;--amber:#a65e10;--shadow:0 8px 28px rgba(20,42,75,.075)}
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.65}button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.5}a{color:var(--blue)}
@@ -63,6 +63,14 @@
     .roi-title{font-size:14px;font-weight:800;margin:20px 0 8px;color:#31425a}
     .roi-hint{font-size:12px;color:#5f7188;line-height:1.65}
     .roi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .roi-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+    .roi-overview .metric{padding:15px;border-radius:12px}
+    .roi-overview .metric strong{font-size:23px}
+    .roi-overview .metric small{display:block}
+    .roi-detail{font-size:11px;color:var(--sub);line-height:1.7;margin-top:5px}
+    .roi-select{border:1px solid var(--line);padding:6px 9px;border-radius:8px;background:#fff;color:var(--ink);font-size:12px;max-width:150px}
+    .roi-mini{margin-top:8px;padding:9px;background:#f5f8fc;border-radius:9px;font-size:12px;line-height:1.8}
+    @media(max-width:620px){.roi-overview{grid-template-columns:1fr}}
     .payout-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px;max-width:600px}
     .payout-fields .field input{width:100%}
     .slim-form{display:grid;grid-template-columns:minmax(140px,2fr) repeat(3,minmax(65px,1fr));gap:9px;align-items:end}
@@ -122,6 +130,11 @@
    <div class="controls"><button type="button" class="btn primary sm" id="nar-refresh">最新の予想と結果を表示</button><a class="btn sm" style="text-decoration:none" href="https://www.keiba.go.jp/" target="_blank" rel="noopener noreferrer">地方競馬公式</a></div>
    <p id="nar-status" class="hint" role="status" aria-live="polite">自動予想データを読み込み中...</p>
    <div id="nar-kpis" class="metric-grid" aria-label="自動予想の的中率"></div>
+    <div class="hrow" style="margin-top:16px"><h3 style="margin:0">参考回収率・収支</h3><label class="field" for="nar-roi-period"><span class="tiny muted">集計期間</span><select class="roi-select" id="nar-roi-period"><option value="all">全期間</option><option value="today">本日</option><option value="7d">直近7日間</option><option value="30d">直近30日間</option></select></label></div>
+    <p class="roi-hint">各点100円で仮想購入した場合の参考回収率です。三連複は保存された候補全点で計算。券種別・全5券種の合計を表示します。</p>
+    <div id="nar-roi-total" class="roi-overview" aria-label="地方競馬の参考回収率と収支"></div>
+    <div id="nar-roi-types" class="metric-stack roi-grid" aria-label="地方競馬の券種別参考回収率"></div>
+    <p id="nar-roi-footnote" class="roi-hint"></p>
    <div class="hrow"><h3 style="margin:15px 0 8px">予想一覧・確定結果</h3><span id="nar-count" class="muted tiny"></span></div>
    <div id="nar-races"><div class="empty">データ読み込み待ち</div></div>
    <p class="section-note">確定済みレースはNAR公式CSVに払戻が掲載されると券種別の確定金額（100円あたり）と、保存済み買い目を各100円購入した場合の参考収支を表示します。払戻未取得時は金額を表示しません。</p>
@@ -130,7 +143,7 @@
 
 
  <section id="jra-center" class="panel" aria-label="JRA中央競馬のレース予想と成績">
-  <div class="hrow"><h2>🏆 中央競馬（JRA）予想</h2><span class="pill amber">v3.6 ・ 払戻表示対応</span></div>
+  <div class="hrow"><h2>🏆 中央競馬（JRA）予想</h2><span class="pill amber">v3.7 ・ 回収率集計</span></div>
   <p class="intro" style="margin-top:9px">東京・中山・京都・阪神などJRA10競馬場に対応。入力された出馬表から<b>三連複・三連単の買い目</b>を発走前に保存し、確定結果との的中率を集計します。</p>
   <div class="live-warning">JRA公式の出馬表を自動取得する接続は未設定です。JRA-VAN Data Lab.はWindows向けで、通常契約のデータをWebサイトへ再配信できません。<b>自分で入力した情報または公開利用が許可されたデータ</b>のみ取り込みます。オッズのみではAI学習予測でなく市場支持率による推定です。</div>
   <div class="hrow" style="margin-top:18px"><h3 style="margin:0">① かんたん入力</h3><span class="muted tiny">発走10分前まで・3頭以上</span></div>
@@ -149,7 +162,10 @@
   <input id="jra-file" type="file" accept=".csv,.json,text/csv,application/json" hidden>
   <p id="jra-message" class="hint" role="status" aria-live="polite">JRAの出走馬は自動では入力されません。日付・発走時刻・馬番などを確認してください。</p>
   <div class="hrow" style="margin-top:17px"><h3 style="margin:0">③ 中央競馬の予想・的中率・払戻金</h3><button type="button" class="btn sm" id="jra-results-btn">確定結果を入力・取込</button></div>
-  <div id="jra-summary" class="jra-summary" aria-label="JRAの的中率"></div>
+  <div id="jra-summary" class="jra-summary" aria-label="JRAの的中率と回収率"></div>
+    <div class="hrow" style="margin-top:14px"><h3 style="margin:0">中央競馬・全券種合計の参考回収率</h3></div>
+    <div id="jra-roi-total" class="roi-overview" aria-label="中央競馬の合計参考回収率と収支"></div>
+    <p class="roi-hint">登録済みの確定払戻金から計算。単勝・馬連・馬単各1点、三連複候補全点、三連単候補全点をそれぞれ100円と仮定します。</p>
   <div id="jra-list" aria-label="JRAレースの予想買い目"><div class="empty">JRAの予想記録はまだありません</div></div>
   <p class="section-note">確定払戻金は結果入力後に表示します（100円あたり）。結果データを入力していない券種は「未登録」と表示します。払戻金は実際の購入額・利益ではありません。</p>
    <p class="section-note">JRAの記録はこの端末に保存。JRAの予想と地方競馬のクラウド自動予想は別管理です。予想済みレースの買い目は上書きしません。確定結果を照合できたレースのみ的中率を算出します。</p>
@@ -234,7 +250,7 @@
       <div class="metric-stack" id="ticket-metrics"></div>
       <p class="section-note">的中率＝該当券種で当たったレース数 ÷ 結果照合済みの予想レース数 ×100。三連単は<strong>保存時点の全買い目のうち1点でも的中したレース</strong>を1件と数えます。単勝・馬連・馬単・三連複は本命順からの1点予想です。点数が異なる券種や戦略の的中率は単純比較できません。</p>
       <h3 class="roi-title">参考回収率・払戻金（100円仮想購入）</h3><p class="roi-hint">確定払戻金（100円あたり）を登録したレースのみ集計。単勝・馬連・馬単は1点×100円、三連複は保存した候補全点×100円、三連単も保存した全点×100円を仮想購入した想定です。<b>実際の購入・収支とは異なります。</b></p>
-      <div class="metric-stack roi-grid" id="roi-metrics"></div>
+      <div id="ledger-roi-total" class="roi-overview"></div><div class="metric-stack roi-grid" id="roi-metrics"></div>
    </div>
    <div class="panel"><div class="hrow"><h2>確定結果を登録</h2><span class="pill gray">着順の確認後</span></div>
       <p class="intro tiny">1〜3着の馬番で照合します。<b>結果の入力前に予想記録が必要です。</b>配信時点ですでに確定結果が得られるレースは新規予想から除外します。結果未確定・同着・競走取消・返還がある場合、この簡易判定の対象外として扱ってください。</p>
