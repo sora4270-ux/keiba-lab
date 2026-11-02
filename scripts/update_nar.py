@@ -190,6 +190,14 @@ def forecast(race, timestamp):
         p *= probs[k] / max(1e-12, 1 - probs[i] - probs[j])
         tickets.append((p, [horses[i]["no"], horses[j]["no"], horses[k]["no"]]))
     tickets.sort(key=lambda x: -x[0])
+    # Unordered top-3 probability: sum of all six possible finishing orders.
+    # Save the 8 highest-ranked UNIQUE three-horse combinations before off.
+    trio_scores = {}
+    for probability, combination in tickets:
+        key = tuple(sorted(combination))
+        trio_scores[key] = trio_scores.get(key, 0.0) + probability
+    trio_ranked = sorted(trio_scores.items(), key=lambda item: (-item[1], item[0]))
+    trio_tickets = [list(key) for key, _ in trio_ranked[:8]]
     return {
         "id": race["id"], "date": race["date"], "venue": race["venue"],
         "race_no": race["race_no"], "name": race["name"],
@@ -198,6 +206,7 @@ def forecast(race, timestamp):
         "model": "form_heuristic_v1_untrained",
         "top3": pick,
         "tickets": [t for _, t in tickets[:12]],
+        "trio_tickets": trio_tickets,
         "result": None, "settled_at": None, "hits": None
     }
 
@@ -211,6 +220,33 @@ def settled_order(horses):
     if any(len(ranked[n]) != 1 for n in (1, 2, 3)):
         return None
     return [ranked[n][0] for n in (1, 2, 3)]
+
+
+def frozen_trio_tickets(pred):
+    """Never synthesize new picks using results. Older records derive unordered
+    combos only from the originally saved, pre-race trifecta tickets.
+    """
+    stored = pred.get("trio_tickets")
+    if isinstance(stored, list):
+        return [sorted(x) for x in stored if isinstance(x, list) and len(x) == 3]
+    existing = pred.get("tickets") or []
+    seen = set()
+    output = []
+    for ticket in existing:
+        if not isinstance(ticket, list) or len(ticket) != 3:
+            continue
+        key = tuple(sorted(ticket))
+        if len(set(key)) != 3 or key in seen:
+            continue
+        seen.add(key)
+        output.append(list(key))
+    return output
+
+
+def trio_multi_hit(pred, result):
+    if not isinstance(result, list) or len(result) != 3:
+        return False
+    return sorted(result) in frozen_trio_tickets(pred)
 
 
 def settle(pred, result, now):
@@ -229,6 +265,7 @@ def settle(pred, result, now):
         "quinella": same_pair(guessed[:2], [a, b]),
         "exacta": guessed[:2] == [a, b],
         "trio": same_pair(guessed, result),
+        "trio_multi": trio_multi_hit(pred, result),
         "trifecta": result in pred["tickets"]
     }
     return True
@@ -236,14 +273,21 @@ def settle(pred, result, now):
 
 def summary(predictions):
     valid = [x for x in predictions if isinstance(x.get("hits"), dict)]
-    rate = lambda key: round(sum(x["hits"][key] is True for x in valid) / len(valid) * 100, 1) if valid else None
+    rate = lambda key: round(sum(x["hits"].get(key) is True for x in valid) / len(valid) * 100, 1) if valid else None
+    # Include older sealed forecasts only by interpreting their pre-race trifecta
+    # shortlist as unordered picks. No horse or probability is added after off.
+    multi_eligible = [x for x in valid if frozen_trio_tickets(x)]
+    trio_multi_rate = round(
+        100 * sum(trio_multi_hit(x, x["result"]) for x in multi_eligible) / len(multi_eligible), 1
+    ) if multi_eligible else None
     return {
         "predicted": len(predictions), "settled": len(valid),
         "pending": len(predictions) - len(valid),
         "win": rate("win"), "quinella": rate("quinella"),
         "exacta": rate("exacta"), "trio": rate("trio"),
+        "trio_multi": trio_multi_rate, "trio_multi_settled": len(multi_eligible),
         "trifecta": rate("trifecta"),
-        "note": "的中率の分母は発走前に保存し、1〜3着を後日照合できたレースのみ。三連単は上位候補12点。"
+        "note": "発走前に予想した確定レースのみ。三連複本線1点と三連複候補最大8点は別集計。以前のレースの三連複候補は保存済み三連単12点を順不同に換算。三連単候補は12点。"
     }
 
 
@@ -308,16 +352,25 @@ def selftest():
     assert added == 1 and settled_count == 0 and out["summary"]["settled"] == 0
     pre = out["races"][0]
     assert len(pre["tickets"]) == 12 and abs(sum(x["win_probability"] for x in pre["top3"])) < 1.001
+    assert len(pre["trio_tickets"]) == 8
+    assert all(ticket == sorted(ticket) and len(ticket) == len(set(ticket)) == 3 for ticket in pre["trio_tickets"])
+    assert len({tuple(ticket) for ticket in pre["trio_tickets"]}) == 8
     for i, (_, _) in enumerate(horse_template):
         horse_template[i][0][31] = str(i+1) if i < 3 else ""
     races = parse_races({"racelist": [(row, {})], "horselist": horse_template})
     late = dt.datetime(2026, 11, 2, 16, 0, tzinfo=JST)
     out2, a, s = update_data(races, late, out)
     assert a == 0 and s == 1 and out2["summary"]["settled"] == 1
+    assert out2["summary"]["trio_multi_settled"] == 1
+    assert out2["races"][0]["hits"]["trio_multi"] == trio_multi_hit(out2["races"][0], [1, 2, 3])
     out3, a, s = update_data(races, late, out2)
     assert a == 0 and s == 0 and out3["races"][0]["predicted_at"] == pre["predicted_at"]
     assert update_data(races, late, {})[1] == 0
-    print("PASS: prediction snapshot before off; settle only after; no duplicates; no late insertion")
+    old = dict(pre)
+    old.pop("trio_tickets")
+    assert len(frozen_trio_tickets(old)) >= 1
+    assert all(ticket in (x["trio_tickets"] if "trio_tickets" in x else frozen_trio_tickets(old)) for ticket in frozen_trio_tickets(old))
+    print("PASS: frozen exacta/trio picks, top8 unordered triples, settled multi-hit, historic conversion, no late insertion")
 
 
 def main():
