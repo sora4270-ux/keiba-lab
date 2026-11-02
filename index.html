@@ -413,7 +413,7 @@ function makeSnapshot(r,origin,meta={}){
  const indexes=h.map((x,i)=>({i,p:p[i]})).sort((a,b)=>b.p-a.p).map(x=>x.i);
  const b=Number($('budget').value),strategy=$('strategy').value;
  const ts=chooseTickets(exactCombinations(h,p),b,strategy).map(t=>[h[t.a].no,h[t.b].no,h[t.c].no]);
- return {key,id:r.id,name:r.name||r.id,date:r.date||'',venue:r.venue||'',raceNo:r.race_no||'',origin:origin.slice(0,180),createdAt:new Date().toISOString(),marketMode,trained:!marketMode&&!!model.trained,horseNos:h.map(x=>x.no),horseNames:h.map(x=>x.name),top3:indexes.slice(0,3).map(i=>h[i].no),probTop:p[indexes[0]],tickets:ts,betCount:ts.length,budget:b,strategy,marketAdjusted:!marketMode&&$('use-market').checked,startAt:r.start_at||'', result:null,payouts:{win:null,trifecta:null}};
+ return {key,id:r.id,name:r.name||r.id,date:r.date||'',venue:r.venue||'',raceNo:r.race_no||'',origin:origin.slice(0,180),createdAt:new Date().toISOString(),marketMode,trained:!marketMode&&!!model.trained,horseNos:h.map(x=>x.no),horseNames:h.map(x=>x.name),top3:indexes.slice(0,3).map(i=>h[i].no),probTop:p[indexes[0]],tickets:ts,betCount:ts.length,budget:b,strategy,marketAdjusted:!marketMode&&$('use-market').checked,startAt:r.start_at||'', result:null,payouts:{win:null,quinella:null,exacta:null,trio:null,trifecta:null}};
 }
 function addPredictions(records){const prev=ledger;ledger=[...records,...ledger];if(!persistLedger()){ledger=prev;throw Error('予想を保存できませんでした。ブラウザの保存容量を確認してください。');}renderLedger();}
 function batchPredict(){
@@ -445,7 +445,13 @@ function optionalPayout(v,label){
  if(v===null||v===undefined||String(v).trim()==='')return null;
  const n=Number(v);if(!Number.isInteger(n)||n<0||n>100000000)throw Error(`${label}は0〜1億円の整数で入力してください`);return n;
 }
-function normalizePayouts(raw={}){return {win:optionalPayout(raw?.win,'単勝払戻'),trifecta:optionalPayout(raw?.trifecta,'三連単払戻')};}
+function normalizePayouts(raw={}){const data={};for(const [key,label] of BET_TYPES)data[key]=optionalPayout(raw?.[key],label+"払戻");return data;}
+function payoutValue(r,key){const x=r?.payouts?.[key];return Number.isInteger(x)&&x>=0?x:null;}
+function amount(v){return Number(v).toLocaleString("ja-JP")+"円";}
+function ticketHit(r,key){if(!r.result)return false;if(key==="trio")return savedTrioList(r).some(t=>t.join("-")===[...r.result].sort((a,b)=>a-b).join("-"));return resultMatches(r)?.[key]===true;}
+function referenceWager(r,key){const pay=payoutValue(r,key);if(!r.result||pay===null)return null;const count=key==="trio"?savedTrioList(r).length:key==="trifecta"?Number(r.betCount||r.tickets?.length||0):1;if(count<=0)return null;const spent=count*100,returned=ticketHit(r,key)?pay:0;return {spent,returned,profit:returned-spent};}
+function payoutDetails(r){if(!r.result)return '<span class="muted">結果待ち</span>';return BET_TYPES.map(([key,label])=>'<span style="display:inline-block;margin-right:9px">'+label+' <b>'+(payoutValue(r,key)===null?'未登録':amount(payoutValue(r,key)))+'</b></span>').join("");}
+function profitDetails(r){if(!r.result)return '<span class="muted">未確定</span>';return [["trio","三連複"],["trifecta","三連単"]].map(([key,label])=>{const v=referenceWager(r,key);return '<span style="display:block">'+label+'：'+(v?(v.profit>=0?'+':'')+amount(v.profit):'未計算')+'</span>';}).join("");}
 function recordResult(rec,top,payouts={}){
  if(rec.result)throw Error(`${rec.name} の結果は既に記録済みです。誤入力は全記録JSONをバックアップしてから履歴を作り直してください。`);
  if(!Array.isArray(top)||top.length!==3||top.some(n=>!Number.isInteger(n)||n<1||n>24)||new Set(top).size!==3)throw Error('1着・2着・3着には異なる1〜24の馬番を入力してください。');
@@ -455,29 +461,30 @@ function recordResult(rec,top,payouts={}){
 }
 function drawResultSelect(){const sel=$('settlement-race'),chosen=sel.value;const pending=ledger.filter(x=>!x.result).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));sel.innerHTML=pending.length?pending.map(x=>`<option value="${esc(x.key)}">${esc(`${x.date||''} ${x.venue||''} ${x.name}`)}</option>`).join(''):'<option value="">結果待ちなし</option>';if(pending.some(x=>x.key===chosen))sel.value=chosen;}
 function renderLedger(){
- const settled=ledger.filter(x=>Array.isArray(x.result)&&x.result.length===3),n=settled.length;
+ const settled=ledger.filter(r=>Array.isArray(r.result)&&r.result.length===3),n=settled.length;
  const sum={};for(const [k] of BET_TYPES)sum[k]=settled.reduce((a,r)=>a+(resultMatches(r)?.[k]===true?1:0),0);
- const rate=x=>n?`${(100*x/n).toFixed(1)}%`:'—';
- $('kpi-pred').textContent=ledger.length.toLocaleString('ja-JP');$('kpi-settled').textContent=n.toLocaleString('ja-JP');
- $('kpi-win').textContent=rate(sum.win);$('kpi-tri').textContent=rate(sum.trifecta);
- $('kpi-win-detail').textContent=`${sum.win} / ${n}`;$('kpi-tri-detail').textContent=`${sum.trifecta} / ${n}`;
- $('ledger-status').textContent=n?`${n}レース照合済み`:'結果待ち';$('history-count').textContent=`${ledger.length}件`;
- $('ticket-metrics').innerHTML=BET_TYPES.map(([key,label])=>`<div class="metric-card"><small>${label}</small><b>${rate(sum[key])}</b><small>${sum[key]} / ${n} レース</small></div>`).join('');
- const roi=(key)=>{
-  const eligible=settled.filter(r=>Number.isInteger(r.payouts?.[key])&&r.payouts[key]>=0);
-  const spent=eligible.reduce((total,r)=>total+(key==='win'?100:r.betCount*100),0);
-  const returned=eligible.reduce((total,r)=>total+(resultMatches(r)?.[key]?r.payouts[key]:0),0);
-  return {n:eligible.length,spent,returned,rate:spent?`${(100*returned/spent).toFixed(1)}%`:'—'};
+ const rate=x=>n?(100*x/n).toFixed(1)+"%":"—";
+ $("kpi-pred").textContent=ledger.length.toLocaleString("ja-JP");$("kpi-settled").textContent=n.toLocaleString("ja-JP");
+ $("kpi-win").textContent=rate(sum.win);$("kpi-tri").textContent=rate(sum.trifecta);
+ $("kpi-win-detail").textContent=sum.win+" / "+n;$("kpi-tri-detail").textContent=sum.trifecta+" / "+n;
+ $("ledger-status").textContent=n?n+"レース照合済み":"結果待ち";$("history-count").textContent=ledger.length+"件";
+ $("ticket-metrics").innerHTML=BET_TYPES.map(([key,label])=>'<div class="metric-card"><small>'+label+'</small><b>'+rate(sum[key])+'</b><small>'+sum[key]+' / '+n+' レース</small></div>').join("");
+ const roi=key=>{
+  const recs=settled.map(r=>referenceWager(r,key)).filter(Boolean);
+  const spent=recs.reduce((t,x)=>t+x.spent,0),returned=recs.reduce((t,x)=>t+x.returned,0);
+  return {n:recs.length,spent,returned,profit:returned-spent,rate:spent?(100*returned/spent).toFixed(1)+"%":"—"};
  };
- $('roi-metrics').innerHTML=[['win','単勝（本命1点）'],['trifecta','三連単（候補全点）']].map(([k,label])=>{const x=roi(k);return `<div class="metric-card"><small>${label}</small><b>${x.rate}</b><small>払戻入力 ${x.n}レース ／ 仮想購入 ${x.spent.toLocaleString('ja-JP')}円 ／ 仮想払戻 ${x.returned.toLocaleString('ja-JP')}円</small></div>`;}).join('');
+ $("roi-metrics").innerHTML=[["win","単勝（1点）"],["quinella","馬連（1点）"],["exacta","馬単（1点）"],["trio","三連複（保存候補全点）"],["trifecta","三連単（保存候補全点）"]].map(([k,label])=>{const x=roi(k);return '<div class="metric-card"><small>'+label+'</small><b>'+x.rate+'</b><small>払戻登録 '+x.n+'レース ／ 仮想購入 '+amount(x.spent)+' ／ 仮想払戻 '+amount(x.returned)+' ／ 参考収支 '+(x.profit>=0?'+':'')+amount(x.profit)+'</small></div>';}).join("");
  const rows=ledger.slice().sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
- $('ledger-rows').innerHTML=rows.length?rows.map(r=>{const score=resultMatches(r),fmtHit=k=>score?`<span class="${score[k]?'hit':'miss'}">${score[k]?'的中':'不的中'}</span>`:'<span class="muted">未確定</span>';
-  return `<tr><td>${esc(`${r.date||''} ${r.venue||''} ${r.name}`)}<span class="sub">${esc(new Date(r.createdAt).toLocaleString('ja-JP'))}</span></td><td>${r.marketMode?'オッズ参照':r.trained?'学習AI':'初期モデル'}</td><td>${esc(r.top3[0])}番 <span class="sub">${(100*r.probTop).toFixed(1)}%</span></td><td>${r.betCount}点<span class="sub">${r.startAt?'発走予定時刻あり':'発走時刻未確認'}</span></td><td>${r.result?esc(r.result.join(' → ')):'未確定'}</td><td>${fmtHit('win')}</td><td>${fmtHit('trifecta')}</td></tr>`;}).join(''):'<tr><td colspan="7" class="muted">まだ記録がありません。レース取込後に全レースを一括予想してください。</td></tr>';
+ $("ledger-rows").innerHTML=rows.length?rows.map(r=>{
+  const score=resultMatches(r),fmtHit=k=>score?'<span class="'+(score[k]?'hit':'miss')+'">'+(score[k]?'的中':'不的中')+'</span>':'<span class="muted">未確定</span>';
+  return '<tr><td>'+esc((r.date||"")+" "+(r.venue||"")+" "+r.name)+'<span class="sub">'+esc(new Date(r.createdAt).toLocaleString("ja-JP"))+'</span></td><td>'+(r.marketMode?'オッズ参照':r.trained?'学習AI':'初期モデル')+'</td><td>'+esc(String(r.top3[0]))+'番 <span class="sub">'+(100*r.probTop).toFixed(1)+'%</span></td><td>'+r.betCount+'点<span class="sub">'+(r.startAt?'発走予定時刻あり':'発走時刻未確認')+'</span></td><td>'+(r.result?esc(r.result.join(' → ')):'未確定')+'</td><td>'+fmtHit('win')+'</td><td>'+fmtHit('trifecta')+'</td><td>'+payoutDetails(r)+'</td><td>'+profitDetails(r)+'</td></tr>';
+ }).join(''):'<tr><td colspan="9" class="muted">まだ記録がありません。レース取込後に全レースを一括予想してください。</td></tr>';
  drawResultSelect();
- if(document.getElementById('jra-center'))jraRender();
+ if(document.getElementById("jra-center"))jraRender();
 }
 $('save-result').addEventListener('click',()=>{
- try{const rec=ledger.find(x=>x.key===$('settlement-race').value);if(!rec)throw Error('照合対象のレースを選択してください。');const top=['first-horse','second-horse','third-horse'].map(id=>Number($(id).value));if(['first-horse','second-horse','third-horse'].some(id=>$(id).value.trim()===''))throw Error('1着〜3着の馬番をすべて入力してください。');recordResult(rec,top,{win:$('win-payout').value,trifecta:$('trifecta-payout').value});if(!persistLedger()){rec.result=null;rec.payouts={win:null,trifecta:null};rec.settledAt=null;throw Error('結果を保存できませんでした');}renderLedger();$('result-feedback').textContent=`${rec.name}：${top.join(' → ')} を記録しました。単勝：${resultMatches(rec).win?'的中':'不的中'} ／ 三連単：${resultMatches(rec).trifecta?'的中':'不的中'}`;['first-horse','second-horse','third-horse','win-payout','trifecta-payout'].forEach(id=>$(id).value='');toast('結果を照合しました');}catch(e){$('result-feedback').textContent=e.message;}
+ try{const rec=ledger.find(x=>x.key===$('settlement-race').value);if(!rec)throw Error('照合対象のレースを選択してください。');const top=['first-horse','second-horse','third-horse'].map(id=>Number($(id).value));if(['first-horse','second-horse','third-horse'].some(id=>$(id).value.trim()===''))throw Error('1着〜3着の馬番をすべて入力してください。');recordResult(rec,top,Object.fromEntries(BET_TYPES.map(([k])=>[k,$(k+'-payout').value])));if(!persistLedger()){rec.result=null;rec.payouts=normalizePayouts({});rec.settledAt=null;throw Error('結果を保存できませんでした');}renderLedger();$('result-feedback').textContent=`${rec.name}：${top.join(' → ')} を記録しました。単勝：${resultMatches(rec).win?'的中':'不的中'} ／ 三連単：${resultMatches(rec).trifecta?'的中':'不的中'}`;['first-horse','second-horse','third-horse',...BET_TYPES.map(([k])=>k+'-payout')].forEach(id=>$(id).value='');toast('結果を照合しました');}catch(e){$('result-feedback').textContent=e.message;}
 });
 function parseResultFile(text,isJson){
  if(isJson){const obj=JSON.parse(text),list=Array.isArray(obj)?obj:Array.isArray(obj?.results)?obj.results:null;if(!list)throw Error('JSONの形式は {"results":[{"race_id":"...","first":1,"second":2,"third":3}]} です。');return list.filter(x=>x&&x.confirmed!==false&&!(['unconfirmed','preliminary','速報','未確定','取消','cancelled'].includes(String(x.status??'').toLowerCase()))).map(x=>({id:String(x.race_id??x.id??''),date:String(x.date??''),top:[Number(x.first),Number(x.second),Number(x.third)],payouts:{win:x.win_payout,trifecta:x.trifecta_payout}}));}
@@ -490,7 +497,7 @@ $('result-file').addEventListener('change',async e=>{
   for(const x of rows){const found=pending.filter(r=>r.id===x.id&&(!x.date||r.date===x.date));if(!found.length){miss++;continue;}if(found.length!==1)throw Error(`${x.id} はレースが複数あります。date列で特定してください。`);const rec=found[0];if(seen.has(rec.key))throw Error(`${x.id} の結果が重複しています。`);seen.add(rec.key);if(x.top.some(n=>!Number.isInteger(n)||n<1||n>24)||new Set(x.top).size!==3||x.top.some(n=>!rec.horseNos.includes(n)))throw Error(`${rec.name}：着順の馬番が不正です。`);normalizePayouts(x.payouts);patches.push([rec,x.top,x.payouts]);}
   if(!patches.length)throw Error(`照合できる未確定予想がありません（対象外${miss}件）。`);
   patches.forEach(([rec,top,payouts])=>recordResult(rec,top,payouts));
-  if(!persistLedger()){patches.forEach(([rec])=>{rec.result=null;rec.payouts={win:null,trifecta:null};rec.settledAt=null});throw Error('記録の保存に失敗しました');}
+  if(!persistLedger()){patches.forEach(([rec])=>{rec.result=null;rec.payouts=normalizePayouts({});rec.settledAt=null});throw Error('記録の保存に失敗しました');}
   renderLedger();$('result-feedback').textContent=`${patches.length}レースの確定結果を照合しました。対象外：${miss}件。`;toast(`${patches.length}レースを照合しました`);
  }catch(err){$('result-feedback').textContent=err.message;}finally{e.target.value='';}
 });
@@ -525,7 +532,7 @@ async function syncFeeds(){
   }
   if(resultRaw){let count=0,ignored=0,changes=[];
    for(const r of resultRows){const found=ledger.filter(x=>x.id===r.id&&(!r.date||x.date===r.date)&&!x.result);if(found.length!==1){ignored++;continue;}const rec=found[0];try{recordResult(rec,r.top,r.payouts);changes.push(rec);count++;}catch(e){ignored++;}}
-   if(count&&!persistLedger()){changes.forEach(r=>{r.result=null;r.payouts={win:null,trifecta:null};r.settledAt=null;});throw Error('結果を端末へ保存できませんでした');}renderLedger();message.push(`結果照合 ${count}件／対象外・不正 ${ignored}件`);
+   if(count&&!persistLedger()){changes.forEach(r=>{r.result=null;r.payouts=normalizePayouts({});r.settledAt=null;});throw Error('結果を端末へ保存できませんでした');}renderLedger();message.push(`結果照合 ${count}件／対象外・不正 ${ignored}件`);
   }
   $('auto-status').textContent=`最終更新 ${new Date().toLocaleString('ja-JP')}：${message.slice(0,4).join('。')}。`; 
  }catch(e){$('auto-status').textContent=`同期失敗：${e.name==='AbortError'?'通信がタイムアウトしました':e.message}。配信先の権利・CORS設定・URLを確認してください。`;}
