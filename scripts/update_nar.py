@@ -7,6 +7,7 @@ import csv
 import datetime as dt
 import io
 import itertools
+import unicodedata
 import json
 import math
 import os
@@ -19,6 +20,9 @@ from zoneinfo import ZoneInfo
 
 JST = ZoneInfo("Asia/Tokyo")
 BASE_URL = "https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=daily"
+ODDS_URL = "https://www.keiba.go.jp/KeibaWeb/DataDownload/OddsDataDownload?type=daily"
+MAX_ODDS_DOWNLOAD = 60 * 1024 * 1024
+MAX_ODDS_FILE = 120 * 1024 * 1024
 DATA_PATH = Path("data/auto/nar_predictions.json")
 MAX_DOWNLOAD = 30 * 1024 * 1024
 MAX_FILE = 20 * 1024 * 1024
@@ -165,6 +169,61 @@ def parse_races(tables):
     return sorted(out, key=lambda r: (r["start"], r["venue"]))
 
 
+def odds_market_index(zip_data):
+    """Stream only official single-win odds from NAR's separate odds ZIP."""
+    if len(zip_data) > MAX_ODDS_DOWNLOAD:
+        raise ValueError("オッズZIPが大きすぎます")
+    out = {}
+    with zipfile.ZipFile(io.BytesIO(zip_data)) as z:
+        members = [m for m in z.infolist()
+                   if m.filename.lower().endswith("_odds.csv") and m.file_size <= MAX_ODDS_FILE]
+        if not members:
+            raise ValueError("公式オッズCSVがありません")
+        for member in members:
+            with z.open(member) as handle:
+                sample = handle.read(4096)
+            try:
+                sample.decode("utf-8-sig")
+                encoding = "utf-8-sig"
+            except UnicodeDecodeError:
+                encoding = "cp932"
+            with z.open(member) as handle:
+                reader = csv.reader(io.TextIOWrapper(handle, encoding=encoding, errors="replace", newline=""))
+                first = next(reader, None)
+                if not first:
+                    continue
+                header = [x.strip().replace("\ufeff", "") for x in first]
+                mapped = "競馬場" in header and "賭式" in header
+                columns = {name: idx for idx, name in enumerate(header)} if mapped else {}
+                def get(row, key, fallback):
+                    pos = columns.get(key, fallback)
+                    return row[pos].strip() if len(row) > pos else ""
+                def consume(row):
+                    bet = unicodedata.normalize("NFKC", get(row, "賭式", 3))
+                    if bet not in ("単勝", "単勝式"):
+                        return
+                    venue = get(row, "競馬場", 0)
+                    date = re.sub("[^0-9]", "", get(row, "競走年月日", 1))
+                    race_no = as_int(get(row, "レース番号", 2))
+                    horse_no = as_int(get(row, "番号1", 4))
+                    popularity = as_int(get(row, "人気", 9))
+                    try:
+                        odds = float(get(row, "オッズ", 7))
+                    except (TypeError, ValueError):
+                        return
+                    if not venue or len(date) != 8 or not race_no or not horse_no or not math.isfinite(odds) or odds < 1 or odds >= 10000:
+                        return
+                    market = {"no": horse_no, "odds": round(odds, 1)}
+                    if popularity is not None and 1 <= popularity <= 50:
+                        market["popularity"] = popularity
+                    out.setdefault((venue, date, race_no), {})[horse_no] = market
+                if not mapped:
+                    consume(first)
+                for row in reader:
+                    consume(row)
+    return out
+
+
 def forecast(race, timestamp):
     horses = race["horses"]
     raw_scores = []
@@ -205,6 +264,8 @@ def forecast(race, timestamp):
         "predicted_at": timestamp.isoformat(timespec="seconds"),
         "model": "form_heuristic_v1_untrained",
         "top3": pick,
+        "ranking": [{"no": horses[i]["no"], "name": horses[i]["name"],
+                     "win_probability": round(probs[i], 4)} for i in ranked],
         "tickets": [t for _, t in tickets[:12]],
         "trio_tickets": trio_tickets,
         "result": None, "settled_at": None, "hits": None
@@ -330,7 +391,7 @@ def summary(predictions):
     }
 
 
-def update_data(races, now, previous, paybacks=None):
+def update_data(races, now, previous, paybacks=None, odds_index=None):
     old = previous.get("races", [])
     if not isinstance(old, list):
         raise ValueError("保存された予想履歴の形式が不正です")
@@ -338,10 +399,13 @@ def update_data(races, now, previous, paybacks=None):
     added = 0
     settled = 0
     payout_updated = 0
+    odds_updated = 0
     paybacks = paybacks or {}
+    odds_index = odds_index or {}
     for race in races:
         ident = race["id"]
-        if ident not in entries:
+        is_new = ident not in entries
+        if is_new:
             # A forecast made after the race or shortly before off is not valid.
             if now >= race["start"] - dt.timedelta(minutes=10):
                 continue
@@ -350,7 +414,17 @@ def update_data(races, now, previous, paybacks=None):
                 continue
             entries[ident] = forecast(race, now)
             added += 1
-        else:
+        # Keep published pre-race picks immutable. Market data is a separately
+        # timestamped observation, and never enters the model's predictions.
+        market = odds_index.get((race["venue"], race["date"].replace("-", ""), race["race_no"]), {})
+        if market:
+            valid_nos = {h["no"] for h in race["horses"]}
+            items = [market[n] for n in sorted(market) if n in valid_nos]
+            record = entries[ident]
+            if items and record.get("market", {}).get("horses") != items:
+                record["market"] = {"horses": items, "updated_at": now.isoformat(timespec="seconds")}
+                odds_updated += 1
+        if not is_new:
             order = settled_order(race["horses"])
             if order and settle(entries[ident], order, now):
                 settled += 1
@@ -370,19 +444,19 @@ def update_data(races, now, previous, paybacks=None):
         "schema_version": 1, "scope": "NAR地方競馬のみ（中央JRAは対象外）",
         "source": "NAR公式CSVデータ（分析結果のみ表示）",
         "method": "過去成績の縮約率から計算する未学習ヒューリスティック。的中保証なし。",
-        "updated_at": now.isoformat(timespec="seconds") if added or settled or payout_updated or not previous else previous.get("updated_at"),
+        "updated_at": now.isoformat(timespec="seconds") if added or settled or payout_updated or odds_updated or not previous else previous.get("updated_at"),
         "races": predictions, "summary": summary(predictions)
-    }, added, settled, payout_updated
+    }, added, settled, payout_updated + odds_updated
 
 
-def fetch_daily_zip():
+def fetch_daily_zip(url=BASE_URL, max_download=MAX_DOWNLOAD):
     request = urllib.request.Request(
-        BASE_URL,
+        url,
         headers={"User-Agent": "KEIBA-LAB/3.3 (personal race form analysis)", "Accept": "application/zip"}
     )
     with urllib.request.urlopen(request, timeout=25) as response:
-        data = response.read(MAX_DOWNLOAD + 1)
-    if len(data) > MAX_DOWNLOAD:
+        data = response.read(max_download + 1)
+    if len(data) > max_download:
         raise ValueError("公式ZIPが容量上限を超えています")
     return data
 
@@ -447,11 +521,16 @@ def main():
     if not races:
         raise RuntimeError("有効なレースがありません。CSV形式か配信状況を確認してください")
     previous = json.loads(DATA_PATH.read_text(encoding="utf-8")) if DATA_PATH.exists() else {}
-    out, added, settled_count, payout_count = update_data(races, now, previous, payback_index(tables))
+    odds_index = {}
+    try:
+        odds_index = odds_market_index(fetch_daily_zip(ODDS_URL, MAX_ODDS_DOWNLOAD))
+    except Exception as exc:
+        print(f"NAR公式オッズ未取得（予想・結果は続行）: {exc}", file=sys.stderr)
+    out, added, settled_count, payout_count = update_data(races, now, previous, payback_index(tables), odds_index)
     if added or settled_count or payout_count or not DATA_PATH.exists():
         DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
         DATA_PATH.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"NAR races: {len(races)}, newly predicted: {added}, newly settled: {settled_count}, payout updates: {payout_count}; total: {out['summary']['predicted']}, settled: {out['summary']['settled']}")
+    print(f"NAR races: {len(races)}, newly predicted: {added}, newly settled: {settled_count}, market/payout updates: {payout_count}; total: {out['summary']['predicted']}, settled: {out['summary']['settled']}")
 
 
 if __name__ == "__main__":
