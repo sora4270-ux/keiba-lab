@@ -242,6 +242,13 @@
       <div class="payout-fields"><div class="field"><label for="win-payout">単勝の確定払戻（100円あたり・任意）</label><input id="win-payout" type="number" min="0" max="100000000" step="1" placeholder="確定金額（円）"></div><div class="field"><label for="quinella-payout">馬連の確定払戻（100円あたり・任意）</label><input id="quinella-payout" type="number" min="0" max="100000000" step="1" placeholder="確定金額（円）"></div><div class="field"><label for="exacta-payout">馬単の確定払戻（100円あたり・任意）</label><input id="exacta-payout" type="number" min="0" max="100000000" step="1" placeholder="確定金額（円）"></div><div class="field"><label for="trio-payout">三連複の確定払戻（100円あたり・任意）</label><input id="trio-payout" type="number" min="0" max="100000000" step="1" placeholder="確定金額（円）"></div><div class="field"><label for="trifecta-payout">三連単の確定払戻（100円あたり・任意）</label><input id="trifecta-payout" type="number" min="0" max="100000000" step="1" placeholder="確定金額（円）"></div></div>
       <div class="controls" style="margin-top:13px"><button type="button" class="btn primary" id="save-result">着順を確定・照合</button><button type="button" class="btn" id="result-file-button">結果CSV / JSON取込</button><button type="button" class="btn sm" id="results-csv-template">結果CSVひな型</button></div>
       <p class="ledger-note" id="result-feedback">結果CSVは race_id,date,first,second,third,win_payout,quinella_payout,exacta_payout,trio_payout,trifecta_payout を使用（払戻列は省略可）。必ず確定結果を確認してください。</p>
+      <div class="hrow" style="margin-top:20px"><h3 style="margin:0">確定済みレースに払戻金を追加・修正</h3><span class="pill gray">着順は変更しません</span></div>
+      <p class="intro tiny">結果確定後に払戻が発表された場合も、ここから追記できます。空欄は未登録として扱います。実際の購入記録とは異なります。</p>
+      <div class="field" style="margin-top:10px;max-width:600px"><label for="payout-race">払戻金を登録する確定済みレース</label><select id="payout-race"><option value="">確定済みレースなし</option></select></div>
+      <div class="payout-fields" id="payout-edit-fields"><div class="field"><label for="edit-win-payout">単勝の払戻（100円あたり）</label><input id="edit-win-payout" type="number" min="0" max="100000000" step="1" placeholder="未登録"></div><div class="field"><label for="edit-quinella-payout">馬連の払戻（100円あたり）</label><input id="edit-quinella-payout" type="number" min="0" max="100000000" step="1" placeholder="未登録"></div><div class="field"><label for="edit-exacta-payout">馬単の払戻（100円あたり）</label><input id="edit-exacta-payout" type="number" min="0" max="100000000" step="1" placeholder="未登録"></div><div class="field"><label for="edit-trio-payout">三連複の払戻（100円あたり）</label><input id="edit-trio-payout" type="number" min="0" max="100000000" step="1" placeholder="未登録"></div><div class="field"><label for="edit-trifecta-payout">三連単の払戻（100円あたり）</label><input id="edit-trifecta-payout" type="number" min="0" max="100000000" step="1" placeholder="未登録"></div></div>
+      <div class="controls" style="margin-top:11px"><button type="button" class="btn primary" id="update-payouts">確定払戻金を保存</button></div>
+      <p class="ledger-note" id="payout-update-feedback"></p>
+
    </div>
    <div class="panel"><div class="hrow"><h2>予想履歴・照合結果</h2><span class="pill gray" id="history-count">0件</span></div>
       <div class="controls" style="margin:13px 0"><button type="button" class="btn sm" id="export-ledger-csv">的中成績CSVを保存</button><button type="button" class="btn sm" id="backup-ledger">全記録JSONをバックアップ</button><button type="button" class="btn sm" id="restore-ledger">バックアップを復元</button><button type="button" class="btn sm red" id="clear-ledger">予想・結果をすべて削除</button></div>
@@ -460,6 +467,31 @@ function recordResult(rec,top,payouts={}){
  rec.result=[...top];rec.payouts=clean;rec.settledAt=new Date().toISOString();
 }
 function drawResultSelect(){const sel=$('settlement-race'),chosen=sel.value;const pending=ledger.filter(x=>!x.result).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));sel.innerHTML=pending.length?pending.map(x=>`<option value="${esc(x.key)}">${esc(`${x.date||''} ${x.venue||''} ${x.name}`)}</option>`).join(''):'<option value="">結果待ちなし</option>';if(pending.some(x=>x.key===chosen))sel.value=chosen;}
+function drawPayoutSelect(){
+ const sel=$("payout-race"),selected=sel.value;
+ const done=ledger.filter(r=>Array.isArray(r.result)).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+ sel.innerHTML=done.length?'<option value="">レースを選択</option>'+done.map(r=>'<option value="'+esc(r.key)+'">'+esc((r.date||"")+" "+(r.venue||"")+" "+r.name)+'</option>').join(''):'<option value="">確定済みレースなし</option>';
+ if(done.some(r=>r.key===selected))sel.value=selected;else sel.value="";
+ if(sel.value)loadPayoutEdit();
+ else BET_TYPES.forEach(([k])=>{$("edit-"+k+"-payout").value="";});
+}
+function loadPayoutEdit(){
+ const r=ledger.find(x=>x.key===$("payout-race").value);
+ BET_TYPES.forEach(([k])=>{$("edit-"+k+"-payout").value=r&&payoutValue(r,k)!==null?String(payoutValue(r,k)):"";});
+}
+$("payout-race").addEventListener("change",loadPayoutEdit);
+$("update-payouts").addEventListener("click",()=>{
+ try{
+  const r=ledger.find(x=>x.key===$("payout-race").value&&Array.isArray(x.result));
+  if(!r)throw Error("確定済みのレースを選択してください");
+  const entries=Object.fromEntries(BET_TYPES.map(([k])=>[k,$("edit-"+k+"-payout").value]));
+  const next=normalizePayouts(entries),previous=r.payouts;
+  r.payouts=next;
+  if(!persistLedger()){r.payouts=previous;throw Error("払戻金を保存できませんでした");}
+  renderLedger();$("payout-update-feedback").textContent=r.name+" の確定払戻金を保存しました（100円あたり）。";
+  toast("払戻金を更新しました");
+ }catch(e){$("payout-update-feedback").textContent=e.message;}
+});
 function renderLedger(){
  const settled=ledger.filter(r=>Array.isArray(r.result)&&r.result.length===3),n=settled.length;
  const sum={};for(const [k] of BET_TYPES)sum[k]=settled.reduce((a,r)=>a+(resultMatches(r)?.[k]===true?1:0),0);
@@ -481,6 +513,7 @@ function renderLedger(){
   return '<tr><td>'+esc((r.date||"")+" "+(r.venue||"")+" "+r.name)+'<span class="sub">'+esc(new Date(r.createdAt).toLocaleString("ja-JP"))+'</span></td><td>'+(r.marketMode?'オッズ参照':r.trained?'学習AI':'初期モデル')+'</td><td>'+esc(String(r.top3[0]))+'番 <span class="sub">'+(100*r.probTop).toFixed(1)+'%</span></td><td>'+r.betCount+'点<span class="sub">'+(r.startAt?'発走予定時刻あり':'発走時刻未確認')+'</span></td><td>'+(r.result?esc(r.result.join(' → ')):'未確定')+'</td><td>'+fmtHit('win')+'</td><td>'+fmtHit('trifecta')+'</td><td>'+payoutDetails(r)+'</td><td>'+profitDetails(r)+'</td></tr>';
  }).join(''):'<tr><td colspan="9" class="muted">まだ記録がありません。レース取込後に全レースを一括予想してください。</td></tr>';
  drawResultSelect();
+ drawPayoutSelect();
  if(document.getElementById("jra-center"))jraRender();
 }
 $('save-result').addEventListener('click',()=>{
