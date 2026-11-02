@@ -619,20 +619,55 @@ $("update-payouts").addEventListener("click",()=>{
   toast("払戻金を更新しました");
  }catch(e){$("payout-update-feedback").textContent=e.message;}
 });
+function updateVenueOptions(el,records,known=[]){
+ const prev=el.value||'all',counts=new Map();
+ for(const r of records){const v=String(r.venue||'未分類').trim()||'未分類';counts.set(v,(counts.get(v)||0)+1);}
+ const names=[...new Set([...known,...counts.keys()])];
+ el.innerHTML='<option value="all">全競馬場（'+records.length+'件）</option>'+names.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'（'+(counts.get(v)||0)+'件）</option>').join('');
+ el.value=names.includes(prev)?prev:'all';return el.value;
+}
+function settledOnly(records){return records.filter(r=>Array.isArray(r.result)&&r.result.length===3);}
+function venueHitPct(records,key,isHit){
+ const done=settledOnly(records),eligible=key==='trio_multi'?done.filter(r=>savedTrioList(r).length>0):done;
+ return eligible.length?(100*eligible.filter(r=>isHit(r,key)).length/eligible.length).toFixed(1)+'%':'—';
+}
+function venueBreakdownHtml(records,isHit,wager){
+ const names=[...new Set(records.map(r=>String(r.venue||'未分類').trim()||'未分類'))].sort((a,b)=>a.localeCompare(b,'ja'));
+ if(!names.length)return '<p class="muted tiny">予想記録はまだありません。</p>';
+ return '<table class="venue-stats-table"><thead><tr><th>競馬場</th><th>予想</th><th>照合</th><th>単勝的中率</th><th>三連複候補的中率</th><th>三連単的中率</th><th>参考回収率（5券種）</th></tr></thead><tbody>'+names.map(v=>{
+  const rows=records.filter(r=>(String(r.venue||'未分類').trim()||'未分類')===v),basket=completeBasket(settledOnly(rows),wager);
+  return '<tr><td>'+esc(v)+'</td><td>'+rows.length+'</td><td>'+settledOnly(rows).length+'</td><td>'+venueHitPct(rows,'win',isHit)+'</td><td>'+venueHitPct(rows,'trio_multi',isHit)+'</td><td>'+venueHitPct(rows,'trifecta',isHit)+'</td><td><b>'+roiLabel(basket.stats)+'</b><small style="display:block;color:#738096">'+basket.races+'R分</small></td></tr>';
+ }).join('')+'</tbody></table>';
+}
+function narHitRecord(r,key){
+ if(!Array.isArray(r.result)||r.result.length!==3)return false;
+ const top=Array.isArray(r.top3)?r.top3.map(p=>Number(p.no)):[],actual=r.result,sorted=a=>[...a].sort((x,y)=>x-y).join('-');
+ if(key==='trio_multi')return savedTrioList(r).some(t=>sorted(t)===sorted(actual));
+ if(typeof r.hits?.[key]==='boolean')return r.hits[key];
+ if(key==='win')return top[0]===actual[0];
+ if(key==='quinella')return top.length>=2&&sorted(top.slice(0,2))===sorted(actual.slice(0,2));
+ if(key==='exacta')return top[0]===actual[0]&&top[1]===actual[1];
+ if(key==='trio')return top.length>=3&&sorted(top)===sorted(actual);
+ if(key==='trifecta')return (r.tickets||[]).some(t=>Array.isArray(t)&&t.join('-')===actual.join('-'));
+ return false;
+}
+function jraHitRecord(r,key){return key==='trio_multi'?ticketHit(r,'trio'):resultMatches(r)?.[key]===true;}
 function renderLedger(){
- const settled=ledger.filter(r=>Array.isArray(r.result)&&r.result.length===3),n=settled.length;
+ const venue=updateVenueOptions($('ledger-view-venue'),ledger,[...JRA_VENUES,...NAR_VENUES]);
+ const viewed=venue==='all'?ledger:ledger.filter(r=>(r.venue||'未分類')===venue);
+ const settled=settledOnly(viewed),n=settled.length;
  const sum={};for(const [k] of BET_TYPES)sum[k]=settled.reduce((a,r)=>a+(resultMatches(r)?.[k]===true?1:0),0);
  const rate=x=>n?(100*x/n).toFixed(1)+"%":"—";
- $("kpi-pred").textContent=ledger.length.toLocaleString("ja-JP");$("kpi-settled").textContent=n.toLocaleString("ja-JP");
+ $("kpi-pred").textContent=viewed.length.toLocaleString("ja-JP");$("kpi-settled").textContent=n.toLocaleString("ja-JP");
  $("kpi-win").textContent=rate(sum.win);$("kpi-tri").textContent=rate(sum.trifecta);
  $("kpi-win-detail").textContent=sum.win+" / "+n;$("kpi-tri-detail").textContent=sum.trifecta+" / "+n;
- $("ledger-status").textContent=n?n+"レース照合済み":"結果待ち";$("history-count").textContent=ledger.length+"件";
+ $("ledger-status").textContent=n?n+"レース照合済み":"結果待ち";$("history-count").textContent=viewed.length+"件";
  $("ticket-metrics").innerHTML=BET_TYPES.map(([key,label])=>'<div class="metric-card"><small>'+label+'</small><b>'+rate(sum[key])+'</b><small>'+sum[key]+' / '+n+' レース</small></div>').join("");
  const roi=key=>roiStatistics(settled.map(r=>referenceWager(r,key)).filter(Boolean));
  $("roi-metrics").innerHTML=[["win","単勝（1点）"],["quinella","馬連（1点）"],["exacta","馬単（1点）"],["trio","三連複（保存候補全点）"],["trifecta","三連単（保存候補全点）"]].map(([k,label])=>{const x=roi(k);return '<div class="metric-card"><small>'+label+'</small><b>'+roiLabel(x)+'</b><small>払戻登録 '+x.n+'レース ／ 仮想購入 '+amount(x.spent)+' ／ 仮想払戻 '+amount(x.returned)+' ／ 参考収支 '+roiSigned(x.profit)+'</small></div>';}).join("");
  const total=completeBasket(settled,referenceWager);
- $("ledger-roi-total").innerHTML=roiOverview(total.stats,"5券種の払戻が揃った "+total.races+"レースのみ集計（同じレースを重複集計せず、5券種の買い目をすべて購入と仮定）");$("ledger-purchase-total").innerHTML=purchaseBanner(ledger,"予想履歴すべて");
- const rows=ledger.slice().sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+ $("ledger-roi-total").innerHTML=roiOverview(total.stats,"5券種の払戻が揃った "+total.races+"レースのみ集計（同じレースを重複集計せず、5券種の買い目をすべて購入と仮定）");$("ledger-purchase-total").innerHTML=purchaseBanner(viewed,venue==="all"?"予想履歴すべて":venue+"の予想履歴");
+ const rows=viewed.slice().sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
  $("ledger-rows").innerHTML=rows.length?rows.map(r=>{
   const score=resultMatches(r),fmtHit=k=>score?'<span class="'+(score[k]?'hit':'miss')+'">'+(score[k]?'的中':'不的中')+'</span>':'<span class="muted">未確定</span>';
   return '<tr><td>'+esc((r.date||"")+" "+(r.venue||"")+" "+r.name)+'<span class="sub">'+esc(new Date(r.createdAt).toLocaleString("ja-JP"))+'</span></td><td>'+(r.marketMode?'オッズ参照':r.trained?'学習AI':'初期モデル')+'</td><td>'+esc(String(r.top3[0]))+'番 <span class="sub">'+(100*r.probTop).toFixed(1)+'%</span></td><td>'+r.betCount+'点<span class="sub">'+(r.startAt?'発走予定時刻あり':'発走時刻未確認')+'</span></td><td><b>'+amount(purchaseSummary(r).total)+'</b><span class="sub">三連複 '+amount(purchaseSummary(r).trio)+' ／ 三連単 '+amount(purchaseSummary(r).trifecta)+'</span><span class="sub">その他3券種 各100円</span></td><td>'+(r.result?esc(r.result.join(' → ')):'未確定')+'</td><td>'+fmtHit('win')+'</td><td>'+fmtHit('trifecta')+'</td><td>'+payoutDetails(r)+'</td><td>'+profitDetails(r)+'</td></tr>';
@@ -641,6 +676,7 @@ function renderLedger(){
  drawPayoutSelect();
  if(document.getElementById("jra-center"))jraRender();
 }
+$("ledger-view-venue").addEventListener("change",renderLedger);
 $('save-result').addEventListener('click',()=>{
  try{const rec=ledger.find(x=>x.key===$('settlement-race').value);if(!rec)throw Error('照合対象のレースを選択してください。');const top=['first-horse','second-horse','third-horse'].map(id=>Number($(id).value));if(['first-horse','second-horse','third-horse'].some(id=>$(id).value.trim()===''))throw Error('1着〜3着の馬番をすべて入力してください。');recordResult(rec,top,Object.fromEntries(BET_TYPES.map(([k])=>[k,$(k+'-payout').value])));if(!persistLedger()){rec.result=null;rec.payouts=normalizePayouts({});rec.settledAt=null;throw Error('結果を保存できませんでした');}renderLedger();$('result-feedback').textContent=`${rec.name}：${top.join(' → ')} を記録しました。単勝：${resultMatches(rec).win?'的中':'不的中'} ／ 三連単：${resultMatches(rec).trifecta?'的中':'不的中'}`;['first-horse','second-horse','third-horse',...BET_TYPES.map(([k])=>k+'-payout')].forEach(id=>$(id).value='');toast('結果を照合しました');}catch(e){$('result-feedback').textContent=e.message;}
 });
@@ -770,6 +806,7 @@ $('restore-all-file').addEventListener('change',async e=>{
 });
 
 
+const NAR_VENUES=['帯広','門別','盛岡','水沢','浦和','船橋','大井','川崎','金沢','笠松','名古屋','園田','姫路','高知','佐賀'];
 const NAR_AUTO_URL='./data/auto/nar_predictions.json';
 function savedTrioList(r){
  if(Array.isArray(r.trio_tickets))return r.trio_tickets.filter(t=>Array.isArray(t)&&t.length===3&&t.every(n=>Number.isInteger(n))).map(t=>[...t].sort((a,b)=>a-b));
@@ -887,6 +924,7 @@ $('nar-refresh').addEventListener('click',narRefresh);
 narRefresh();
 
 const JRA_VENUES=new Set(['東京','中山','京都','阪神','中京','新潟','福島','小倉','札幌','函館']);
+$('manual-venue').innerHTML='<option value="">未指定（未分類で保存）</option>'+[...JRA_VENUES,...NAR_VENUES].map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
 function jraDateTime(r){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(r.date||'')))throw Error('JRA開催日はYYYY-MM-DDの形式で入力してください');
  if(!JRA_VENUES.has(String(r.venue||'')))throw Error('中央競馬の競馬場を選択してください：'+String(r.venue||''));
