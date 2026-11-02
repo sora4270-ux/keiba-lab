@@ -3,7 +3,7 @@
   "scope": "NAR地方競馬のみ（中央JRAは対象外）",
   "source": "NAR公式CSVデータ（分析結果のみ表示）",
   "method": "過去成績の縮約率から計算する未学習ヒューリスティック。的中保証なし。",
-  "updated_at": "2026-11-02T19:52:55+09:00",
+  "updated_at": "2026-11-02T19:56:56+09:00",
   "races": [
     {
       "id": "nar-20261102-船橋-12",
@@ -474,6 +474,13 @@
         "trio": false,
         "trio_multi": false,
         "trifecta": false
+      },
+      "payouts": {
+        "win": 680,
+        "quinella": 2820,
+        "exacta": 4850,
+        "trio": 4020,
+        "trifecta": 25340
       }
     },
     {
@@ -577,6 +584,13 @@
         "trio": true,
         "trio_multi": true,
         "trifecta": true
+      },
+      "payouts": {
+        "win": 540,
+        "quinella": 2320,
+        "exacta": 4620,
+        "trio": 6820,
+        "trifecta": 37090
       }
     }
   ],
