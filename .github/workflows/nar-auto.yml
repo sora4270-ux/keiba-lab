@@ -33,11 +33,25 @@ jobs:
           html = Path('index.html').read_text(encoding='utf-8')
           js = html.rsplit('<script>', 1)[1].split('</script>', 1)[0]
           Path('/tmp/keiba-lab-inline.js').write_text(js, encoding='utf-8')
-          for token in ('id="nar-races"', 'function savedTrioList(', 'id="manual-trio-list"', 'id="manual-trio-count"'):
+          for token in ('id="nar-races"', 'function savedTrioList(', 'id="manual-trio-list"', 'id="manual-trio-count"', 'id="jra-center"', 'function jraDateTime(', 'id="jra-entries"', 'function jraAutoPredict('):
               assert token in html, f'Feature missing: {token}'
           print('All trio UI elements found')
           PY
           node --check /tmp/keiba-lab-inline.js
+          node - <<'NODE'
+          const assert=require('node:assert/strict');
+          const fs=require('node:fs');
+          const html=fs.readFileSync('index.html','utf8');
+          const fn=html.slice(html.indexOf('function jraDateTime('),html.indexOf('function jraValidRaces('));
+          assert.ok(fn.startsWith('function jraDateTime('),'JRA validator unavailable');
+          const jraDateTime=new Function('JRA_VENUES',fn+';return jraDateTime;')(new Set(['東京','中山','京都','阪神','中京','新潟','福島','小倉','札幌','函館']));
+          const good={date:'2099-01-01',venue:'東京',race_no:11,start_at:'2099-01-01T15:40:00+09:00'};
+          assert.doesNotThrow(()=>jraDateTime(good));
+          for(const bad of [{...good,venue:'船橋'},{...good,start_at:'2099-01-01T15:40:00'},{...good,race_no:0},{...good,date:'2099/01/01'},{...good,start_at:'2020-01-01T15:40:00+09:00'}]){
+            assert.throws(()=>jraDateTime(bad));
+          }
+          console.log('PASS: JRA 10 venues, ISO+JST date validation and no past forecasts');
+          NODE
       - name: Self-test (no external services)
         run: python scripts/update_nar.py --selftest
       - name: Obtain NAR official day CSV and update predictions
