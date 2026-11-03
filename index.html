@@ -922,12 +922,13 @@ function updateRaceDateOptions(el,records){
  return el.value==='today'?today:el.value;
 }
 function forecastResultRows(records,mode){return mode==='results'?records.filter(r=>Array.isArray(r.result)&&r.result.length===3):records;}
-let narViewedData=null,narViewedCached=false;
+let narViewedData=null,narViewedCached=false,quickNextRace=null;
 $("nar-roi-period").addEventListener("change",()=>{
  if(narViewedData)narRender(narViewedData,narViewedCached);
 });
 $("nar-view-venue").addEventListener("change",()=>{if(narViewedData)narRender(narViewedData,narViewedCached);});
 $("nar-view-date").addEventListener("change",()=>{if(narViewedData)narRender(narViewedData,narViewedCached);});
+$("nar-view-number").addEventListener("change",()=>{if(narViewedData)narRender(narViewedData,narViewedCached);});
 $("nar-view-mode").addEventListener("change",()=>{if(narViewedData)narRender(narViewedData,narViewedCached);});
 function narPayoutHtml(r,trioMultiHit){
  if(!Array.isArray(r.result))return '';
@@ -957,11 +958,29 @@ function narRender(data,localCopy=false){
  if(old)status.push('データが24時間以上更新されていません');
  if(localCopy)status.push('端末内キャッシュから表示中（最大70件のため競馬場別集計が一部になる場合があります）');
  $('nar-status').textContent=status.join(' ／ ');
+ const nextMap=new Map(),nowMillis=Date.now(),today=jstRaceToday();
+ for(const r of [...calendar,...arr]){
+  const when=Date.parse(r.start_at);
+  if(r.date!==today||!Number.isFinite(when)||when<=nowMillis)continue;
+  const key=String(r.id||r.date+'-'+r.venue+'-'+r.race_no);
+  if(!nextMap.has(key)||arr.includes(r))nextMap.set(key,r);
+ }
+ quickNextRace=[...nextMap.values()].sort((a,b)=>Date.parse(a.start_at)-Date.parse(b.start_at))[0]||null;
+ if(quickNextRace){
+  const r=quickNextRace;
+  const scheduledTime=new Date(r.start_at).toLocaleTimeString('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hour12:false});
+  const ready=arr.some(x=>x.id===r.id);
+  $('quick-next-race').innerHTML='<div><strong>次の発走予定：'+esc(scheduledTime)+' '+esc(r.venue)+' '+esc(r.race_no)+'R</strong><small>'+(ready?'予想確定済み':'買い目未確定・開催情報のみ')+(localCopy?' ／ 保存データを表示中':'')+'</small></div><button type="button" class="btn sm primary" id="quick-open-next">このレースを見る</button>';
+ }else{
+  $('quick-next-race').innerHTML='<div><strong>本日のこの先の開催情報はありません</strong><small>開催日を切り替えると過去の予想・結果も確認できます。'+(localCopy?' 現在は保存データを表示中。':'')+'</small></div>';
+ }
  const venue=updateVenueOptions($('nar-view-venue'),[...arr,...calendar],NAR_VENUES);
  const date=updateRaceDateOptions($('nar-view-date'),[...arr,...calendar]);
  const dateMatches=r=>date==='all'||r.date===date;
- const viewed=arr.filter(r=>(venue==='all'||r.venue===venue)&&dateMatches(r));
- const scheduled=calendar.filter(r=>(venue==='all'||r.venue===venue)&&dateMatches(r));
+ const raceNumber=$('nar-view-number').value;
+ const matchesNumber=r=>raceNumber==='all'||Number(r.race_no)===Number(raceNumber);
+ const viewed=arr.filter(r=>(venue==='all'||r.venue===venue)&&dateMatches(r)&&matchesNumber(r));
+ const scheduled=calendar.filter(r=>(venue==='all'||r.venue===venue)&&dateMatches(r)&&matchesNumber(r));
  let ss=data?.summary||{};
  const cards=[['win','単勝・本命1点'],['quinella','馬連・上位2頭'],['exacta','馬単・上位2頭'],['trio','三連複・本線1点'],['trio_multi','三連複・候補最大8点'],['trifecta','三連単・12点']];
  if(venue!=='all'||date!=='all'){
@@ -1071,7 +1090,8 @@ function jraRender(){
  const allRecords=ledger.filter(r=>JRA_VENUES.has(String(r.venue||''))).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
  const venue=updateVenueOptions($('jra-view-venue'),allRecords,[...JRA_VENUES]);
  const date=updateRaceDateOptions($('jra-view-date'),allRecords);
- const records=allRecords.filter(r=>(venue==='all'||r.venue===venue)&&(date==='all'||r.date===date));
+ const raceNumber=$('jra-view-number').value;
+ const records=allRecords.filter(r=>(venue==='all'||r.venue===venue)&&(date==='all'||r.date===date)&&(raceNumber==='all'||Number(r.raceNo??r.race_no)===Number(raceNumber)));
  const mode=$('jra-view-mode').value;
  $('jra-results-summary').hidden=mode!=='results';
  const displayed=forecastResultRows(records,mode);
@@ -1104,6 +1124,7 @@ function jraRender(){
 }
 $('jra-view-venue').addEventListener('change',jraRender);
 $('jra-view-date').addEventListener('change',jraRender);
+$('jra-view-number').addEventListener('change',jraRender);
 $('jra-view-mode').addEventListener('change',jraRender);
 $('jra-date').value=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Tokyo'});
 $('jra-predict').addEventListener('click',()=>{
@@ -1135,6 +1156,36 @@ $('jra-results-btn').addEventListener('click',()=>switchTab('ledger'));
 $('jra-authorized-feed').addEventListener('click',()=>{switchTab('sync');$('feed-url').focus()});
 jraRender();
 
+// Keep visible choice buttons synchronized with existing prediction/result selectors.
+document.querySelectorAll('.mode-choices[data-mode-select]').forEach(group=>{
+ const select=$(group.dataset.modeSelect);
+ function paint(){group.querySelectorAll('button[data-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.mode===select.value)));}
+ group.querySelectorAll('button[data-mode]').forEach(button=>button.addEventListener('click',()=>{
+  select.value=button.dataset.mode;select.dispatchEvent(new Event('change',{bubbles:true}));
+ }));
+ select.addEventListener('change',paint);paint();
+});
+document.querySelectorAll('[data-jump]').forEach(button=>button.addEventListener('click',()=>{
+ const destination=button.dataset.jump;
+ if(destination==='ledger'){switchTab('ledger');return;}
+ const select=$(destination+'-view-mode');select.value=button.dataset.display||'predictions';
+ select.dispatchEvent(new Event('change',{bubbles:true}));
+ const target=destination==='nar'?$('nar-automated'):document.querySelector('#jra-center .date-toolbar');
+ target?.scrollIntoView({behavior:'smooth',block:'start'});
+}));
+document.querySelectorAll('[data-reset-scope]').forEach(button=>button.addEventListener('click',()=>{
+ const scope=button.dataset.resetScope;
+ $(scope+'-view-date').value='today';$(scope+'-view-venue').value='all';$(scope+'-view-number').value='all';
+ $(scope+'-view-date').dispatchEvent(new Event('change',{bubbles:true}));
+}));
+$('quick-next-race').addEventListener('click',event=>{
+ if(!event.target.closest('#quick-open-next')||!quickNextRace||!narViewedData)return;
+ $('nar-view-date').value='today';$('nar-view-venue').value=quickNextRace.venue;
+ $('nar-view-number').value=String(quickNextRace.race_no);
+ $('nar-view-mode').value='predictions';
+ $('nar-view-mode').dispatchEvent(new Event('change',{bubbles:true}));
+ $('nar-automated').scrollIntoView({behavior:'smooth',block:'start'});
+});
 
 loadLedger();renderLedger();
 
