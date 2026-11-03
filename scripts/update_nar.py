@@ -228,57 +228,149 @@ def odds_market_index(zip_data):
     return out
 
 
-def forecast(race, timestamp):
+
+def normalized(values):
+    total = sum(values)
+    if not values or not math.isfinite(total) or total <= 0:
+        return None
+    return [v / total for v in values]
+
+
+def form_probabilities(race):
+    scores = [(.45 * shrink_rate(h["overall"])
+               + .25 * shrink_rate(h["distance"])
+               + .20 * shrink_rate(h["venue"])
+               + .10 * shrink_rate(h["jockey"])) for h in race["horses"]]
+    return normalized([math.exp(7 * (x - max(scores))) for x in scores])
+
+
+def market_probabilities(horses, odds_by_no):
+    """Only complete snapshots from the forecast run are usable."""
+    if not isinstance(odds_by_no, dict):
+        return None
+    implied = []
+    for h in horses:
+        row = odds_by_no.get(h["no"])
+        if not isinstance(row, dict):
+            return None
+        try:
+            odds = float(row["odds"])
+        except (KeyError, TypeError, ValueError):
+            return None
+        if not math.isfinite(odds) or not 1 <= odds < 10000:
+            return None
+        implied.append(1 / max(1.01, odds))
+    return normalized(implied)
+
+
+def learn_parameters(records, now):
+    """Only prior SETTLED races train. Never use mutable display 'market'."""
+    history = []
+    for record in records:
+        try:
+            settled = dt.datetime.fromisoformat(record["settled_at"])
+            locked = dt.datetime.fromisoformat(record.get("locked_at") or record["predicted_at"])
+            rows = record["ranking"]
+            winner = record["result"][0]
+            ids = [r["no"] for r in rows]
+            values = [float(r.get("form_probability", r["win_probability"])) for r in rows]
+            if not (settled < now and locked < now and winner in ids and len(ids) >= 3
+                    and all(math.isfinite(v) and v > 0 for v in values)):
+                continue
+            history.append((settled, record, ids, normalized(values), ids.index(winner)))
+        except (KeyError, TypeError, ValueError, IndexError):
+            continue
+    history.sort(key=lambda x: x[0])
+    history = history[-400:]
+    n = len(history)
+    alpha = 1.
+    if n >= 25:
+        def loss(a):
+            result = 0.
+            for _, _, _, probs, pos in history:
+                adjusted = normalized([p ** a for p in probs])
+                result -= math.log(max(adjusted[pos], 1e-10))
+            return result / n + .006 * (a - 1) ** 2
+        alpha = min([.5, .75, 1., 1.25, 1.5, 2.], key=loss)
+    prelock = []
+    for _, record, ids, form, winner_pos in history:
+        snap = record.get("market_at_lock")
+        if not isinstance(snap, dict):
+            continue
+        try:
+            observed = dt.datetime.fromisoformat(snap["updated_at"])
+            locked = dt.datetime.fromisoformat(record.get("locked_at") or record["predicted_at"])
+            deadline = dt.datetime.fromisoformat(record["cutoff_at"])
+            if observed > locked or observed >= deadline:
+                continue
+            odds = {h["no"]: h for h in snap["horses"]}
+            market = market_probabilities([{"no": n} for n in ids], odds)
+            if market:
+                prelock.append((normalized([p ** alpha for p in form]), market, winner_pos))
+        except (KeyError, TypeError, ValueError, IndexError):
+            continue
+    weight = .8  # Use the market as primary anchor; fit only when sample is sufficient.
+    if len(prelock) >= 60:
+        def market_loss(w):
+            return (sum(-math.log(max((1-w)*p[i] + w*m[i], 1e-10))
+                        for p, m, i in prelock) / len(prelock)
+                    + .01 * (w-.8)**2)
+        weight = min([.5, .6, .7, .8, .9], key=market_loss)
+    return {"form_alpha": alpha, "market_weight": weight,
+            "form_training_races": n, "market_training_races": len(prelock)}
+
+
+def forecast(race, timestamp, market=None, calibration=None):
     deadline = race["start"] - FORECAST_LOCK_BEFORE_START
     if timestamp >= deadline:
         raise ValueError("発走15分前以降のレースの予想は新規作成しません")
     horses = race["horses"]
-    raw_scores = []
-    for h in horses:
-        s = (
-            .45 * shrink_rate(h["overall"]) +
-            .25 * shrink_rate(h["distance"]) +
-            .20 * shrink_rate(h["venue"]) +
-            .10 * shrink_rate(h["jockey"])
-        )
-        raw_scores.append(s)
-    high = max(raw_scores)
-    weights = [math.exp(7 * (s - high)) for s in raw_scores]
-    denom = sum(weights)
-    probs = [w / denom for w in weights]
+    cfg = calibration or {"form_alpha": 1., "market_weight": .8,
+                          "form_training_races": 0, "market_training_races": 0}
+    original_form = form_probabilities(race)
+    form = normalized([p ** cfg["form_alpha"] for p in original_form])
+    market_p = market_probabilities(horses, market)
+    w = cfg["market_weight"] if market_p else 0.
+    probs = [(1-w)*p + w*market_p[i] if market_p else p for i, p in enumerate(form)]
     ranked = sorted(range(len(horses)), key=lambda i: (-probs[i], horses[i]["no"]))
     pick = [{"no": horses[i]["no"], "name": horses[i]["name"],
              "win_probability": round(probs[i], 4)} for i in ranked[:3]]
-    # Plackett-Luce approximation. Top 12 ordered triple tickets, NOT guaranteed hit.
+    # All ordered three-horse finishing combinations; no result lookup.
     tickets = []
     for i, j, k in itertools.permutations(range(len(horses)), 3):
-        p = probs[i] * probs[j] / max(1e-12, 1 - probs[i])
-        p *= probs[k] / max(1e-12, 1 - probs[i] - probs[j])
+        p = probs[i] * probs[j] / max(1e-12, 1-probs[i])
+        p *= probs[k] / max(1e-12, 1-probs[i]-probs[j])
         tickets.append((p, [horses[i]["no"], horses[j]["no"], horses[k]["no"]]))
-    tickets.sort(key=lambda x: -x[0])
-    # Unordered top-3 probability: sum of all six possible finishing orders.
-    # Save the 8 highest-ranked UNIQUE three-horse combinations before off.
+    tickets.sort(key=lambda x: (-x[0], x[1]))
     trio_scores = {}
-    for probability, combination in tickets:
-        key = tuple(sorted(combination))
-        trio_scores[key] = trio_scores.get(key, 0.0) + probability
-    trio_ranked = sorted(trio_scores.items(), key=lambda item: (-item[1], item[0]))
-    trio_tickets = [list(key) for key, _ in trio_ranked[:8]]
-    return {
+    for p, numbers in tickets:
+        key = tuple(sorted(numbers))
+        trio_scores[key] = trio_scores.get(key, 0.) + p
+    trio_sorted = sorted(trio_scores.items(), key=lambda x: (-x[1], x[0]))
+    output = {
         "id": race["id"], "date": race["date"], "venue": race["venue"],
         "race_no": race["race_no"], "name": race["name"],
         "start_at": race["start"].isoformat(timespec="minutes"),
         "predicted_at": timestamp.isoformat(timespec="seconds"),
         "locked_at": timestamp.isoformat(timespec="seconds"),
         "cutoff_at": deadline.isoformat(timespec="minutes"),
-        "model": "form_heuristic_v1_untrained",
+        "model": "form_market_v2_calibrated" if market_p else "form_v2_no_odds",
+        "calibration": {k: cfg[k] for k in ("form_alpha","market_weight",
+                                           "form_training_races","market_training_races")},
         "top3": pick,
         "ranking": [{"no": horses[i]["no"], "name": horses[i]["name"],
-                     "win_probability": round(probs[i], 4)} for i in ranked],
-        "tickets": [t for _, t in tickets[:12]],
-        "trio_tickets": trio_tickets,
+                     "win_probability": round(probs[i], 6),
+                     "form_probability": round(original_form[i], 6)} for i in ranked],
+        "tickets": [numbers for _, numbers in tickets[:12]],
+        "trio_tickets": [list(numbers) for numbers, _ in trio_sorted[:8]],
         "result": None, "settled_at": None, "hits": None
     }
+    if market_p:
+        # Immutable pre-lock input; the display-only 'market' can change later.
+        output["market_at_lock"] = {
+            "horses": [dict(market[h["no"]]) for h in horses],
+            "updated_at": timestamp.isoformat(timespec="seconds")}
+    return output
 
 
 def payback_index(tables):
@@ -405,6 +497,7 @@ def update_data(races, now, previous, paybacks=None, odds_index=None):
     if not isinstance(old, list):
         raise ValueError("保存された予想履歴の形式が不正です")
     entries = {p["id"]: p for p in old if isinstance(p, dict) and p.get("id")}
+    calibration = learn_parameters(old, now)
     # A lightweight race calendar is published independently of frozen picks.
     # The public feed contains only date/venue/race/time metadata, never raw CSV.
     past_schedule = previous.get("schedule", [])
@@ -446,10 +539,10 @@ def update_data(races, now, previous, paybacks=None, odds_index=None):
             # Strictly exclude races that already report results.
             if any(h["rank"] in (1, 2, 3) for h in race["horses"]):
                 continue
-            entries[ident] = forecast(race, now)
+            locked_market = odds_index.get((race["venue"], race["date"].replace("-", ""), race["race_no"]), {})
+            entries[ident] = forecast(race, now, locked_market, calibration)
             added += 1
-        # Keep published pre-race picks immutable. Market data is a separately
-        # timestamped observation, and never enters the model's predictions.
+        # Keep the forecast frozen. Later display odds are never training features.
         market = odds_index.get((race["venue"], race["date"].replace("-", ""), race["race_no"]), {})
         if market:
             valid_nos = {h["no"] for h in race["horses"]}
@@ -477,7 +570,8 @@ def update_data(races, now, previous, paybacks=None, odds_index=None):
     return {
         "schema_version": 1, "scope": "NAR地方競馬のみ（中央JRAは対象外）",
         "source": "NAR公式CSVデータ（分析結果のみ表示）",
-        "method": "過去成績の縮約率から計算する未学習ヒューリスティック。的中保証なし。",
+        "method": "新規予想は発走前の単勝オッズと過去成績を融合し、確定済みレースだけで確率を補正。過去の予想は変更しません。的中保証なし。",
+        "learning": calibration,
         "updated_at": now.isoformat(timespec="seconds") if added or settled or payout_updated or odds_updated or schedule_changed or not previous else previous.get("updated_at"),
         "schedule_updated_at": now.isoformat(timespec="seconds") if schedule_changed or not previous else previous.get("schedule_updated_at"),
         "schedule": calendar,
@@ -590,6 +684,24 @@ def selftest():
     assert again["races"][0]["tickets"] == pre["tickets"]
     assert update_data(races, late, again, paybacks, market)[3] == 0
     assert "ranking" in pre and len(pre["ranking"]) == len(races[0]["horses"])
+    # Regression: the odds leader must influence the NEW forecast at T-17.
+    big_fav = {i: {"no": i, "odds": 1.1 if i == 8 else 100.0}
+               for i in range(1, 9)}
+    trained = forecast(races[0], dt.datetime(2026, 11, 2, 15, 23, tzinfo=JST),
+                       big_fav, {"form_alpha": 1., "market_weight": .8,
+                                 "form_training_races": 33, "market_training_races": 0})
+    assert trained["top3"][0]["no"] == 8
+    assert trained["market_at_lock"]["updated_at"] == trained["locked_at"]
+    assert trained["cutoff_at"] == "2026-11-02T15:25+09:00"
+    assert forecast(races[0], now)["model"] == "form_v2_no_odds"
+    past = [dict(pre, result=[1, 2, 3], settled_at="2026-11-02T16:01:00+09:00",
+                 market={"horses": list(big_fav.values()),
+                         "updated_at": "2026-11-02T16:10:00+09:00"})
+            for _ in range(30)]
+    assert learn_parameters(past, dt.datetime(2026, 11, 2, 17, tzinfo=JST))["form_training_races"] == 30
+    assert learn_parameters(past, dt.datetime(2026, 11, 2, 17, tzinfo=JST))["market_training_races"] == 0
+    assert learn_parameters(past, dt.datetime(2026, 11, 2, 15, tzinfo=JST))["form_training_races"] == 0
+    print("PASS: pre-lock odds, history-only calibration and immutable predictions")
     print("PASS: official NAR single-win odds, popularity and frozen ranking")
     print("PASS: T-15 cutoff, finalisation window, frozen picks, result scoring and verified payouts")
 
