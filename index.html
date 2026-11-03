@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <meta name="description" content="全レース予想、予想の日時記録、単勝・馬連・馬単・三連複・三連単の的中率集計、過去レースからの学習に対応。">
-  <title>KEIBA LAB v3.14 | スマホで見やすい競馬予想</title>
+  <title>KEIBA LAB v3.15 | 地方・中央の予想と結果を簡単チェック</title>
   <style>
     :root{--navy:#0b1628;--navy2:#14243a;--surface:#fff;--bg:#f5f7fb;--ink:#132338;--sub:#677488;--line:#e4eaf2;--green:#087957;--mint:#dff7ec;--blue:#235ad2;--ice:#eaf0ff;--amber:#a65e10;--shadow:0 8px 28px rgba(20,42,75,.075)}
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.65}button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.5}a{color:var(--blue)}
@@ -158,6 +158,10 @@
     .view-mode .hint-copy{font-size:12px;color:#5c6e85;flex:1;min-width:180px}
     /* v3.14: mobile-first navigation without changing prediction data */
     .home-panel{background:#fff;border:1px solid var(--line);border-radius:17px;box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
+    .quick-live-summary{margin:0 0 12px;padding:9px 11px;border-radius:10px;background:#f0f6ff;border:1px solid #dce8f8;color:#25476d;font-size:12px;font-weight:700;line-height:1.65}
+    .quick-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:11px}
+    .quick-bottom>span{font-size:11px;color:#677a90}
+    .mobile-dock button[aria-current="page"]{background:#e6f2ff;color:#0c5298}
     .home-heading{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:5px;margin-bottom:12px}.home-heading strong{font-size:18px}.home-heading span{font-size:12px;color:var(--sub)}
     .quick-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
     .quick-link{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;min-width:0;padding:13px;border-radius:12px;background:#f5f8fd;border:1px solid #dfe8f4;color:#1c406c;font-weight:800;min-height:72px}
@@ -202,7 +206,9 @@
    <button type="button" class="quick-link" data-jump="jra" data-display="predictions"><strong>🏆 中央・予想</strong><small>保存したJRAの買い目</small></button>
    <button type="button" class="quick-link" data-jump="jra" data-display="results"><strong>📊 中央・結果</strong><small>確定着順と収支</small></button>
   </div>
+  <p id="quick-live-summary" class="quick-live-summary" role="status" aria-live="polite">地方競馬の最新データを確認しています…</p>
   <div id="quick-next-race" class="quick-next" aria-live="polite"><span>次の発走予定を確認しています…</span></div>
+  <div class="quick-bottom"><button type="button" id="quick-refresh" class="btn sm">↻ 最新データを再取得</button><span>中央競馬は自分で登録したレースを表示します。</span></div>
  </section>
  <section id="nar-automated" class="panel" aria-label="地方競馬の自動予想と的中率">
    <div class="hrow"><h2>🏇 地方競馬・全レース自動予想</h2><span class="pill">NAR 自動予想</span></div>
@@ -230,7 +236,7 @@
 
 
  <section id="jra-center" class="panel" aria-label="JRA中央競馬のレース予想と成績">
-  <div class="hrow"><h2>🏆 中央競馬（JRA）予想</h2><span class="pill amber">v3.10 ・ 発走15分前に予想固定</span></div>
+  <div class="hrow"><h2>🏆 中央競馬（JRA）予想</h2><span class="pill amber">発走15分前に予想固定</span></div>
   <p class="intro" style="margin-top:9px">東京・中山・京都・阪神などJRA10競馬場に対応。入力された出馬表から<b>三連複・三連単の買い目</b>を発走前に保存し、確定結果との的中率を集計します。</p>
   <div class="live-warning">JRA公式の出馬表を自動取得する接続は未設定です。JRA-VAN Data Lab.はWindows向けで、通常契約のデータをWebサイトへ再配信できません。<b>自分で入力した情報または公開利用が許可されたデータ</b>のみ取り込みます。オッズのみではAI学習予測でなく市場支持率による推定です。</div>
   <div class="hrow" style="margin-top:18px"><h3 style="margin:0">① かんたん入力</h3><span class="muted tiny">発走15分前まで・3頭以上</span></div>
@@ -380,7 +386,7 @@
  <div class="panel"><h2>各項目の意味</h2><ul class="guide-list"><li><b>近走指数（0〜100）</b>：過去3〜5走の着差・レース水準などから自身で統一基準で算出した能力値。</li><li><b>距離適性（1〜5）</b>：今回の距離に合うほど高評価。</li><li><b>馬場適性（1〜5）</b>：今回の良・稍重・重・不良などへの相性。</li><li><b>騎手勝率（%）</b>：同じ集計期間で算出した騎手の勝率。</li><li><b>調教評価（1〜5）</b>：追い切りや近況からの統一基準での評価。</li><li><b>単勝オッズ</b>：直近で確認した数値を入力。オッズ補正をONにすると推定勝率へ市場情報を混ぜます。</li></ul></div>
  <div class="panel"><h2>重要な注意点</h2><p class="muted">このアプリは予測の検証とデータ分析を目的としたツールです。初期状態は開発者が設定した仮の重みであり、機械学習済みではありません。学習後も予測値の適切な校正や検証が必要であり、勝率・買い目の的中や利益は保証しません。出馬表・オッズは、ユーザー入力や許諾済みデータフィードで取り込みます。地方競馬の公式配布CSVに基づく自動予想機能を追加しました。中央競馬の公式データ自動取得は未対応です。実際の馬券は20歳以上が法律・施設のルールに従い、生活費に影響しない範囲でご自身の判断で購入してください。</p></div></section>
  <div class="panel" style="margin-top:10px"><strong>Ver.3.1の追加機能</strong><p class="muted tiny">「全レース・的中率」で取り込んだレースを一括予想し、予想日時を保存。確定結果をCSV/JSONまたは手入力で照合すると5券種の的中率が出ます。確定払戻金を登録した対象レースでは参考回収率も表示します。予想の自動取得・定期実行は、許諾済みの配信先と常時稼働環境が必要です。</p></div>
- <footer class="footer">KEIBA LAB v3.14 ・ ブラウザだけで動く競馬分析ツール ・ 投票機能なし</footer>
+ <footer class="footer">KEIBA LAB v3.15 ・ ブラウザだけで動く競馬分析ツール ・ 投票機能なし</footer>
 </main>
 <nav class="mobile-dock" aria-label="スマホ用クイックメニュー">
  <button type="button" data-jump="nar" data-display="predictions"><span aria-hidden="true">🏇</span>地方予想</button>
@@ -959,6 +965,9 @@ function narRender(data,localCopy=false){
  if(old)status.push('データが24時間以上更新されていません');
  if(localCopy)status.push('端末内キャッシュから表示中（最大70件のため競馬場別集計が一部になる場合があります）');
  $('nar-status').textContent=status.join(' ／ ');
+ const confirmedResults=arr.filter(r=>Array.isArray(r.result)&&r.result.length===3).length;
+ const updatedLabel=Number.isFinite(stamp)?new Date(stamp).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'不明';
+ $('quick-live-summary').textContent='地方競馬：予想確定 '+arr.length+'R ／ 結果照合 '+confirmedResults+'R ／ 開催情報 '+calendar.length+'R　｜　更新 '+updatedLabel+(localCopy?'（保存済み）':'')+(old?' ⚠ 24時間以上前':'')+'　※取得済み情報';
  const nextMap=new Map(),nowMillis=Date.now(),today=jstRaceToday();
  for(const r of [...calendar,...arr]){
   const when=Date.parse(r.start_at);
@@ -971,7 +980,9 @@ function narRender(data,localCopy=false){
   const r=quickNextRace;
   const scheduledTime=new Date(r.start_at).toLocaleTimeString('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hour12:false});
   const ready=arr.some(x=>x.id===r.id);
-  $('quick-next-race').innerHTML='<div><strong>次の発走予定：'+esc(scheduledTime)+' '+esc(r.venue)+' '+esc(r.race_no)+'R</strong><small>'+(ready?'予想確定済み':'買い目未確定・開催情報のみ')+(localCopy?' ／ 保存データを表示中':'')+'</small></div><button type="button" class="btn sm primary" id="quick-open-next">このレースを見る</button>';
+  const remaining=Math.max(0,Math.ceil((Date.parse(r.start_at)-nowMillis)/60000));
+  const state=ready?'予想確定済み':remaining<=15?'締切を過ぎたため未予想':'予想確定待ち';
+  $('quick-next-race').innerHTML='<div><strong>次の発走予定：'+esc(scheduledTime)+' '+esc(r.venue)+' '+esc(r.race_no)+'R</strong><small>'+('発走まで約'+remaining+'分 ／ '+state)+(localCopy?' ／ 保存データを表示中':'')+'</small></div><button type="button" class="btn sm primary" id="quick-open-next">このレースを見る</button>';
  }else{
   $('quick-next-race').innerHTML='<div><strong>取得済みデータに本日のこれからのレースはありません</strong><small>開催日を切り替えると過去の予想・結果も確認できます。'+(localCopy?' 現在は保存データを表示中。':'')+'</small></div>';
  }
@@ -1056,10 +1067,11 @@ async function narRefresh(silent=false){
  }catch(e){
   let cached;try{cached=JSON.parse(localStorage.getItem('keiba_lab_nar_auto_preview')||'null');}catch(e){}
   if(cached&&Array.isArray(cached.races)){narRender(cached,true);$('nar-status').textContent+=' ／ 最新版の取得失敗：'+e.message;}
-  else{$('nar-status').textContent='まだ自動予想データを取得できません：'+e.message+'。GitHub Actionsの稼働状況を確認してください。';$('nar-races').innerHTML='<div class="empty">自動予想の初回生成待ちです。地方競馬の公式データ取得が成功すると表示されます。</div>';$('quick-next-race').innerHTML='<div><strong>開催情報が取得できていません</strong><small>地方競馬の更新ボタンから再確認できます。</small></div>';}
+  else{$('nar-status').textContent='まだ自動予想データを取得できません：'+e.message+'。GitHub Actionsの稼働状況を確認してください。';$('quick-live-summary').textContent='地方競馬データの取得に失敗しました。更新ボタンで再取得できます。';$('nar-races').innerHTML='<div class="empty">自動予想の初回生成待ちです。地方競馬の公式データ取得が成功すると表示されます。</div>';$('quick-next-race').innerHTML='<div><strong>開催情報が取得できていません</strong><small>地方競馬の更新ボタンから再確認できます。</small></div>';}
  }finally{btn.disabled=false;narFetching=false;}
 }
 $('nar-refresh').addEventListener('click',()=>narRefresh(false));
+$('quick-refresh').addEventListener('click',()=>narRefresh(false));
 narRefresh();
 setInterval(()=>{if(document.visibilityState==='visible')narRefresh(true);},120000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-narLastPollAt>60000)narRefresh(true);});
@@ -1170,10 +1182,18 @@ document.querySelectorAll('.mode-choices[data-mode-select]').forEach(group=>{
  group.querySelectorAll('button[data-mode]').forEach(button=>button.addEventListener('click',()=>{
   select.value=button.dataset.mode;select.dispatchEvent(new Event('change',{bubbles:true}));
  }));
- select.addEventListener('change',paint);paint();
+ select.addEventListener('change',()=>{paint();const scope=group.dataset.modeSelect.startsWith('nar-')?'nar':'jra';updateDockSelection(scope,select.value);});paint();
 });
+function updateDockSelection(destination,display){
+ document.querySelectorAll('.mobile-dock [data-jump]').forEach(button=>{
+  const active=button.dataset.jump===destination&&(destination==='ledger'||button.dataset.display===display);
+  if(active)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
+ });
+}
+updateDockSelection('nar','predictions');
 document.querySelectorAll('[data-jump]').forEach(button=>button.addEventListener('click',()=>{
  const destination=button.dataset.jump;
+ updateDockSelection(destination,button.dataset.display);
  if(destination==='ledger'){switchTab('ledger');return;}
  const select=$(destination+'-view-mode');select.value=button.dataset.display||'predictions';
  select.dispatchEvent(new Event('change',{bubbles:true}));
@@ -1197,6 +1217,7 @@ $('quick-next-race').addEventListener('click',event=>{
  $('nar-view-number').value=String(quickNextRace.race_no);
  $('nar-view-mode').value='predictions';
  $('nar-view-mode').dispatchEvent(new Event('change',{bubbles:true}));
+ updateDockSelection('nar','predictions');
  $('nar-automated').scrollIntoView({behavior:'smooth',block:'start'});
 });
 
