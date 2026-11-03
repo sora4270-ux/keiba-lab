@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <meta name="description" content="全レース予想、予想の日時記録、単勝・馬連・馬単・三連複・三連単の的中率集計、過去レースからの学習に対応。">
-  <title>KEIBA LAB v3.11 | 競馬場別予想・的中率・回収率</title>
+  <title>KEIBA LAB v3.12 | 日付別レース・自動更新・競馬場別成績</title>
   <style>
     :root{--navy:#0b1628;--navy2:#14243a;--surface:#fff;--bg:#f5f7fb;--ink:#132338;--sub:#677488;--line:#e4eaf2;--green:#087957;--mint:#dff7ec;--blue:#235ad2;--ice:#eaf0ff;--amber:#a65e10;--shadow:0 8px 28px rgba(20,42,75,.075)}
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.65}button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.5}a{color:var(--blue)}
@@ -149,6 +149,9 @@
     .venue-stats-table th,.venue-stats-table td{padding:9px 8px;border-bottom:1px solid #e6edf5;text-align:right;white-space:nowrap}
     .venue-stats-table th{background:#f5f8fc;color:#5d708a;font-size:11px}.venue-stats-table th:first-child,.venue-stats-table td:first-child{text-align:left;font-weight:750}
     @media(max-width:620px){.venue-toolbar{padding:11px}.venue-toolbar .field{max-width:none;min-width:100%}}
+    .date-toolbar .field{min-width:155px}.date-toolbar .venue-help{min-width:180px}
+    .nar-unpredicted{background:#fcfdff;border-style:dashed}.nar-unpredicted p{margin:8px 0 0;color:#687990;font-size:12px}
+    #nar-last-check{display:block;margin:-5px 0 10px;font-size:11px;color:#667b91}
   </style>
 </head>
 <body>
@@ -162,7 +165,8 @@
    <p class="intro" style="margin-top:10px">地方競馬の公式配布CSVを使い、発走前の予想を保存・結果確定後に照合します。中央競馬（JRA）の入力予想は下の専用欄をご利用ください。</p>
    <div class="controls"><button type="button" class="btn primary sm" id="nar-refresh">最新の予想と結果を表示</button><a class="btn sm" style="text-decoration:none" href="https://www.keiba.go.jp/" target="_blank" rel="noopener noreferrer">地方競馬公式</a></div>
    <p id="nar-status" class="hint" role="status" aria-live="polite">自動予想データを読み込み中...</p>
-   <div class="venue-toolbar"><div class="field"><label for="nar-view-venue">地方競馬場で絞り込む</label><select id="nar-view-venue"><option value="all">全競馬場</option></select></div><span class="venue-help">競馬場ごとに予想一覧・的中率・回収率を表示します。</span></div>
+   <span id="nar-last-check" aria-live="polite">新着レースを画面表示中に約2分ごと確認します。</span>
+   <div class="venue-toolbar date-toolbar"><div class="field"><label for="nar-view-date">開催日で絞り込む</label><select id="nar-view-date"><option value="today">今日</option><option value="all">すべての日付</option></select></div><div class="field"><label for="nar-view-venue">地方競馬場で絞り込む</label><select id="nar-view-venue"><option value="all">全競馬場</option></select></div><span class="venue-help">開催日・競馬場別にレース予想と成績を表示します。</span></div>
    <div id="nar-kpis" class="metric-grid" aria-label="自動予想の的中率"></div>
     <div class="hrow" style="margin-top:16px"><h3 style="margin:0">参考回収率・収支</h3><label class="field" for="nar-roi-period"><span class="tiny muted">集計期間</span><select class="roi-select" id="nar-roi-period"><option value="all">全期間</option><option value="today">本日</option><option value="7d">直近7日間</option><option value="30d">直近30日間</option></select></label></div>
     <p class="roi-hint">各点100円で仮想購入した場合の参考回収率です。三連複は保存された候補全点で計算。券種別・全5券種の合計を表示します。</p>
@@ -199,7 +203,7 @@
   <p class="tiny muted">脚質は「逃げ・先行・差し・追込」から任意入力。未入力ならペース判定不可と表示します。人気順は入力した単勝オッズから算出します。</p>
   <p id="jra-message" class="hint" role="status" aria-live="polite">JRAの出走馬は自動では入力されません。日付・発走時刻・馬番などを確認してください。</p>
   <div class="hrow" style="margin-top:17px"><h3 style="margin:0">③ 中央競馬の予想・的中率・払戻金</h3><button type="button" class="btn sm" id="jra-results-btn">確定結果を入力・取込</button></div>
-   <div class="venue-toolbar"><div class="field"><label for="jra-view-venue">中央競馬場で絞り込む</label><select id="jra-view-venue"><option value="all">全競馬場</option></select></div><span class="venue-help">選んだ競馬場の予想・的中率・回収率に切り替えます。</span></div>
+   <div class="venue-toolbar date-toolbar"><div class="field"><label for="jra-view-date">開催日で絞り込む</label><select id="jra-view-date"><option value="today">今日</option><option value="all">すべての日付</option></select></div><div class="field"><label for="jra-view-venue">中央競馬場で絞り込む</label><select id="jra-view-venue"><option value="all">全競馬場</option></select></div><span class="venue-help">保存済みのJRA予想も日付別に表示します。</span></div>
   <div id="jra-summary" class="jra-summary" aria-label="JRAの的中率と回収率"></div>
     <div class="hrow" style="margin-top:14px"><h3 style="margin:0">中央競馬・全券種合計の参考回収率</h3></div>
     <div id="jra-roi-total" class="roi-overview" aria-label="中央競馬の合計参考回収率と収支"></div><div id="jra-purchase-total" class="stake-banner"></div>
@@ -848,11 +852,20 @@ function narPeriodRaces(records,period){
  const earliest=new Date(Date.parse(today+"T00:00:00Z")-(days-1)*86400000).toISOString().slice(0,10);
  return records.filter(r=>typeof r.date==="string"&&r.date>=earliest&&r.date<=today);
 }
+function jstRaceToday(){return new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Tokyo'});}
+function updateRaceDateOptions(el,records){
+ const selected=el.value||'today',today=jstRaceToday();
+ const dates=[...new Set(records.map(r=>r?.date).filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(String(d||''))))].sort().reverse();
+ el.innerHTML='<option value="today">今日（'+esc(today)+'）</option><option value="all">すべての日付</option>'+dates.map(d=>'<option value="'+esc(d)+'">'+esc(d)+'（'+esc(new Date(d+'T12:00:00+09:00').toLocaleDateString('ja-JP',{weekday:'short'}))+'）</option>').join('');
+ el.value=selected==='today'||selected==='all'||dates.includes(selected)?selected:'today';
+ return el.value==='today'?today:el.value;
+}
 let narViewedData=null,narViewedCached=false;
 $("nar-roi-period").addEventListener("change",()=>{
  if(narViewedData)narRender(narViewedData,narViewedCached);
 });
 $("nar-view-venue").addEventListener("change",()=>{if(narViewedData)narRender(narViewedData,narViewedCached);});
+$("nar-view-date").addEventListener("change",()=>{if(narViewedData)narRender(narViewedData,narViewedCached);});
 function narPayoutHtml(r,trioMultiHit){
  if(!Array.isArray(r.result))return '';
  const payouts=r.payouts||{},kinds=[["win","単勝"],["quinella","馬連"],["exacta","馬単"],["trio","三連複"],["trifecta","三連単"]];
@@ -870,6 +883,7 @@ function narPayoutHtml(r,trioMultiHit){
 function narRender(data,localCopy=false){
  narViewedData=data;narViewedCached=localCopy;
  const now=new Date(),arr=Array.isArray(data?.races)?data.races:[];
+ const calendar=Array.isArray(data?.schedule)?data.schedule.filter(r=>r&&typeof r.id==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(r.date||'')):[];
  const stamp=typeof data?.updated_at==='string'?Date.parse(data.updated_at):NaN;
  const old=Number.isFinite(stamp)&&now.getTime()-stamp>24*60*60*1000;
  const status=['配信元：NAR公式CSV','予想モデル：過去成績による未学習推定'];
@@ -877,11 +891,14 @@ function narRender(data,localCopy=false){
  if(old)status.push('データが24時間以上更新されていません');
  if(localCopy)status.push('端末内キャッシュから表示中（最大70件のため競馬場別集計が一部になる場合があります）');
  $('nar-status').textContent=status.join(' ／ ');
- const venue=updateVenueOptions($('nar-view-venue'),arr,NAR_VENUES);
- const viewed=venue==='all'?arr:arr.filter(r=>r.venue===venue);
+ const venue=updateVenueOptions($('nar-view-venue'),[...arr,...calendar],NAR_VENUES);
+ const date=updateRaceDateOptions($('nar-view-date'),[...arr,...calendar]);
+ const dateMatches=r=>date==='all'||r.date===date;
+ const viewed=arr.filter(r=>(venue==='all'||r.venue===venue)&&dateMatches(r));
+ const scheduled=calendar.filter(r=>(venue==='all'||r.venue===venue)&&dateMatches(r));
  let ss=data?.summary||{};
  const cards=[['win','単勝・本命1点'],['quinella','馬連・上位2頭'],['exacta','馬単・上位2頭'],['trio','三連複・本線1点'],['trio_multi','三連複・候補最大8点'],['trifecta','三連単・12点']];
- if(venue!=='all'){
+ if(venue!=='all'||date!=='all'){
   const settled=settledOnly(viewed),multi=settled.filter(r=>savedTrioList(r).length>0);
   ss={predicted:viewed.length,settled:settled.length,pending:viewed.length-settled.length,trio_multi_settled:multi.length};
   for(const [key] of cards){
@@ -890,7 +907,7 @@ function narRender(data,localCopy=false){
   }
  }
  const den=Number(ss.settled)||0;
- $('nar-venue-breakdown').innerHTML=venueBreakdownHtml(arr,narHitRecord,narReferenceWager);
+ $('nar-venue-breakdown').innerHTML=venueBreakdownHtml(arr.filter(dateMatches),narHitRecord,narReferenceWager);
  $('nar-kpis').innerHTML='<div class="metric"><small>予想記録</small><strong>'+Number(ss.predicted??arr.length).toLocaleString('ja-JP')+'件</strong><small>結果照合 '+den+'件 ／ 結果待ち '+Number(ss.pending||0)+'件</small></div>'+cards.map(([key,label])=>'<div class="metric"><small>'+label+'</small><strong>'+narPct(ss[key])+'</strong><small>母数：照合済み '+(key==='trio_multi'?Number(ss.trio_multi_settled||0):den)+'レース</small></div>').join('');
  const period=$("nar-roi-period").value;
  const roiRaces=settledOnly(narPeriodRaces(viewed,period));
@@ -965,7 +982,8 @@ function jraAutoPredict(races,label){
 function jraRender(){
  const allRecords=ledger.filter(r=>JRA_VENUES.has(String(r.venue||''))).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
  const venue=updateVenueOptions($('jra-view-venue'),allRecords,[...JRA_VENUES]);
- const records=venue==='all'?allRecords:allRecords.filter(r=>r.venue===venue);
+ const date=updateRaceDateOptions($('jra-view-date'),allRecords);
+ const records=allRecords.filter(r=>(venue==='all'||r.venue===venue)&&(date==='all'||r.date===date));
  const settled=settledOnly(records),n=settled.length;
  $('jra-venue-breakdown').innerHTML=venueBreakdownHtml(allRecords,jraHitRecord,referenceWager);
  const ratio=(type)=>{
@@ -989,6 +1007,7 @@ function jraRender(){
  }).join('');
 }
 $('jra-view-venue').addEventListener('change',jraRender);
+$('jra-view-date').addEventListener('change',jraRender);
 $('jra-date').value=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Tokyo'});
 $('jra-predict').addEventListener('click',()=>{
  try{
