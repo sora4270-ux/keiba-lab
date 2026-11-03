@@ -922,10 +922,19 @@ function narRender(data,localCopy=false){
  const upcoming=viewed.filter(r=>!r.result&&Date.parse(r.start_at)>Date.now()).sort((a,b)=>Date.parse(a.start_at)-Date.parse(b.start_at));
  const finished=viewed.filter(r=>Array.isArray(r.result)).sort((a,b)=>Date.parse(b.start_at)-Date.parse(a.start_at));
  const pending=viewed.filter(r=>!r.result&&Date.parse(r.start_at)<=Date.now()).sort((a,b)=>Date.parse(b.start_at)-Date.parse(a.start_at));
- const shown=[...upcoming.slice(0,30),...pending.slice(0,5),...finished.slice(0,20)];
- $('nar-count').textContent='発走前 '+upcoming.length+' ／ 結果待ち '+pending.length+' ／ 照合済み '+finished.length;
+ const predictedIds=new Set(viewed.map(r=>r.id));
+ const unpredicted=scheduled.filter(r=>!predictedIds.has(r.id)).map(r=>({...r,_scheduleOnly:true}));
+ const futureUnpredicted=unpredicted.filter(r=>Date.parse(r.start_at)>Date.now());
+ const pastUnpredicted=unpredicted.filter(r=>Date.parse(r.start_at)<=Date.now());
+ const front=[...upcoming,...futureUnpredicted].sort((a,b)=>Date.parse(a.start_at)-Date.parse(b.start_at));
+ const shown=[...front.slice(0,40),...pending.slice(0,10),...pastUnpredicted.sort((a,b)=>Date.parse(b.start_at)-Date.parse(a.start_at)).slice(0,10),...finished.slice(0,30)];
+ $('nar-count').textContent='開催情報 '+(viewed.length+unpredicted.length)+'R ／ 予想確定 '+viewed.length+'R ／ 未予想 '+unpredicted.length+'R ／ 結果照合 '+finished.length+'R';
  if(!shown.length){$('nar-races').innerHTML='<div class="empty">'+(venue==='all'?'まだ予想が登録されていません。公式データが配信され、GitHub Actionsの処理が成功するとここに表示されます。':esc(venue)+'の予想記録はまだありません。')+'</div>';return;}
  $('nar-races').innerHTML=shown.map(r=>{
+  if(r._scheduleOnly){
+   const label=Date.parse(r.start_at)-Date.now()>600000?'予想準備中':'締切到達・未予想';
+   return '<div class="nar-race nar-unpredicted"><div class="nar-race-head"><strong>'+esc(r.date+' '+r.venue+' '+r.race_no+'R')+'</strong><span class="pill gray">'+label+'</span></div><div class="muted tiny">発走予定 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ 予想締切 '+esc(forecastCutoffLabel(r.start_at))+'</div><p>開催情報のみ取得しました。発走10分前までに予想が確定した場合だけ買い目を表示します。未予想は的中率・回収率の集計対象外です。</p></div>';
+  }
   const top=Array.isArray(r.top3)?r.top3:[],tickets=Array.isArray(r.tickets)?r.tickets:[],hits=r.hits||{},trio=savedTrioList(r);
   const displayDate=String(r.date||'')+' '+String(r.venue||'')+' '+String(r.race_no||'')+'R';
   const actual=Array.isArray(r.result)?'確定 '+r.result.join(' → '):Date.parse(r.start_at)<Date.now()?'結果待ち':'発走前';
@@ -934,8 +943,12 @@ function narRender(data,localCopy=false){
   return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></div><div class="muted tiny">発走予定 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ 予想確定 '+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+' ／ 締切 '+esc(forecastCutoffLabel(r.start_at))+'</div><div class="nar-line">'+top.map((p,i)=>'<span class="nar-pick">'+(i===0?'◎':i===1?'○':'▲')+' '+esc(p.no)+'番 '+esc(p.name)+' <b>'+narPct(100*Number(p.win_probability))+'</b></span>').join('')+'</div>'+raceInsightHtml(r,'NAR')+'<div class="nar-trio-title">三連複の買い目 <span class="pill">'+trio.length+'点</span></div><div class="nar-trio-list">'+trioTokens(trio)+'</div><div class="nar-trio-note">'+(Array.isArray(r.trio_tickets)?'順位に関係なく3頭が入れば的中。候補上位8点までを発走前に固定。':'旧予想の保存済み三連単候補を順不同に換算（新規予想ではありません）。')+'</div><div class="nar-result">'+simple+'</div>'+purchaseDetailHtml(r)+narPayoutHtml(r,trioMultiHit)+'<details><summary>三連単候補12点を確認</summary><p>'+tickets.map((t,i)=>esc(Array.isArray(t)?t.join('→'):t)+'（100円）').join(' ／ ')+'</p></details></div>';
  }).join('');
 }
-async function narRefresh(){
- const btn=$('nar-refresh');btn.disabled=true;$('nar-status').textContent='公式データ由来の予想・集計を取得中...';
+let narFetching=false,narLastPollAt=0;
+async function narRefresh(silent=false){
+ if(narFetching)return;
+ narFetching=true;narLastPollAt=Date.now();
+ const btn=$('nar-refresh');btn.disabled=true;
+ if(!silent)$('nar-status').textContent='公式データ由来の予想・集計を取得中...';
  try{
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);
   let res;try{res=await fetch(NAR_AUTO_URL+'?v='+Date.now(),{cache:'no-store',credentials:'omit',signal:controller.signal});}finally{clearTimeout(timer);}
@@ -943,15 +956,18 @@ async function narRefresh(){
   const text=await res.text();if(text.length>4*1024*1024)throw Error('自動予想データが大きすぎます');
   const data=JSON.parse(text);if(data?.schema_version!==1||!Array.isArray(data.races)||!data.summary)throw Error('データの形式が不正です');
   narRender(data);
-  try{localStorage.setItem('keiba_lab_nar_auto_preview',JSON.stringify({...data,races:data.races.slice(0,70)}));}catch(e){}
+  $('nar-last-check').textContent='最終確認：'+new Date().toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})+' ／ 画面表示中は約2分ごとに新規レースを確認';
+  try{localStorage.setItem('keiba_lab_nar_auto_preview',JSON.stringify({...data,races:data.races.slice(0,70),schedule:(data.schedule||[]).slice(-200)}));}catch(e){}
  }catch(e){
   let cached;try{cached=JSON.parse(localStorage.getItem('keiba_lab_nar_auto_preview')||'null');}catch(e){}
   if(cached&&Array.isArray(cached.races)){narRender(cached,true);$('nar-status').textContent+=' ／ 最新版の取得失敗：'+e.message;}
   else{$('nar-status').textContent='まだ自動予想データを取得できません：'+e.message+'。GitHub Actionsの稼働状況を確認してください。';$('nar-races').innerHTML='<div class="empty">自動予想の初回生成待ちです。地方競馬の公式データ取得が成功すると表示されます。</div>';}
- }finally{btn.disabled=false;}
+ }finally{btn.disabled=false;narFetching=false;}
 }
-$('nar-refresh').addEventListener('click',narRefresh);
+$('nar-refresh').addEventListener('click',()=>narRefresh(false));
 narRefresh();
+setInterval(()=>{if(document.visibilityState==='visible')narRefresh(true);},120000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-narLastPollAt>60000)narRefresh(true);});
 
 const JRA_VENUES=new Set(['東京','中山','京都','阪神','中京','新潟','福島','小倉','札幌','函館']);
 $('manual-venue').innerHTML='<option value="">未指定（未分類で保存）</option>'+[...JRA_VENUES,...NAR_VENUES].map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
