@@ -231,7 +231,7 @@
    <div id="nar-races"><div class="empty">データ読み込み待ち</div></div>
    <p class="section-note">地方競馬の単勝オッズ・人気は公式オッズCSVを取得できた場合のみ表示。未取得の場合は空欄とし、保存済みの買い目には影響しません。</p>
    <p class="section-note">確定済みレースはNAR公式CSVに払戻が掲載されると券種別の確定金額（100円あたり）と、保存済み買い目を各100円購入した場合の参考収支を表示します。払戻未取得時は金額を表示しません。</p>
-    <p class="section-note">自動予想は毎回のデータ取得とGitHub Actionsの稼働状況によって遅延・欠測する場合があります。実際の発走・確定結果は主催者発表でご確認ください。初期予測は未学習の過去成績ベース推定で、的中や収益を保証しません。公開された予想は後から書き換えません。</p>
+    <p class="section-note">自動予想は毎回のデータ取得とGitHub Actionsの稼働状況によって遅延・欠測する場合があります。実際の発走・確定結果は主催者発表でご確認ください。旧モデルの予想はそのまま保存。新規予想は発走前の単勝オッズを主に使い、確定結果で過去成績モデルの確率を補正します（学習件数が不足すると固定係数）。発走15分前の確定に間に合わない場合は未予想です。的中・収益を保証せず、確定済みの買い目は後から変更しません。</p>
  </section>
 
 
@@ -960,7 +960,9 @@ function narRender(data,localCopy=false){
  const calendar=Array.isArray(data?.schedule)?data.schedule.filter(r=>r&&typeof r.id==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(r.date||'')):[];
  const stamp=typeof data?.updated_at==='string'?Date.parse(data.updated_at):NaN;
  const old=Number.isFinite(stamp)&&now.getTime()-stamp>24*60*60*1000;
- const status=['配信元：NAR公式CSV','予想モデル：過去成績による未学習推定'];
+ const learned=data?.learning&&Number.isFinite(Number(data.learning.form_training_races));
+ const status=['配信元：NAR公式CSV',learned?'新規予想：発走前オッズ＋過去成績の確率補正（オッズ欠損時は過去成績のみ）':'予想モデル：旧方式（過去成績による未学習推定）'];
+ if(learned)status.push('確率補正の学習元：照合済み'+Number(data.learning.form_training_races)+'R ／ 発走前オッズの学習元：'+Number(data.learning.market_training_races)+'R');
  if(Number.isFinite(stamp))status.push('最後の新規予想・結果更新：'+new Date(stamp).toLocaleString('ja-JP'));
  if(old)status.push('データが24時間以上更新されていません');
  if(localCopy)status.push('端末内キャッシュから表示中（最大70件のため競馬場別集計が一部になる場合があります）');
@@ -1046,7 +1048,8 @@ function narRender(data,localCopy=false){
   const actual=Date.parse(r.start_at)<Date.now()?'予想固定・発走済み':'予想固定・発走前';
   const trioMultiHit=Array.isArray(r.result)&&trio.some(t=>t.join('-')===[...r.result].sort((a,b)=>a-b).join('-'));
   const simple='';
-  return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></div><div class="muted tiny">発走予定 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ 予想確定 '+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+' ／ 締切 '+esc(frozenCutoffLabel(r))+'</div><div class="nar-line">'+top.map((p,i)=>'<span class="nar-pick">'+(i===0?'◎':i===1?'○':'▲')+' '+esc(p.no)+'番 '+esc(p.name)+' <b>'+narPct(100*Number(p.win_probability))+'</b></span>').join('')+'</div>'+raceInsightHtml(r,'NAR')+'<div class="nar-trio-title">三連複の買い目 <span class="pill">'+trio.length+'点</span></div><div class="nar-trio-list">'+trioTokens(trio)+'</div><div class="nar-trio-note">'+(Array.isArray(r.trio_tickets)?'順位に関係なく3頭が入れば的中。候補上位8点までを発走前に固定。':'旧予想の保存済み三連単候補を順不同に換算（新規予想ではありません）。')+'</div><div class="nar-result">'+simple+'</div>'+purchaseDetailHtml(r)+'<details><summary>三連単候補12点を確認</summary><p>'+tickets.map((t,i)=>esc(Array.isArray(t)?t.join('→'):t)+'（100円）').join(' ／ ')+'</p></details></div>';
+  const modelTag=String(r.model||'').startsWith('form_market_v2')?'新モデル｜発走前オッズ併用':String(r.model||'').startsWith('form_v2')?'新モデル｜オッズなし': '旧モデル｜過去成績のみ';
+  return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></div><div class="muted tiny">発走予定 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ 予想確定 '+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+' ／ 締切 '+esc(frozenCutoffLabel(r))+' ／ '+esc(modelTag)+'</div><div class="nar-line">'+top.map((p,i)=>'<span class="nar-pick">'+(i===0?'◎':i===1?'○':'▲')+' '+esc(p.no)+'番 '+esc(p.name)+' <b>'+narPct(100*Number(p.win_probability))+'</b></span>').join('')+'</div>'+raceInsightHtml(r,'NAR')+'<div class="nar-trio-title">三連複の買い目 <span class="pill">'+trio.length+'点</span></div><div class="nar-trio-list">'+trioTokens(trio)+'</div><div class="nar-trio-note">'+(Array.isArray(r.trio_tickets)?'順位に関係なく3頭が入れば的中。候補上位8点までを発走前に固定。':'旧予想の保存済み三連単候補を順不同に換算（新規予想ではありません）。')+'</div><div class="nar-result">'+simple+'</div>'+purchaseDetailHtml(r)+'<details><summary>三連単候補12点を確認</summary><p>'+tickets.map((t,i)=>esc(Array.isArray(t)?t.join('→'):t)+'（100円）').join(' ／ ')+'</p></details></div>';
  }).join('');
 }
 let narFetching=false,narLastPollAt=0;
