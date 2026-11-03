@@ -567,12 +567,13 @@ def update_data(races, now, previous, paybacks=None, odds_index=None):
                         payout_updated += 1
     # Prevent unbounded site data growth. Keep latest 5000 independently timestamped forecasts.
     predictions = sorted(entries.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)[:5000]
+    model_changed = (previous.get("method") != "新規予想は発走前の単勝オッズと過去成績を融合し、確定済みレースだけで確率を補正。過去の予想は変更しません。的中保証なし。" or previous.get("learning") != calibration)
     return {
         "schema_version": 1, "scope": "NAR地方競馬のみ（中央JRAは対象外）",
         "source": "NAR公式CSVデータ（分析結果のみ表示）",
         "method": "新規予想は発走前の単勝オッズと過去成績を融合し、確定済みレースだけで確率を補正。過去の予想は変更しません。的中保証なし。",
         "learning": calibration,
-        "updated_at": now.isoformat(timespec="seconds") if added or settled or payout_updated or odds_updated or schedule_changed or not previous else previous.get("updated_at"),
+        "updated_at": now.isoformat(timespec="seconds") if added or settled or payout_updated or odds_updated or schedule_changed or model_changed or not previous else previous.get("updated_at"),
         "schedule_updated_at": now.isoformat(timespec="seconds") if schedule_changed or not previous else previous.get("schedule_updated_at"),
         "schedule": calendar,
         "races": predictions, "summary": summary(predictions)
@@ -726,7 +727,9 @@ def main():
         print(f"NAR公式オッズ未取得（予想・結果は続行）: {exc}", file=sys.stderr)
     now = dt.datetime.now(JST)
     out, added, settled_count, payout_count = update_data(races, now, previous, payback_index(tables), odds_index)
-    if added or settled_count or payout_count or out["schedule"] != previous.get("schedule", []) or not DATA_PATH.exists():
+    if (added or settled_count or payout_count or out["schedule"] != previous.get("schedule", [])
+            or out.get("method") != previous.get("method") or out.get("learning") != previous.get("learning")
+            or not DATA_PATH.exists()):
         DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
         DATA_PATH.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"NAR calendar entries: {len(out['schedule'])}; NAR races: {len(races)}, newly predicted: {added}, newly settled: {settled_count}, market/payout updates: {payout_count}; total: {out['summary']['predicted']}, settled: {out['summary']['settled']}")
