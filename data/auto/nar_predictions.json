@@ -2,8 +2,14 @@
   "schema_version": 1,
   "scope": "NAR地方競馬のみ（中央JRAは対象外）",
   "source": "NAR公式CSVデータ（分析結果のみ表示）",
-  "method": "過去成績の縮約率から計算する未学習ヒューリスティック。的中保証なし。",
-  "updated_at": "2026-11-03T21:00:38+09:00",
+  "method": "新規予想は発走前の単勝オッズと過去成績を融合し、確定済みレースだけで確率を補正。過去の予想は変更しません。的中保証なし。",
+  "learning": {
+    "form_alpha": 1.0,
+    "market_weight": 0.8,
+    "form_training_races": 35,
+    "market_training_races": 0
+  },
+  "updated_at": "2026-11-03T21:08:36+09:00",
   "schedule_updated_at": "2026-11-03T10:39:32+09:00",
   "schedule": [
     {
