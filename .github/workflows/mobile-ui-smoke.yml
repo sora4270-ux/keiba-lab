@@ -1,0 +1,32 @@
+name: KEIBA LAB mobile UI smoke test
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'sw.js'
+      - 'race-intel.js'
+      - 'tests/mobile-ui-smoke.cjs'
+      - '.github/workflows/mobile-ui-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install headless Chromium test tools
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Test smartphone navigation, filters and view switches
+        run: node tests/mobile-ui-smoke.cjs
