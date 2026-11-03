@@ -50,13 +50,24 @@ jobs:
           const html=fs.readFileSync('index.html','utf8');
           const fn=html.slice(html.indexOf('function jraDateTime('),html.indexOf('function jraValidRaces('));
           assert.ok(fn.startsWith('function jraDateTime('),'JRA validator unavailable');
-          const jraDateTime=new Function('JRA_VENUES',fn+';return jraDateTime;')(new Set(['東京','中山','京都','阪神','中京','新潟','福島','小倉','札幌','函館']));
+          const forecastOpen=(start)=>{const deadline=Date.parse(start)-10*60000;if(!Number.isFinite(deadline)||Date.now()>=deadline)throw Error('発走10分前の締切超過');};
+          const jraDateTime=new Function('JRA_VENUES','assertForecastOpen',fn+';return jraDateTime;')(new Set(['東京','中山','京都','阪神','中京','新潟','福島','小倉','札幌','函館']),forecastOpen);
           const good={date:'2099-01-01',venue:'東京',race_no:11,start_at:'2099-01-01T15:40:00+09:00'};
           assert.doesNotThrow(()=>jraDateTime(good));
           for(const bad of [{...good,venue:'船橋'},{...good,start_at:'2099-01-01T15:40:00'},{...good,race_no:0},{...good,date:'2099/01/01'},{...good,start_at:'2020-01-01T15:40:00+09:00'}]){
             assert.throws(()=>jraDateTime(bad));
           }
           console.log('PASS: JRA 10 venues, ISO+JST date validation and no past forecasts');
+          const dateFns=html.slice(html.indexOf('function jstRaceToday('),html.indexOf('let narViewedData='));
+          assert.ok(dateFns.startsWith('function jstRaceToday('),'date filter unavailable');
+          const updateRaceDateOptions=new Function('esc',dateFns+';return updateRaceDateOptions;')(x=>String(x));
+          const dateSelect={value:'2026-11-02',innerHTML:''};
+          assert.equal(updateRaceDateOptions(dateSelect,[{date:'2026-11-02'},{date:'2026-11-03'}]),'2026-11-02');
+          assert.ok(dateSelect.innerHTML.includes('2026-11-03'));
+          dateSelect.value='all';
+          assert.equal(updateRaceDateOptions(dateSelect,[]),'all');
+          assert.ok(html.includes('id="nar-view-date"')&&html.includes('id="jra-view-date"'));
+          console.log('PASS: NAR/JRA date filters and historical date selection');
           NODE
       - name: Self-test (no external services)
         run: python scripts/update_nar.py --selftest
