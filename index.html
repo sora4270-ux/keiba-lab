@@ -972,7 +972,7 @@ function narRender(data,localCopy=false){
   const ready=arr.some(x=>x.id===r.id);
   $('quick-next-race').innerHTML='<div><strong>次の発走予定：'+esc(scheduledTime)+' '+esc(r.venue)+' '+esc(r.race_no)+'R</strong><small>'+(ready?'予想確定済み':'買い目未確定・開催情報のみ')+(localCopy?' ／ 保存データを表示中':'')+'</small></div><button type="button" class="btn sm primary" id="quick-open-next">このレースを見る</button>';
  }else{
-  $('quick-next-race').innerHTML='<div><strong>本日のこの先の開催情報はありません</strong><small>開催日を切り替えると過去の予想・結果も確認できます。'+(localCopy?' 現在は保存データを表示中。':'')+'</small></div>';
+  $('quick-next-race').innerHTML='<div><strong>取得済みデータに本日のこれからのレースはありません</strong><small>開催日を切り替えると過去の予想・結果も確認できます。'+(localCopy?' 現在は保存データを表示中。':'')+'</small></div>';
  }
  const venue=updateVenueOptions($('nar-view-venue'),[...arr,...calendar],NAR_VENUES);
  const date=updateRaceDateOptions($('nar-view-date'),[...arr,...calendar]);
@@ -1014,7 +1014,10 @@ function narRender(data,localCopy=false){
  const front=[...upcoming,...futureUnpredicted].sort((a,b)=>Date.parse(a.start_at)-Date.parse(b.start_at));
  const shown=mode==='results'?finished.slice(0,60):[...front.slice(0,40),...pending.slice(0,10),...pastUnpredicted.sort((a,b)=>Date.parse(b.start_at)-Date.parse(a.start_at)).slice(0,10),...finished.slice(0,30)];
  $('nar-count').textContent=mode==='results'?'確定結果 '+finished.length+'R ／ 予想確定 '+viewed.length+'R':'開催情報 '+(viewed.length+unpredicted.length)+'R ／ 予想確定 '+viewed.length+'R ／ 未予想 '+unpredicted.length+'R';
- if(!shown.length){$('nar-races').innerHTML='<div class="empty">'+(mode==='results'?'この条件で確定結果が取得できたレースはまだありません。':'この条件で予想・開催情報はまだ登録されていません。')+'</div>';return;}
+ if(!shown.length){
+  const historical=mode==='results'&&arr.some(r=>Array.isArray(r.result)&&r.result.length===3);
+  $('nar-races').innerHTML='<div class="empty">'+(mode==='results'?'この条件で確定結果が取得できたレースはまだありません。':'この条件で予想・開催情報はまだ登録されていません。')+(historical?'<div style="margin-top:12px"><button type="button" class="btn primary sm" data-show-all-results="nar">全日付・全競馬場の結果を見る</button></div>':'')+'</div>';return;
+ }
  $('nar-races').innerHTML=shown.map(r=>{
   if(r._scheduleOnly){
    const label=Date.parse(r.start_at)-Date.now()>900000?'予想準備中・直前データ確認待ち':'締切到達・未予想';
@@ -1052,7 +1055,7 @@ async function narRefresh(silent=false){
  }catch(e){
   let cached;try{cached=JSON.parse(localStorage.getItem('keiba_lab_nar_auto_preview')||'null');}catch(e){}
   if(cached&&Array.isArray(cached.races)){narRender(cached,true);$('nar-status').textContent+=' ／ 最新版の取得失敗：'+e.message;}
-  else{$('nar-status').textContent='まだ自動予想データを取得できません：'+e.message+'。GitHub Actionsの稼働状況を確認してください。';$('nar-races').innerHTML='<div class="empty">自動予想の初回生成待ちです。地方競馬の公式データ取得が成功すると表示されます。</div>';}
+  else{$('nar-status').textContent='まだ自動予想データを取得できません：'+e.message+'。GitHub Actionsの稼働状況を確認してください。';$('nar-races').innerHTML='<div class="empty">自動予想の初回生成待ちです。地方競馬の公式データ取得が成功すると表示されます。</div>';$('quick-next-race').innerHTML='<div><strong>開催情報が取得できていません</strong><small>地方競馬の更新ボタンから再確認できます。</small></div>';}
  }finally{btn.disabled=false;narFetching=false;}
 }
 $('nar-refresh').addEventListener('click',()=>narRefresh(false));
@@ -1110,7 +1113,10 @@ function jraRender(){
  $('jra-summary').innerHTML=metrics.map(([label,value])=>'<div class="metric"><small>'+esc(label)+'</small><strong>'+esc(value)+'</strong></div>').join('');
  const jraBasket=completeBasket(settled,referenceWager);
  $('jra-roi-total').innerHTML=roiOverview(jraBasket.stats,"5券種の払戻が揃った "+jraBasket.races+"レースのみ集計");$('jra-purchase-total').innerHTML=purchaseBanner(records,venue==="all"?"中央競馬の予想記録":venue+"の予想記録");
- if(!displayed.length){$('jra-list').innerHTML='<div class="empty">'+(mode==='results'?'この条件では確定結果が登録されていません。結果入力または取込後に表示されます。':'まだJRAの予想記録がありません。上の入力欄で出馬表を登録してください。')+'</div>';return;}
+ if(!displayed.length){
+  const historical=mode==='results'&&allRecords.some(r=>Array.isArray(r.result)&&r.result.length===3);
+  $('jra-list').innerHTML='<div class="empty">'+(mode==='results'?'この条件では確定結果が登録されていません。結果入力または取込後に表示されます。':'まだJRAの予想記録がありません。上の入力欄で出馬表を登録してください。')+(historical?'<div style="margin-top:12px"><button type="button" class="btn primary sm" data-show-all-results="jra">全日付・全競馬場の結果を見る</button></div>':'')+'</div>';return;
+ }
  $('jra-list').innerHTML=displayed.slice(0,50).map(r=>{
   const trio=savedTrioList(r),result=r.result,top=Array.isArray(r.top3)?r.top3:[];
   const match=resultMatches(r),multi=result&&trio.some(t=>t.join('-')===[...result].sort((a,b)=>a-b).join('-'));
@@ -1173,6 +1179,12 @@ document.querySelectorAll('[data-jump]').forEach(button=>button.addEventListener
  const target=destination==='nar'?$('nar-automated'):document.querySelector('#jra-center .date-toolbar');
  target?.scrollIntoView({behavior:'smooth',block:'start'});
 }));
+document.addEventListener('click',event=>{
+ const button=event.target.closest('[data-show-all-results]');if(!button)return;
+ const scope=button.dataset.showAllResults;
+ $(scope+'-view-date').value='all';$(scope+'-view-venue').value='all';$(scope+'-view-number').value='all';
+ $(scope+'-view-date').dispatchEvent(new Event('change',{bubbles:true}));
+});
 document.querySelectorAll('[data-reset-scope]').forEach(button=>button.addEventListener('click',()=>{
  const scope=button.dataset.resetScope;
  $(scope+'-view-date').value='today';$(scope+'-view-venue').value='all';$(scope+'-view-number').value='all';
