@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <meta name="description" content="全レース予想、予想の日時記録、単勝・馬連・馬単・三連複・三連単の的中率集計、過去レースからの学習に対応。">
-  <title>KEIBA LAB v3.13 | 日付別レース・自動更新・競馬場別成績</title>
+  <title>KEIBA LAB v3.14 | スマホで見やすい競馬予想</title>
   <style>
     :root{--navy:#0b1628;--navy2:#14243a;--surface:#fff;--bg:#f5f7fb;--ink:#132338;--sub:#677488;--line:#e4eaf2;--green:#087957;--mint:#dff7ec;--blue:#235ad2;--ice:#eaf0ff;--amber:#a65e10;--shadow:0 8px 28px rgba(20,42,75,.075)}
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.65}button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.5}a{color:var(--blue)}
@@ -156,6 +156,35 @@
     .view-mode .field{min-width:180px}
     .view-mode .field select{width:100%;border:1px solid #b8c9e1;border-radius:10px;padding:11px;background:#f0f5ff;color:#173b70;font-weight:800}
     .view-mode .hint-copy{font-size:12px;color:#5c6e85;flex:1;min-width:180px}
+    /* v3.14: mobile-first navigation without changing prediction data */
+    .home-panel{background:#fff;border:1px solid var(--line);border-radius:17px;box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
+    .home-heading{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:5px;margin-bottom:12px}.home-heading strong{font-size:18px}.home-heading span{font-size:12px;color:var(--sub)}
+    .quick-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+    .quick-link{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;min-width:0;padding:13px;border-radius:12px;background:#f5f8fd;border:1px solid #dfe8f4;color:#1c406c;font-weight:800;min-height:72px}
+    .quick-link strong{font-size:14px}.quick-link small{font-size:11px;color:#63768d;font-weight:500}.quick-link:active{background:#e7eefb}
+    .quick-next{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;padding:12px 13px;border:1px solid #d9e9df;border-radius:11px;background:#f4fbf7;font-size:12px}
+    .quick-next strong{display:block;font-size:13px;color:#18523d}.quick-next small{color:#537264}
+    .mode-choices{display:grid;grid-template-columns:1fr 1fr;gap:7px;max-width:420px;flex:1;min-width:210px}
+    .mode-choice{border:1px solid #cbd9eb;border-radius:11px;background:#f5f8fd;color:#355171;min-height:46px;padding:9px 12px;font-weight:800;font-size:14px}
+    .mode-choice[aria-pressed="true"]{background:#14385e;color:#fff;border-color:#14385e}
+    .view-mode>.field{display:none}.mobile-dock{display:none}
+    #nar-automated,#jra-center,#jra-list,.tabs{scroll-margin-top:12px}
+    button:focus-visible,.quick-link:focus-visible{outline:3px solid #65b8f5;outline-offset:3px}
+    @media(max-width:760px){.quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:620px){
+      .top-inner{padding-bottom:34px}.hero{padding-top:15px}.hero h1{font-size:25px;line-height:1.3;margin:6px 0 4px}.hero h1 br{display:none}.hero .eyebrow,.hero p,.caps{display:none}
+      .home-panel{padding:13px;border-radius:13px}.home-heading strong{font-size:16px}.home-heading span{font-size:11px}
+      .quick-link{min-height:62px;padding:10px 11px}.quick-link strong{font-size:13px}.quick-link small{font-size:10px}
+      .view-mode{margin:12px 0}.view-mode .hint-copy{font-size:11px;min-width:0}.mode-choices{max-width:none;min-width:100%}
+      .date-toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+      .date-toolbar .field{min-width:0;max-width:none}.date-toolbar .venue-help{display:none}
+      .date-toolbar .reset-filter{grid-column:1/-1;width:100%;min-height:40px}
+      .mobile-dock{position:fixed;z-index:200;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:6px 5px calc(6px + env(safe-area-inset-bottom));background:rgba(255,255,255,.97);border-top:1px solid #d6e1ec;box-shadow:0 -4px 18px rgba(11,22,40,.1)}
+      .mobile-dock button{border:0;background:transparent;min-width:0;min-height:51px;color:#405873;font-size:10px;font-weight:800;padding:4px 0;border-radius:9px}
+      .mobile-dock button span{display:block;font-size:19px;line-height:1.25;margin-bottom:3px}
+      .mobile-dock button:active{background:#e8f0fd}
+      body{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
+    }
   </style>
 </head>
 <body>
@@ -164,14 +193,24 @@
  <div class="hero"><div class="eyebrow">RACE PREDICTION / MACHINE LEARNING</div><h1>競馬予想を、<br><span>もっと手軽に。</span></h1><p>出馬表を取り込んでレースを選択。単勝オッズだけなら市場支持率、指数がそろえばモデルによる推定を表示。過去レースCSVで学習もできます。</p><div class="caps"><span>◎ レース選択</span><span>◎ 三連単の買い目候補</span><span>◎ データ連携・CSV学習</span><span>◎ 全レース一括予想</span><span>◎ 的中率の追跡</span><span>◎ スマホ対応</span></div></div>
 </div></header>
 <main class="wrap">
+ <section class="home-panel" aria-label="よく使う画面へ移動">
+  <div class="home-heading"><strong>見たい情報をタップ</strong><span>予想と結果をワンタップで切り替え</span></div>
+  <div class="quick-actions">
+   <button type="button" class="quick-link" data-jump="nar" data-display="predictions"><strong>🏇 地方・予想</strong><small>確定した印と買い目</small></button>
+   <button type="button" class="quick-link" data-jump="nar" data-display="results"><strong>🎯 地方・結果</strong><small>的中率と回収率</small></button>
+   <button type="button" class="quick-link" data-jump="jra" data-display="predictions"><strong>🏆 中央・予想</strong><small>保存したJRAの買い目</small></button>
+   <button type="button" class="quick-link" data-jump="jra" data-display="results"><strong>📊 中央・結果</strong><small>確定着順と収支</small></button>
+  </div>
+  <div id="quick-next-race" class="quick-next" aria-live="polite"><span>次の発走予定を確認しています…</span></div>
+ </section>
  <section id="nar-automated" class="panel" aria-label="地方競馬の自動予想と的中率">
    <div class="hrow"><h2>🏇 地方競馬・全レース自動予想</h2><span class="pill">NAR 自動予想</span></div>
    <p class="intro" style="margin-top:10px">地方競馬の公式配布CSVを使い、発走前の予想を保存・結果確定後に照合します。中央競馬（JRA）の入力予想は下の専用欄をご利用ください。</p>
    <div class="controls"><button type="button" class="btn primary sm" id="nar-refresh">最新の予想と結果を表示</button><a class="btn sm" style="text-decoration:none" href="https://www.keiba.go.jp/" target="_blank" rel="noopener noreferrer">地方競馬公式</a></div>
    <p id="nar-status" class="hint" role="status" aria-live="polite">自動予想データを読み込み中...</p>
    <span id="nar-last-check" aria-live="polite">新着レースを画面表示中に約2分ごと確認します。</span>
-   <div class="venue-toolbar date-toolbar"><div class="field"><label for="nar-view-date">開催日で絞り込む</label><select id="nar-view-date"><option value="today">今日</option><option value="all">すべての日付</option></select></div><div class="field"><label for="nar-view-venue">地方競馬場で絞り込む</label><select id="nar-view-venue"><option value="all">全競馬場</option></select></div><span class="venue-help">開催日・競馬場別にレース予想と成績を表示します。</span></div>
-   <div class="view-mode"><div class="field"><label for="nar-view-mode">表示内容を選択</label><select id="nar-view-mode"><option value="predictions">レース予想</option><option value="results">レース結果</option></select></div><span class="hint-copy">予想は確定買い目のみ、結果は着順・的中・払戻・回収率を表示します。</span></div>
+   <div class="venue-toolbar date-toolbar"><div class="field"><label for="nar-view-date">開催日</label><select id="nar-view-date"><option value="today">今日</option><option value="all">すべての日付</option></select></div><div class="field"><label for="nar-view-venue">競馬場</label><select id="nar-view-venue"><option value="all">全競馬場</option></select></div><div class="field"><label for="nar-view-number">レース番号</label><select id="nar-view-number"><option value="all">全レース</option><option value="1">1R</option><option value="2">2R</option><option value="3">3R</option><option value="4">4R</option><option value="5">5R</option><option value="6">6R</option><option value="7">7R</option><option value="8">8R</option><option value="9">9R</option><option value="10">10R</option><option value="11">11R</option><option value="12">12R</option></select></div><button type="button" class="btn sm reset-filter" data-reset-scope="nar">今日・全競馬場に戻す</button></div>
+   <div class="view-mode"><div class="field"><label for="nar-view-mode">表示内容を選択</label><select id="nar-view-mode"><option value="predictions">レース予想</option><option value="results">レース結果</option></select></div><div class="mode-choices" data-mode-select="nar-view-mode" role="group" aria-label="地方競馬の表示内容"><button type="button" class="mode-choice" data-mode="predictions" aria-pressed="true">🏇 レース予想</button><button type="button" class="mode-choice" data-mode="results" aria-pressed="false">🎯 レース結果</button></div><span class="hint-copy">予想は確定買い目のみ、結果は着順・的中・払戻・回収率を表示します。</span></div>
    <div id="nar-results-summary" hidden>
    <div id="nar-kpis" class="metric-grid" aria-label="自動予想の的中率"></div>
     <div class="hrow" style="margin-top:16px"><h3 style="margin:0">参考回収率・収支</h3><label class="field" for="nar-roi-period"><span class="tiny muted">集計期間</span><select class="roi-select" id="nar-roi-period"><option value="all">全期間</option><option value="today">本日</option><option value="7d">直近7日間</option><option value="30d">直近30日間</option></select></label></div>
@@ -210,8 +249,8 @@
   <p class="tiny muted">脚質は「逃げ・先行・差し・追込」から任意入力。未入力ならペース判定不可と表示します。人気順は入力した単勝オッズから算出します。</p>
   <p id="jra-message" class="hint" role="status" aria-live="polite">JRAの出走馬は自動では入力されません。日付・発走時刻・馬番などを確認してください。</p>
   <div class="hrow" style="margin-top:17px"><h3 style="margin:0">③ 中央競馬の予想・的中率・払戻金</h3><button type="button" class="btn sm" id="jra-results-btn">確定結果を入力・取込</button></div>
-   <div class="venue-toolbar date-toolbar"><div class="field"><label for="jra-view-date">開催日で絞り込む</label><select id="jra-view-date"><option value="today">今日</option><option value="all">すべての日付</option></select></div><div class="field"><label for="jra-view-venue">中央競馬場で絞り込む</label><select id="jra-view-venue"><option value="all">全競馬場</option></select></div><span class="venue-help">保存済みのJRA予想も日付別に表示します。</span></div>
-  <div class="view-mode"><div class="field"><label for="jra-view-mode">表示内容を選択</label><select id="jra-view-mode"><option value="predictions">レース予想</option><option value="results">レース結果</option></select></div><span class="hint-copy">予想と結果は別画面で切り替えられます。</span></div>
+   <div class="venue-toolbar date-toolbar"><div class="field"><label for="jra-view-date">開催日</label><select id="jra-view-date"><option value="today">今日</option><option value="all">すべての日付</option></select></div><div class="field"><label for="jra-view-venue">競馬場</label><select id="jra-view-venue"><option value="all">全競馬場</option></select></div><div class="field"><label for="jra-view-number">レース番号</label><select id="jra-view-number"><option value="all">全レース</option><option value="1">1R</option><option value="2">2R</option><option value="3">3R</option><option value="4">4R</option><option value="5">5R</option><option value="6">6R</option><option value="7">7R</option><option value="8">8R</option><option value="9">9R</option><option value="10">10R</option><option value="11">11R</option><option value="12">12R</option></select></div><button type="button" class="btn sm reset-filter" data-reset-scope="jra">今日・全競馬場に戻す</button></div>
+  <div class="view-mode"><div class="field"><label for="jra-view-mode">表示内容を選択</label><select id="jra-view-mode"><option value="predictions">レース予想</option><option value="results">レース結果</option></select></div><div class="mode-choices" data-mode-select="jra-view-mode" role="group" aria-label="中央競馬の表示内容"><button type="button" class="mode-choice" data-mode="predictions" aria-pressed="true">🏇 レース予想</button><button type="button" class="mode-choice" data-mode="results" aria-pressed="false">🎯 レース結果</button></div><span class="hint-copy">予想と結果は別画面で切り替えられます。</span></div>
   <div id="jra-results-summary" hidden>
   <div id="jra-summary" class="jra-summary" aria-label="JRAの的中率と回収率"></div>
     <div class="hrow" style="margin-top:14px"><h3 style="margin:0">中央競馬・全券種合計の参考回収率</h3></div>
@@ -340,8 +379,15 @@
  <div class="panel"><h2>各項目の意味</h2><ul class="guide-list"><li><b>近走指数（0〜100）</b>：過去3〜5走の着差・レース水準などから自身で統一基準で算出した能力値。</li><li><b>距離適性（1〜5）</b>：今回の距離に合うほど高評価。</li><li><b>馬場適性（1〜5）</b>：今回の良・稍重・重・不良などへの相性。</li><li><b>騎手勝率（%）</b>：同じ集計期間で算出した騎手の勝率。</li><li><b>調教評価（1〜5）</b>：追い切りや近況からの統一基準での評価。</li><li><b>単勝オッズ</b>：直近で確認した数値を入力。オッズ補正をONにすると推定勝率へ市場情報を混ぜます。</li></ul></div>
  <div class="panel"><h2>重要な注意点</h2><p class="muted">このアプリは予測の検証とデータ分析を目的としたツールです。初期状態は開発者が設定した仮の重みであり、機械学習済みではありません。学習後も予測値の適切な校正や検証が必要であり、勝率・買い目の的中や利益は保証しません。出馬表・オッズは、ユーザー入力や許諾済みデータフィードで取り込みます。地方競馬の公式配布CSVに基づく自動予想機能を追加しました。中央競馬の公式データ自動取得は未対応です。実際の馬券は20歳以上が法律・施設のルールに従い、生活費に影響しない範囲でご自身の判断で購入してください。</p></div></section>
  <div class="panel" style="margin-top:10px"><strong>Ver.3.1の追加機能</strong><p class="muted tiny">「全レース・的中率」で取り込んだレースを一括予想し、予想日時を保存。確定結果をCSV/JSONまたは手入力で照合すると5券種の的中率が出ます。確定払戻金を登録した対象レースでは参考回収率も表示します。予想の自動取得・定期実行は、許諾済みの配信先と常時稼働環境が必要です。</p></div>
- <footer class="footer">KEIBA LAB v3.11 ・ ブラウザだけで動く競馬分析ツール ・ 投票機能なし</footer>
+ <footer class="footer">KEIBA LAB v3.14 ・ ブラウザだけで動く競馬分析ツール ・ 投票機能なし</footer>
 </main>
+<nav class="mobile-dock" aria-label="スマホ用クイックメニュー">
+ <button type="button" data-jump="nar" data-display="predictions"><span aria-hidden="true">🏇</span>地方予想</button>
+ <button type="button" data-jump="nar" data-display="results"><span aria-hidden="true">🎯</span>地方結果</button>
+ <button type="button" data-jump="jra" data-display="predictions"><span aria-hidden="true">🏆</span>中央予想</button>
+ <button type="button" data-jump="jra" data-display="results"><span aria-hidden="true">📊</span>中央結果</button>
+ <button type="button" data-jump="ledger"><span aria-hidden="true">📈</span>記録・成績</button>
+</nav>
 <div class="toast" id="toast" role="status"></div>
 <input type="file" id="result-file" accept=".csv,.json,text/csv,application/json" hidden><input type="file" id="ledger-file" accept=".json,application/json" hidden><input type="file" id="feed-file" accept=".json,.csv,application/json,text/csv" hidden><input type="file" id="race-file" accept=".csv,text/csv" hidden><input type="file" id="history-file" accept=".csv,text/csv" hidden><input type="file" id="model-file" accept=".json,application/json" hidden>
 <script src="./race-intel.js"></script>
