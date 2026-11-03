@@ -228,6 +228,7 @@
     <details class="venue-breakdown"><summary>地方競馬場別の的中率・回収率を一覧で比較</summary><div class="scroll" id="nar-venue-breakdown"></div><p class="section-note">取得済み記録から集計。5券種回収率は5券種の払戻が揃ったレースのみ対象です。</p></details>
    </div>
    <div class="hrow"><h3 style="margin:15px 0 8px" id="nar-list-title">レース予想</h3><span id="nar-count" class="muted tiny"></span></div>
+   <div id="nar-model-comparison" class="roi-mini" aria-live="polite">新旧モデルの成績を読み込み中...</div>
    <div id="nar-races"><div class="empty">データ読み込み待ち</div></div>
    <p class="section-note">地方競馬の単勝オッズ・人気は公式オッズCSVを取得できた場合のみ表示。未取得の場合は空欄とし、保存済みの買い目には影響しません。</p>
    <p class="section-note">確定済みレースはNAR公式CSVに払戻が掲載されると券種別の確定金額（100円あたり）と、保存済み買い目を各100円購入した場合の参考収支を表示します。払戻未取得時は金額を表示しません。</p>
@@ -994,6 +995,19 @@ function narRender(data,localCopy=false){
  const raceNumber=$('nar-view-number').value;
  const matchesNumber=r=>raceNumber==='all'||Number(r.race_no)===Number(raceNumber);
  const viewed=arr.filter(r=>(venue==='all'||r.venue===venue)&&dateMatches(r)&&matchesNumber(r));
+ const modelStats=[
+  ['旧モデル',r=>!String(r.model||'').startsWith('form_market_v2')&&!String(r.model||'').startsWith('form_v2')],
+  ['新モデル：オッズ併用',r=>String(r.model||'').startsWith('form_market_v2')],
+  ['新モデル：オッズ未取得',r=>String(r.model||'').startsWith('form_v2')]
+ ].map(([label,match])=>{
+  const verified=viewed.filter(r=>Array.isArray(r.result)&&r.result.length===3&&match(r));
+  if(!verified.length)return label+'：結果待ち';
+  const win=verified.filter(r=>narHitRecord(r,'win')).length;
+  const trio=verified.filter(r=>narHitRecord(r,'trio_multi')).length;
+  const rate=n=>(n/verified.length*100).toFixed(1)+'%';
+  return label+'：'+verified.length+'R ／ 本命 '+rate(win)+' ／ 三連複8点以内 '+rate(trio)+(verified.length<30?'（少数・参考）':'');
+ });
+ $('nar-model-comparison').textContent='新旧モデルの結果比較（選択した開催日・競馬場）：'+modelStats.join('　｜　');
  const scheduled=calendar.filter(r=>(venue==='all'||r.venue===venue)&&dateMatches(r)&&matchesNumber(r));
  let ss=data?.summary||{};
  const cards=[['win','単勝・本命1点'],['quinella','馬連・上位2頭'],['exacta','馬単・上位2頭'],['trio','三連複・本線1点'],['trio_multi','三連複・候補最大8点'],['trifecta','三連単・12点']];
