@@ -402,6 +402,28 @@ def update_data(races, now, previous, paybacks=None, odds_index=None):
     if not isinstance(old, list):
         raise ValueError("保存された予想履歴の形式が不正です")
     entries = {p["id"]: p for p in old if isinstance(p, dict) and p.get("id")}
+    # A lightweight race calendar is published independently of frozen picks.
+    # The public feed contains only date/venue/race/time metadata, never raw CSV.
+    past_schedule = previous.get("schedule", [])
+    if not isinstance(past_schedule, list):
+        past_schedule = []
+    schedule_by_id = {
+        x["id"]: x for x in past_schedule
+        if isinstance(x, dict) and isinstance(x.get("id"), str)
+        and isinstance(x.get("date"), str)
+    }
+    for race in races:
+        schedule_by_id[race["id"]] = {
+            "id": race["id"], "date": race["date"], "venue": race["venue"],
+            "race_no": race["race_no"], "name": race["name"],
+            "start_at": race["start"].isoformat(timespec="minutes")
+        }
+    oldest_date = (now.date() - dt.timedelta(days=35)).isoformat()
+    calendar = sorted(
+        (x for x in schedule_by_id.values() if x["date"] >= oldest_date),
+        key=lambda x: (x["date"], x["venue"], x["race_no"])
+    )[-1200:]
+    schedule_changed = calendar != previous.get("schedule", [])
     added = 0
     settled = 0
     payout_updated = 0
@@ -450,7 +472,9 @@ def update_data(races, now, previous, paybacks=None, odds_index=None):
         "schema_version": 1, "scope": "NAR地方競馬のみ（中央JRAは対象外）",
         "source": "NAR公式CSVデータ（分析結果のみ表示）",
         "method": "過去成績の縮約率から計算する未学習ヒューリスティック。的中保証なし。",
-        "updated_at": now.isoformat(timespec="seconds") if added or settled or payout_updated or odds_updated or not previous else previous.get("updated_at"),
+        "updated_at": now.isoformat(timespec="seconds") if added or settled or payout_updated or odds_updated or schedule_changed or not previous else previous.get("updated_at"),
+        "schedule_updated_at": now.isoformat(timespec="seconds") if schedule_changed or not previous else previous.get("schedule_updated_at"),
+        "schedule": calendar,
         "races": predictions, "summary": summary(predictions)
     }, added, settled, payout_updated + odds_updated
 
@@ -481,6 +505,8 @@ def selftest():
     assert len(races) == 1
     out, added, settled_count, payout_count = update_data(races, now, {})
     assert added == 1 and settled_count == 0 and out["summary"]["settled"] == 0
+    assert len(out["schedule"]) == 1 and out["schedule"][0]["date"] == "2026-11-02"
+    assert out["schedule"][0]["start_at"] == "2026-11-02T15:40+09:00"
     pre = out["races"][0]
     assert (dt.datetime.fromisoformat(pre["predicted_at"]) <=
             dt.datetime.fromisoformat(pre["cutoff_at"]))
@@ -507,6 +533,8 @@ def selftest():
     out3, a, s, p = update_data(races, late, out2)
     assert a == 0 and s == 0 and out3["races"][0]["predicted_at"] == pre["predicted_at"]
     assert update_data(races, late, {})[1] == 0
+    assert len(update_data(races, late, {})[0]["schedule"]) == 1
+    assert update_data(races, late, {})[0]["races"] == []
     # A verified payback can be added in a subsequent refresh.
     payrow = [""] * 54
     payrow[0], payrow[1], payrow[2] = "門別", "20261102", "1"
@@ -574,10 +602,10 @@ def main():
     except Exception as exc:
         print(f"NAR公式オッズ未取得（予想・結果は続行）: {exc}", file=sys.stderr)
     out, added, settled_count, payout_count = update_data(races, now, previous, payback_index(tables), odds_index)
-    if added or settled_count or payout_count or not DATA_PATH.exists():
+    if added or settled_count or payout_count or out["schedule"] != previous.get("schedule", []) or not DATA_PATH.exists():
         DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
         DATA_PATH.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"NAR races: {len(races)}, newly predicted: {added}, newly settled: {settled_count}, market/payout updates: {payout_count}; total: {out['summary']['predicted']}, settled: {out['summary']['settled']}")
+    print(f"NAR calendar entries: {len(out['schedule'])}; NAR races: {len(races)}, newly predicted: {added}, newly settled: {settled_count}, market/payout updates: {payout_count}; total: {out['summary']['predicted']}, settled: {out['summary']['settled']}")
 
 
 if __name__ == "__main__":
