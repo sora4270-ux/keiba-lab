@@ -983,7 +983,7 @@ function narRender(data,localCopy=false){
  const scheduled=calendar.filter(r=>(venue==='all'||r.venue===venue)&&dateMatches(r)&&matchesNumber(r));
  let ss=data?.summary||{};
  const cards=[['win','単勝・本命1点'],['quinella','馬連・上位2頭'],['exacta','馬単・上位2頭'],['trio','三連複・本線1点'],['trio_multi','三連複・候補最大8点'],['trifecta','三連単・12点']];
- if(venue!=='all'||date!=='all'){
+ if(venue!=='all'||date!=='all'||raceNumber!=='all'){
   const settled=settledOnly(viewed),multi=settled.filter(r=>savedTrioList(r).length>0);
   ss={predicted:viewed.length,settled:settled.length,pending:viewed.length-settled.length,trio_multi_settled:multi.length};
   for(const [key] of cards){
@@ -992,7 +992,7 @@ function narRender(data,localCopy=false){
   }
  }
  const den=Number(ss.settled)||0;
- $('nar-venue-breakdown').innerHTML=venueBreakdownHtml(arr.filter(dateMatches),narHitRecord,narReferenceWager);
+ $('nar-venue-breakdown').innerHTML=venueBreakdownHtml(arr.filter(r=>dateMatches(r)&&matchesNumber(r)),narHitRecord,narReferenceWager);
  $('nar-kpis').innerHTML='<div class="metric"><small>予想記録</small><strong>'+Number(ss.predicted??arr.length).toLocaleString('ja-JP')+'件</strong><small>結果照合 '+den+'件 ／ 結果待ち '+Number(ss.pending||0)+'件</small></div>'+cards.map(([key,label])=>'<div class="metric"><small>'+label+'</small><strong>'+narPct(ss[key])+'</strong><small>母数：照合済み '+(key==='trio_multi'?Number(ss.trio_multi_settled||0):den)+'レース</small></div>').join('');
  const period=$("nar-roi-period").value;
  const roiRaces=settledOnly(narPeriodRaces(viewed,period));
@@ -1096,7 +1096,7 @@ function jraRender(){
  $('jra-results-summary').hidden=mode!=='results';
  const displayed=forecastResultRows(records,mode);
  const settled=settledOnly(records),n=settled.length;
- $('jra-venue-breakdown').innerHTML=venueBreakdownHtml(allRecords,jraHitRecord,referenceWager);
+ $('jra-venue-breakdown').innerHTML=venueBreakdownHtml(allRecords.filter(r=>raceNumber==='all'||Number(r.raceNo??r.race_no)===Number(raceNumber)),jraHitRecord,referenceWager);
  const ratio=(type)=>{
   if(!n)return '—';
   const hits=settled.filter(r=>{
