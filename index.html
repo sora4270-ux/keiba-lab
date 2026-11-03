@@ -1026,6 +1026,9 @@ function jraRender(){
  const venue=updateVenueOptions($('jra-view-venue'),allRecords,[...JRA_VENUES]);
  const date=updateRaceDateOptions($('jra-view-date'),allRecords);
  const records=allRecords.filter(r=>(venue==='all'||r.venue===venue)&&(date==='all'||r.date===date));
+ const mode=$('jra-view-mode').value;
+ $('jra-results-summary').hidden=mode!=='results';
+ const displayed=forecastResultRows(records,mode);
  const settled=settledOnly(records),n=settled.length;
  $('jra-venue-breakdown').innerHTML=venueBreakdownHtml(allRecords,jraHitRecord,referenceWager);
  const ratio=(type)=>{
@@ -1041,11 +1044,16 @@ function jraRender(){
  $('jra-summary').innerHTML=metrics.map(([label,value])=>'<div class="metric"><small>'+esc(label)+'</small><strong>'+esc(value)+'</strong></div>').join('');
  const jraBasket=completeBasket(settled,referenceWager);
  $('jra-roi-total').innerHTML=roiOverview(jraBasket.stats,"5券種の払戻が揃った "+jraBasket.races+"レースのみ集計");$('jra-purchase-total').innerHTML=purchaseBanner(records,venue==="all"?"中央競馬の予想記録":venue+"の予想記録");
- if(!records.length){$('jra-list').innerHTML='<div class="empty">'+(venue==='all'?'まだJRAの予想記録がありません。':esc(venue)+'の予想記録はまだありません。')+'上の入力欄で出馬表を登録してください。</div>';return;}
- $('jra-list').innerHTML=records.slice(0,20).map(r=>{
+ if(!displayed.length){$('jra-list').innerHTML='<div class="empty">'+(mode==='results'?'この条件では確定結果が登録されていません。結果入力または取込後に表示されます。':'まだJRAの予想記録がありません。上の入力欄で出馬表を登録してください。')+'</div>';return;}
+ $('jra-list').innerHTML=displayed.slice(0,50).map(r=>{
   const trio=savedTrioList(r),result=r.result,top=Array.isArray(r.top3)?r.top3:[];
   const match=resultMatches(r),multi=result&&trio.some(t=>t.join('-')===[...result].sort((a,b)=>a-b).join('-'));
-  return '<div class="jra-card"><div class="jra-card-head"><strong>'+esc(r.date+' '+r.venue+' '+(r.raceNo||'')+'R')+'</strong><span class="pill '+(result?'':'gray')+'">'+(result?'確定 '+esc(result.join(' → ')):'予想確定・固定済み')+'</span></div><small>'+esc(r.name)+' ／ 予想確定 '+esc(new Date(r.lockedAt||r.createdAt).toLocaleString('ja-JP'))+' ／ 締切 '+esc(forecastCutoffLabel(r.startAt))+(r.marketMode?' ／ オッズ参照（学習AIではない）':' ／ 指数モデル')+'</small>'+raceInsightHtml(r,'JRA')+'<div class="nar-trio-title">三連複 '+trio.length+'点 '+(result?(multi?'<span class="hit">的中</span>':'<span class="miss">不的中</span>'):'')+'</div><div class="nar-trio-list">'+trioTokens(trio)+'</div>'+purchaseDetailHtml(r)+'<details style="margin-top:9px"><summary style="cursor:pointer">三連単 '+r.tickets.length+'点の買い目を見る '+(result?(match?.trifecta?'（的中）':'（不的中）'):'')+'</summary><p class="tiny muted">'+r.tickets.map(x=>esc(x.join('→'))+'（100円）').join(' ／ ')+'</p></details><div class="nar-result"><b>確定払戻（100円あたり）</b><div>'+payoutDetails(r)+'</div><div class="tiny muted">参考収支（各買い目100円）：'+profitDetails(r)+'</div></div><p class="tiny muted">◎ '+esc(top[0]??'—')+' ／ ○ '+esc(top[1]??'—')+' ／ ▲ '+esc(top[2]??'—')+'</p></div>';
+  if(mode==='results'){
+   const head='<div class="jra-card-head"><strong>'+esc(r.date+' '+r.venue+' '+(r.raceNo||'')+'R')+'</strong><span class="pill">確定結果 '+esc(result.join(' → '))+'</span></div>';
+   const forecast='◎ '+esc(top[0]??'—')+' ／ ○ '+esc(top[1]??'—')+' ／ ▲ '+esc(top[2]??'—');
+   return '<div class="jra-card">'+head+'<div class="nar-result">実際の1〜3着：<b>'+esc(result.join(' → '))+'</b><p class="tiny muted">当初の予想：'+forecast+'</p><p>単勝：'+(match?.win?'<span class="hit">的中</span>':'<span class="miss">不的中</span>')+' ／ 三連複：'+(multi?'<span class="hit">的中</span>':'<span class="miss">不的中</span>')+' ／ 三連単：'+(match?.trifecta?'<span class="hit">的中</span>':'<span class="miss">不的中</span>')+'</p></div>'+purchaseDetailHtml(r)+'<div class="nar-result"><b>確定払戻（100円あたり）</b><div>'+payoutDetails(r)+'</div><div class="tiny muted">参考収支（各買い目100円）：'+profitDetails(r)+'</div></div></div>';
+  }
+  return '<div class="jra-card"><div class="jra-card-head"><strong>'+esc(r.date+' '+r.venue+' '+(r.raceNo||'')+'R')+'</strong><span class="pill gray">予想確定・固定済み</span></div><small>'+esc(r.name)+' ／ 予想確定 '+esc(new Date(r.lockedAt||r.createdAt).toLocaleString('ja-JP'))+' ／ 締切 '+esc(frozenCutoffLabel(r))+(r.marketMode?' ／ オッズ参照（学習AIではない）':' ／ 指数モデル')+'</small>'+raceInsightHtml(r,'JRA')+'<div class="nar-trio-title">三連複 '+trio.length+'点</div><div class="nar-trio-list">'+trioTokens(trio)+'</div>'+purchaseDetailHtml(r)+'<details style="margin-top:9px"><summary style="cursor:pointer">三連単 '+r.tickets.length+'点の買い目を見る</summary><p class="tiny muted">'+r.tickets.map(x=>esc(x.join('→'))+'（100円）').join(' ／ ')+'</p></details><p class="tiny muted">◎ '+esc(top[0]??'—')+' ／ ○ '+esc(top[1]??'—')+' ／ ▲ '+esc(top[2]??'—')+'</p></div>';
  }).join('');
 }
 $('jra-view-venue').addEventListener('change',jraRender);
