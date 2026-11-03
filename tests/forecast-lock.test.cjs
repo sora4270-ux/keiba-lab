@@ -8,7 +8,7 @@ const between = (from, to) => {
   assert.ok(start >= 0 && finish > start, 'Missing test section: '+from);
   return html.slice(start, finish);
 };
-const lock = between('const FORECAST_LOCK_MINUTES=10;', "const LEDGER_KEY=");
+const lock = between('const FORECAST_LOCK_MINUTES=15;', "const LEDGER_KEY=");
 const jra = between('function jraDateTime(', 'function jraValidRaces(');
 const snapshot = between('function makeSnapshot(', 'function addPredictions(');
 const save = between('function addPredictions(', 'function batchPredict(');
@@ -30,11 +30,11 @@ const source = [
 ].join('\n');
 const api = new Function(source)();
 const start='2026-11-07T15:40:00+09:00';
-const cutoff=Date.parse('2026-11-07T15:30:00+09:00');
+const cutoff=Date.parse('2026-11-07T15:25:00+09:00');
 assert.equal(api.forecastCutoffMillis(start),cutoff);
 assert.doesNotThrow(()=>api.assertForecastOpen(start,cutoff-1));
-assert.throws(()=>api.assertForecastOpen(start,cutoff),/10分前/);
-assert.throws(()=>api.assertForecastOpen(start,cutoff+1),/10分前/);
+assert.throws(()=>api.assertForecastOpen(start,cutoff),/15分前/);
+assert.throws(()=>api.assertForecastOpen(start,cutoff+1),/15分前/);
 assert.throws(()=>api.assertForecastOpen(''),/発走日時は必須/);
 assert.throws(()=>api.assertForecastOpen('2026-11-07T15:40:00'),/発走日時は必須/);
 const valid={id:'future-R11',name:'実レース',venue:'東京',race_no:11};
@@ -48,16 +48,16 @@ const horses=[
   {no:3,name:'Horse C',odds:9.5}
 ];
 const race=(delta,id='test')=>({...valid,id,date:jstDate(now+delta),start_at:isoAt(now+delta),horses});
-assert.throws(()=>api.makeSnapshot(race(9*60*1000),'licensed feed'),/10分前/);
-assert.throws(()=>api.makeSnapshot({...race(11*60*1000),start_at:''},'licensed feed'),/発走日時は必須/);
-const available=api.makeSnapshot(race(15*60*1000),'licensed feed');
-assert.equal(available.cutoffAt,new Date(Date.parse(available.startAt)-600000).toISOString());
+assert.throws(()=>api.makeSnapshot(race(14*60*1000),'licensed feed'),/15分前/);
+assert.throws(()=>api.makeSnapshot({...race(16*60*1000),start_at:''},'licensed feed'),/発走日時は必須/);
+const available=api.makeSnapshot(race(16*60*1000),'licensed feed');
+assert.equal(available.cutoffAt,new Date(Date.parse(available.startAt)-900000).toISOString());
 assert.ok(Date.parse(available.lockedAt)<Date.parse(available.cutoffAt));
 api.addPredictions([available]);
 assert.equal(api.ledger.length,1);
-assert.throws(()=>api.makeSnapshot(race(15*60*1000),'licensed feed'),/上書き不可/);
+assert.throws(()=>api.makeSnapshot(race(16*60*1000),'licensed feed'),/上書き不可/);
 assert.throws(()=>api.addPredictions([{
-  ...available,key:'late|future',startAt:isoAt(now+9*60*1000)
-}]),/10分前/);
+  ...available,key:'late|future',startAt:isoAt(now+14*60*1000)
+}]),/15分前/);
 assert.equal(api.ledger.length,1);
-console.log('PASS: T-10 boundary, JRA validation, manual/feed snapshot and final persistence guard');
+console.log('PASS: T-15 boundary, JRA validation, manual/feed snapshot and final persistence guard');

@@ -28,7 +28,10 @@ MAX_DOWNLOAD = 30 * 1024 * 1024
 MAX_FILE = 20 * 1024 * 1024
 TRACK_FIELDS = ("競馬場", "日付", "レース番号")
 BET_TYPES = ("win", "quinella", "exacta", "trio", "trifecta")
-FORECAST_LOCK_BEFORE_START = dt.timedelta(minutes=10)
+FORECAST_LOCK_BEFORE_START = dt.timedelta(minutes=15)
+# Re-evaluate current official inputs on scheduled runs; only publish
+# within the T-20 to T-15 window. GitHub Actions may be delayed.
+FORECAST_FINALIZATION_WINDOW = dt.timedelta(minutes=5)
 
 
 def as_int(value):
@@ -228,7 +231,7 @@ def odds_market_index(zip_data):
 def forecast(race, timestamp):
     deadline = race["start"] - FORECAST_LOCK_BEFORE_START
     if timestamp >= deadline:
-        raise ValueError("発走10分前を過ぎたレースの予想は新規作成しません")
+        raise ValueError("発走15分前以降のレースの予想は新規作成しません")
     horses = race["horses"]
     raw_scores = []
     for h in horses:
@@ -435,7 +438,10 @@ def update_data(races, now, previous, paybacks=None, odds_index=None):
         is_new = ident not in entries
         if is_new:
             # A forecast made after the race or shortly before off is not valid.
-            if now >= race["start"] - FORECAST_LOCK_BEFORE_START:
+            deadline = race["start"] - FORECAST_LOCK_BEFORE_START
+            # Do not publish early; calculate using the latest official inputs.
+            # Do not backfill when the T-20 to T-15 run was missed.
+            if not (deadline - FORECAST_FINALIZATION_WINDOW <= now < deadline):
                 continue
             # Strictly exclude races that already report results.
             if any(h["rank"] in (1, 2, 3) for h in race["horses"]):
@@ -492,7 +498,7 @@ def fetch_daily_zip(url=BASE_URL, max_download=MAX_DOWNLOAD):
 
 
 def selftest():
-    now = dt.datetime(2026, 11, 2, 9, 0, tzinfo=JST)
+    now = dt.datetime(2026, 11, 2, 15, 22, tzinfo=JST)
     horse_template = []
     for no in range(1, 9):
         row = [""] * 36
@@ -503,6 +509,8 @@ def selftest():
     row[0], row[1], row[2], row[3] = "門別", "20261102", "1", "1540"
     races = parse_races({"racelist": [(row, {})], "horselist": horse_template})
     assert len(races) == 1
+    early, early_added, _, _ = update_data(races, now - dt.timedelta(minutes=15), {})
+    assert early_added == 0 and early["races"] == [] and len(early["schedule"]) == 1
     out, added, settled_count, payout_count = update_data(races, now, {})
     assert added == 1 and settled_count == 0 and out["summary"]["settled"] == 0
     assert len(out["schedule"]) == 1 and out["schedule"][0]["date"] == "2026-11-02"
@@ -511,13 +519,14 @@ def selftest():
     assert (dt.datetime.fromisoformat(pre["predicted_at"]) <=
             dt.datetime.fromisoformat(pre["cutoff_at"]))
     assert pre["locked_at"] == pre["predicted_at"]
-    for delta in (dt.timedelta(minutes=10), dt.timedelta(minutes=9)):
+    assert forecast(races[0], races[0]["start"] - dt.timedelta(minutes=16))["top3"]
+    for delta in (dt.timedelta(minutes=15), dt.timedelta(minutes=14)):
         try:
             forecast(races[0], races[0]["start"] - delta)
         except ValueError:
             pass
         else:
-            raise AssertionError("10分前以降の予想作成が許可されました")
+            raise AssertionError("15分前以降の予想作成が許可されました")
     assert len(pre["tickets"]) == 12 and abs(sum(x["win_probability"] for x in pre["top3"])) < 1.001
     assert len(pre["trio_tickets"]) == 8
     assert all(ticket == sorted(ticket) and len(ticket) == len(set(ticket)) == 3 for ticket in pre["trio_tickets"])
@@ -582,14 +591,15 @@ def selftest():
     assert update_data(races, late, again, paybacks, market)[3] == 0
     assert "ranking" in pre and len(pre["ranking"]) == len(races[0]["horses"])
     print("PASS: official NAR single-win odds, popularity and frozen ranking")
-    print("PASS: frozen pre-race picks, result scoring, verified NAR 5-type payouts, delayed enrichment")
+    print("PASS: T-15 cutoff, finalisation window, frozen picks, result scoring and verified payouts")
 
 
 def main():
     if "--selftest" in sys.argv:
         selftest()
         return
-    now = dt.datetime.now(JST)
+    # Capture the clock AFTER network fetches, so a slow ZIP download cannot
+    # produce forecasts timestamped before the T-15 cutoff retroactively.
     source_bytes = fetch_daily_zip()
     tables = load_zip_tables(source_bytes)
     races = parse_races(tables)
@@ -601,6 +611,7 @@ def main():
         odds_index = odds_market_index(fetch_daily_zip(ODDS_URL, MAX_ODDS_DOWNLOAD))
     except Exception as exc:
         print(f"NAR公式オッズ未取得（予想・結果は続行）: {exc}", file=sys.stderr)
+    now = dt.datetime.now(JST)
     out, added, settled_count, payout_count = update_data(races, now, previous, payback_index(tables), odds_index)
     if added or settled_count or payout_count or out["schedule"] != previous.get("schedule", []) or not DATA_PATH.exists():
         DATA_PATH.parent.mkdir(parents=True, exist_ok=True)

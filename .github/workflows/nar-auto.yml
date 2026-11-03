@@ -9,6 +9,7 @@ on:
       - 'tests/roi.test.cjs'
       - 'tests/race-intel.test.cjs'
       - 'tests/forecast-lock.test.cjs'
+      - 'tests/view-switch.test.cjs'
       - 'race-intel.js'
   schedule:
     # UTC 00:00-13:55 = JST 09:00-22:55; GitHub may delay scheduled jobs.
@@ -50,7 +51,7 @@ jobs:
           const html=fs.readFileSync('index.html','utf8');
           const fn=html.slice(html.indexOf('function jraDateTime('),html.indexOf('function jraValidRaces('));
           assert.ok(fn.startsWith('function jraDateTime('),'JRA validator unavailable');
-          const forecastOpen=(start)=>{const deadline=Date.parse(start)-10*60000;if(!Number.isFinite(deadline)||Date.now()>=deadline)throw Error('発走10分前の締切超過');};
+          const forecastOpen=(start)=>{const deadline=Date.parse(start)-15*60000;if(!Number.isFinite(deadline)||Date.now()>=deadline)throw Error('発走15分前の締切超過');};
           const jraDateTime=new Function('JRA_VENUES','assertForecastOpen',fn+';return jraDateTime;')(new Set(['東京','中山','京都','阪神','中京','新潟','福島','小倉','札幌','函館']),forecastOpen);
           const good={date:'2099-01-01',venue:'東京',race_no:11,start_at:'2099-01-01T15:40:00+09:00'};
           assert.doesNotThrow(()=>jraDateTime(good));
@@ -76,6 +77,7 @@ jobs:
           node tests/roi.test.cjs
           node tests/race-intel.test.cjs
           node tests/forecast-lock.test.cjs
+          node tests/view-switch.test.cjs
       - name: Obtain NAR official day CSV and update predictions
         run: python scripts/update_nar.py
       - name: Save frozen forecasts and settled hit rates
