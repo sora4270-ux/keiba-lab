@@ -3,7 +3,7 @@
   "scope": "NAR地方競馬のみ（中央JRAは対象外）",
   "source": "NAR公式CSVデータ（分析結果のみ表示）",
   "method": "過去成績の縮約率から計算する未学習ヒューリスティック。的中保証なし。",
-  "updated_at": "2026-11-03T20:15:15+09:00",
+  "updated_at": "2026-11-03T21:00:38+09:00",
   "schedule_updated_at": "2026-11-03T10:39:32+09:00",
   "schedule": [
     {
@@ -500,83 +500,101 @@
           13
         ]
       ],
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        12,
+        10,
+        6
+      ],
+      "settled_at": "2026-11-03T21:00:38+09:00",
+      "hits": {
+        "win": false,
+        "quinella": false,
+        "exacta": false,
+        "trio": false,
+        "trio_multi": false,
+        "trifecta": false
+      },
       "market": {
         "horses": [
           {
             "no": 1,
-            "odds": 51.8,
-            "popularity": 9
+            "odds": 124.2,
+            "popularity": 10
           },
           {
             "no": 2,
-            "odds": 103.4,
-            "popularity": 13
-          },
-          {
-            "no": 3,
-            "odds": 91.2,
+            "odds": 180.0,
             "popularity": 12
           },
           {
-            "no": 4,
-            "odds": 20.1,
-            "popularity": 6
-          },
-          {
-            "no": 5,
-            "odds": 78.7,
+            "no": 3,
+            "odds": 165.9,
             "popularity": 11
           },
           {
+            "no": 4,
+            "odds": 14.3,
+            "popularity": 4
+          },
+          {
+            "no": 5,
+            "odds": 244.0,
+            "popularity": 13
+          },
+          {
             "no": 6,
-            "odds": 6.5,
+            "odds": 6.6,
             "popularity": 2
           },
           {
             "no": 7,
-            "odds": 10.3,
+            "odds": 10.7,
             "popularity": 3
           },
           {
             "no": 8,
-            "odds": 15.3,
-            "popularity": 4
+            "odds": 19.4,
+            "popularity": 6
           },
           {
             "no": 9,
-            "odds": 65.2,
-            "popularity": 10
+            "odds": 81.7,
+            "popularity": 9
           },
           {
             "no": 10,
-            "odds": 1.4,
+            "odds": 1.3,
             "popularity": 1
           },
           {
             "no": 11,
-            "odds": 44.2,
+            "odds": 37.2,
             "popularity": 8
           },
           {
             "no": 12,
-            "odds": 25.5,
+            "odds": 27.0,
             "popularity": 7
           },
           {
             "no": 13,
-            "odds": 131.3,
+            "odds": 628.0,
             "popularity": 14
           },
           {
             "no": 14,
-            "odds": 18.1,
+            "odds": 17.4,
             "popularity": 5
           }
         ],
-        "updated_at": "2026-11-03T20:15:15+09:00"
+        "updated_at": "2026-11-03T21:00:38+09:00"
+      },
+      "payouts": {
+        "win": 2700,
+        "quinella": 1000,
+        "exacta": 5850,
+        "trio": 2380,
+        "trifecta": 31600
       }
     },
     {
@@ -783,83 +801,101 @@
           14
         ]
       ],
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        9,
+        6,
+        10
+      ],
+      "settled_at": "2026-11-03T21:00:38+09:00",
+      "hits": {
+        "win": false,
+        "quinella": false,
+        "exacta": false,
+        "trio": false,
+        "trio_multi": false,
+        "trifecta": false
+      },
       "market": {
         "horses": [
           {
             "no": 1,
-            "odds": 6.7,
+            "odds": 7.7,
             "popularity": 4
           },
           {
             "no": 2,
-            "odds": 134.5,
+            "odds": 163.9,
             "popularity": 14
           },
           {
             "no": 3,
-            "odds": 16.7,
-            "popularity": 6
+            "odds": 11.1,
+            "popularity": 5
           },
           {
             "no": 4,
-            "odds": 114.1,
+            "odds": 135.4,
             "popularity": 13
           },
           {
             "no": 5,
-            "odds": 17.3,
-            "popularity": 7
+            "odds": 18.5,
+            "popularity": 8
           },
           {
             "no": 6,
-            "odds": 4.8,
+            "odds": 5.0,
             "popularity": 3
           },
           {
             "no": 7,
-            "odds": 80.9,
+            "odds": 103.6,
             "popularity": 12
           },
           {
             "no": 8,
-            "odds": 21.6,
-            "popularity": 9
+            "odds": 17.5,
+            "popularity": 7
           },
           {
             "no": 9,
-            "odds": 4.6,
+            "odds": 4.4,
             "popularity": 2
           },
           {
             "no": 10,
-            "odds": 12.9,
-            "popularity": 5
+            "odds": 13.8,
+            "popularity": 6
           },
           {
             "no": 11,
-            "odds": 57.0,
+            "odds": 32.8,
             "popularity": 10
           },
           {
             "no": 12,
-            "odds": 21.5,
-            "popularity": 8
+            "odds": 24.5,
+            "popularity": 9
           },
           {
             "no": 13,
-            "odds": 3.0,
+            "odds": 3.1,
             "popularity": 1
           },
           {
             "no": 14,
-            "odds": 75.8,
+            "odds": 62.3,
             "popularity": 11
           }
         ],
-        "updated_at": "2026-11-03T20:15:15+09:00"
+        "updated_at": "2026-11-03T21:00:38+09:00"
+      },
+      "payouts": {
+        "win": 440,
+        "quinella": 1250,
+        "exacta": 2340,
+        "trio": 5830,
+        "trifecta": 26600
       }
     },
     {
@@ -10903,15 +10939,15 @@
   ],
   "summary": {
     "predicted": 41,
-    "settled": 39,
-    "pending": 2,
-    "win": 15.4,
-    "quinella": 10.3,
-    "exacta": 5.1,
-    "trio": 2.6,
-    "trio_multi": 7.7,
-    "trio_multi_settled": 39,
-    "trifecta": 7.7,
+    "settled": 41,
+    "pending": 0,
+    "win": 14.6,
+    "quinella": 9.8,
+    "exacta": 4.9,
+    "trio": 2.4,
+    "trio_multi": 7.3,
+    "trio_multi_settled": 41,
+    "trifecta": 7.3,
     "note": "発走前に予想した確定レースのみ。三連複本線1点と三連複候補最大8点は別集計。以前のレースの三連複候補は保存済み三連単12点を順不同に換算。三連単候補は12点。"
   }
 }
