@@ -3,7 +3,7 @@
   "scope": "NAR地方競馬のみ（中央JRAは対象外）",
   "source": "NAR公式CSVデータ（分析結果のみ表示）",
   "method": "過去成績の縮約率から計算する未学習ヒューリスティック。的中保証なし。",
-  "updated_at": "2026-11-03T10:39:32+09:00",
+  "updated_at": "2026-11-03T10:44:15+09:00",
   "schedule_updated_at": "2026-11-03T10:39:32+09:00",
   "schedule": [
     {
@@ -507,76 +507,76 @@
         "horses": [
           {
             "no": 1,
-            "odds": 57.0,
-            "popularity": 11
+            "odds": 48.6,
+            "popularity": 9
           },
           {
             "no": 2,
-            "odds": 85.6,
+            "odds": 97.2,
             "popularity": 14
           },
           {
             "no": 3,
-            "odds": 57.0,
-            "popularity": 11
+            "odds": 48.6,
+            "popularity": 9
           },
           {
             "no": 4,
-            "odds": 34.2,
+            "odds": 38.8,
             "popularity": 8
           },
           {
             "no": 5,
-            "odds": 42.8,
+            "odds": 48.6,
             "popularity": 9
           },
           {
             "no": 6,
-            "odds": 15.5,
-            "popularity": 6
+            "odds": 16.2,
+            "popularity": 7
           },
           {
             "no": 7,
-            "odds": 12.2,
-            "popularity": 5
+            "odds": 13.8,
+            "popularity": 6
           },
           {
             "no": 8,
-            "odds": 3.1,
-            "popularity": 1
+            "odds": 3.5,
+            "popularity": 2
           },
           {
             "no": 9,
-            "odds": 4.8,
+            "odds": 5.5,
             "popularity": 3
           },
           {
             "no": 10,
-            "odds": 3.2,
-            "popularity": 2
+            "odds": 2.8,
+            "popularity": 1
           },
           {
             "no": 11,
-            "odds": 42.8,
+            "odds": 48.6,
             "popularity": 9
           },
           {
             "no": 12,
-            "odds": 10.7,
+            "odds": 12.1,
             "popularity": 4
           },
           {
             "no": 13,
-            "odds": 57.0,
-            "popularity": 11
+            "odds": 64.8,
+            "popularity": 13
           },
           {
             "no": 14,
-            "odds": 28.5,
-            "popularity": 7
+            "odds": 12.1,
+            "popularity": 4
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -790,76 +790,76 @@
         "horses": [
           {
             "no": 1,
-            "odds": 9.6,
-            "popularity": 5
+            "odds": 12.3,
+            "popularity": 6
           },
           {
             "no": 2,
-            "odds": 80.2,
+            "odds": 57.7,
             "popularity": 14
           },
           {
             "no": 3,
-            "odds": 16.0,
+            "odds": 21.6,
             "popularity": 9
           },
           {
             "no": 4,
-            "odds": 20.0,
-            "popularity": 10
+            "odds": 26.6,
+            "popularity": 11
           },
           {
             "no": 5,
-            "odds": 8.3,
-            "popularity": 2
+            "odds": 10.8,
+            "popularity": 5
           },
           {
             "no": 6,
-            "odds": 3.0,
+            "odds": 3.2,
             "popularity": 1
           },
           {
             "no": 7,
-            "odds": 30.1,
+            "odds": 31.4,
             "popularity": 12
           },
           {
             "no": 8,
-            "odds": 8.3,
-            "popularity": 2
-          },
-          {
-            "no": 9,
-            "odds": 8.9,
+            "odds": 9.3,
             "popularity": 4
           },
           {
+            "no": 9,
+            "odds": 8.6,
+            "popularity": 3
+          },
+          {
             "no": 10,
-            "odds": 15.0,
+            "odds": 19.2,
             "popularity": 8
           },
           {
             "no": 11,
-            "odds": 48.1,
+            "odds": 49.4,
             "popularity": 13
           },
           {
             "no": 12,
-            "odds": 12.6,
+            "odds": 17.3,
             "popularity": 7
           },
           {
             "no": 13,
-            "odds": 10.0,
-            "popularity": 6
+            "odds": 4.2,
+            "popularity": 2
           },
           {
             "no": 14,
-            "odds": 26.7,
-            "popularity": 11
+            "odds": 23.0,
+            "popularity": 10
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -1072,72 +1072,77 @@
       "market": {
         "horses": [
           {
-            "no": 2,
-            "odds": 10.0,
-            "popularity": 3
-          },
-          {
-            "no": 3,
-            "odds": 60.4,
-            "popularity": 12
-          },
-          {
-            "no": 4,
-            "odds": 10.9,
-            "popularity": 4
-          },
-          {
-            "no": 5,
-            "odds": 60.4,
-            "popularity": 12
-          },
-          {
-            "no": 6,
-            "odds": 40.2,
+            "no": 1,
+            "odds": 49.2,
             "popularity": 11
           },
           {
+            "no": 2,
+            "odds": 8.5,
+            "popularity": 4
+          },
+          {
+            "no": 3,
+            "odds": 49.2,
+            "popularity": 11
+          },
+          {
+            "no": 4,
+            "odds": 14.0,
+            "popularity": 6
+          },
+          {
+            "no": 5,
+            "odds": 65.6,
+            "popularity": 13
+          },
+          {
+            "no": 6,
+            "odds": 65.6,
+            "popularity": 13
+          },
+          {
             "no": 7,
-            "odds": 30.2,
-            "popularity": 10
+            "odds": 21.8,
+            "popularity": 8
           },
           {
             "no": 8,
-            "odds": 20.1,
-            "popularity": 7
+            "odds": 24.6,
+            "popularity": 10
           },
           {
             "no": 9,
-            "odds": 3.0,
+            "odds": 4.3,
             "popularity": 2
           },
           {
             "no": 10,
-            "odds": 13.4,
+            "odds": 13.1,
             "popularity": 5
           },
           {
             "no": 11,
-            "odds": 24.1,
-            "popularity": 9
+            "odds": 5.7,
+            "popularity": 3
           },
           {
             "no": 12,
-            "odds": 2.8,
+            "odds": 3.1,
             "popularity": 1
           },
           {
             "no": 13,
-            "odds": 13.4,
-            "popularity": 5
+            "odds": 21.8,
+            "popularity": 8
           },
           {
             "no": 14,
-            "odds": 20.1,
+            "odds": 15.1,
             "popularity": 7
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -1336,52 +1341,52 @@
         "horses": [
           {
             "no": 1,
-            "odds": 13.9,
+            "odds": 13.7,
             "popularity": 5
           },
           {
             "no": 2,
-            "odds": 15.8,
+            "odds": 16.7,
             "popularity": 7
           },
           {
             "no": 3,
-            "odds": 74.1,
+            "odds": 58.6,
             "popularity": 10
           },
           {
             "no": 4,
-            "odds": 14.8,
+            "odds": 15.6,
             "popularity": 6
           },
           {
             "no": 5,
-            "odds": 111.2,
+            "odds": 117.2,
             "popularity": 11
           },
           {
             "no": 6,
-            "odds": 24.7,
+            "odds": 26.0,
             "popularity": 8
           },
           {
             "no": 7,
-            "odds": 31.7,
+            "odds": 33.4,
             "popularity": 9
           },
           {
             "no": 8,
-            "odds": 7.4,
+            "odds": 7.8,
             "popularity": 4
           },
           {
             "no": 9,
-            "odds": 2.2,
+            "odds": 2.0,
             "popularity": 1
           },
           {
             "no": 10,
-            "odds": 6.0,
+            "odds": 6.3,
             "popularity": 3
           },
           {
@@ -1390,7 +1395,7 @@
             "popularity": 2
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -1594,66 +1599,66 @@
         "horses": [
           {
             "no": 1,
-            "odds": 39.2,
+            "odds": 42.1,
             "popularity": 11
           },
           {
             "no": 2,
-            "odds": 2.8,
+            "odds": 3.0,
             "popularity": 2
           },
           {
             "no": 3,
-            "odds": 58.8,
-            "popularity": 12
+            "odds": 42.1,
+            "popularity": 11
           },
           {
             "no": 4,
-            "odds": 2.6,
+            "odds": 2.8,
             "popularity": 1
           },
           {
             "no": 5,
-            "odds": 29.4,
-            "popularity": 9
+            "odds": 31.6,
+            "popularity": 10
           },
           {
             "no": 6,
-            "odds": 16.8,
-            "popularity": 6
-          },
-          {
-            "no": 7,
-            "odds": 29.4,
-            "popularity": 9
-          },
-          {
-            "no": 8,
-            "odds": 10.6,
-            "popularity": 3
-          },
-          {
-            "no": 9,
-            "odds": 11.7,
-            "popularity": 4
-          },
-          {
-            "no": 10,
-            "odds": 23.5,
-            "popularity": 8
-          },
-          {
-            "no": 11,
-            "odds": 19.6,
+            "odds": 18.0,
             "popularity": 7
           },
           {
-            "no": 12,
-            "odds": 11.7,
+            "no": 7,
+            "odds": 9.0,
+            "popularity": 3
+          },
+          {
+            "no": 8,
+            "odds": 11.4,
             "popularity": 4
+          },
+          {
+            "no": 9,
+            "odds": 12.6,
+            "popularity": 5
+          },
+          {
+            "no": 10,
+            "odds": 25.2,
+            "popularity": 9
+          },
+          {
+            "no": 11,
+            "odds": 21.0,
+            "popularity": 8
+          },
+          {
+            "no": 12,
+            "odds": 12.6,
+            "popularity": 5
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -1847,51 +1852,51 @@
         "horses": [
           {
             "no": 1,
-            "odds": 7.7,
+            "odds": 7.6,
             "popularity": 5
           },
           {
             "no": 2,
-            "odds": 3.5,
+            "odds": 4.3,
             "popularity": 1
           },
           {
             "no": 3,
-            "odds": 4.1,
-            "popularity": 2
+            "odds": 4.6,
+            "popularity": 4
           },
           {
             "no": 4,
-            "odds": 36.6,
+            "odds": 26.1,
             "popularity": 9
           },
           {
             "no": 5,
-            "odds": 18.3,
+            "odds": 20.3,
             "popularity": 7
           },
           {
             "no": 6,
-            "odds": 20.9,
+            "odds": 22.9,
             "popularity": 8
           },
           {
             "no": 7,
-            "odds": 4.3,
+            "odds": 4.4,
             "popularity": 3
           },
           {
             "no": 8,
-            "odds": 13.3,
+            "odds": 10.7,
             "popularity": 6
           },
           {
             "no": 9,
-            "odds": 6.1,
-            "popularity": 4
+            "odds": 4.3,
+            "popularity": 1
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -2095,61 +2100,61 @@
         "horses": [
           {
             "no": 1,
-            "odds": 9.6,
+            "odds": 8.8,
             "popularity": 5
           },
           {
             "no": 2,
-            "odds": 24.6,
+            "odds": 23.9,
             "popularity": 9
           },
           {
             "no": 3,
-            "odds": 3.5,
+            "odds": 3.4,
             "popularity": 1
           },
           {
             "no": 4,
-            "odds": 3.9,
+            "odds": 4.2,
             "popularity": 2
           },
           {
             "no": 5,
-            "odds": 24.6,
+            "odds": 23.9,
             "popularity": 9
           },
           {
             "no": 7,
-            "odds": 20.1,
-            "popularity": 6
+            "odds": 21.7,
+            "popularity": 8
           },
           {
             "no": 8,
-            "odds": 8.2,
+            "odds": 8.5,
             "popularity": 4
           },
           {
             "no": 9,
-            "odds": 44.3,
+            "odds": 39.8,
             "popularity": 11
           },
           {
             "no": 10,
-            "odds": 22.1,
-            "popularity": 8
-          },
-          {
-            "no": 11,
-            "odds": 20.1,
+            "odds": 18.4,
             "popularity": 6
           },
           {
+            "no": 11,
+            "odds": 19.9,
+            "popularity": 7
+          },
+          {
             "no": 12,
-            "odds": 4.1,
-            "popularity": 3
+            "odds": 4.2,
+            "popularity": 2
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -2363,76 +2368,76 @@
         "horses": [
           {
             "no": 1,
-            "odds": 53.8,
+            "odds": 58.4,
             "popularity": 11
           },
           {
             "no": 2,
-            "odds": 80.8,
+            "odds": 87.6,
             "popularity": 12
           },
           {
             "no": 3,
-            "odds": 40.4,
-            "popularity": 10
+            "odds": 35.0,
+            "popularity": 9
           },
           {
             "no": 4,
-            "odds": 32.3,
+            "odds": 35.0,
             "popularity": 9
           },
           {
             "no": 5,
-            "odds": 23.0,
+            "odds": 25.0,
             "popularity": 6
           },
           {
             "no": 6,
-            "odds": 26.9,
+            "odds": 29.2,
             "popularity": 7
           },
           {
             "no": 7,
-            "odds": 20.2,
+            "odds": 17.5,
             "popularity": 5
           },
           {
             "no": 8,
-            "odds": 80.8,
+            "odds": 87.6,
             "popularity": 12
           },
           {
             "no": 9,
-            "odds": 26.9,
+            "odds": 29.2,
             "popularity": 7
           },
           {
             "no": 10,
-            "odds": 3.4,
-            "popularity": 2
-          },
-          {
-            "no": 11,
-            "odds": 3.1,
-            "popularity": 1
-          },
-          {
-            "no": 12,
             "odds": 3.7,
             "popularity": 3
           },
           {
+            "no": 11,
+            "odds": 3.3,
+            "popularity": 2
+          },
+          {
+            "no": 12,
+            "odds": 3.1,
+            "popularity": 1
+          },
+          {
             "no": 13,
-            "odds": 10.1,
+            "odds": 10.9,
             "popularity": 4
           },
           {
             "no": 14,
-            "odds": 80.8,
+            "odds": 87.6,
             "popularity": 12
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -2626,28 +2631,28 @@
         "horses": [
           {
             "no": 1,
-            "odds": 8.8,
+            "odds": 8.5,
             "popularity": 4
           },
           {
             "no": 2,
-            "odds": 5.2,
+            "odds": 5.8,
             "popularity": 2
           },
           {
             "no": 3,
-            "odds": 2.6,
+            "odds": 3.0,
             "popularity": 1
           },
           {
             "no": 4,
-            "odds": 19.0,
-            "popularity": 9
+            "odds": 20.8,
+            "popularity": 10
           },
           {
             "no": 5,
-            "odds": 9.5,
-            "popularity": 5
+            "odds": 12.1,
+            "popularity": 7
           },
           {
             "no": 6,
@@ -2656,26 +2661,26 @@
           },
           {
             "no": 7,
-            "odds": 19.0,
+            "odds": 14.5,
             "popularity": 9
           },
           {
             "no": 8,
-            "odds": 8.1,
+            "odds": 6.9,
             "popularity": 3
           },
           {
             "no": 9,
-            "odds": 16.3,
+            "odds": 13.2,
             "popularity": 8
           },
           {
             "no": 10,
-            "odds": 12.7,
-            "popularity": 7
+            "odds": 8.5,
+            "popularity": 4
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -2869,56 +2874,56 @@
         "horses": [
           {
             "no": 1,
-            "odds": 192.8,
+            "odds": 109.6,
             "popularity": 10
           },
           {
             "no": 2,
-            "odds": 17.5,
-            "popularity": 7
+            "odds": 13.7,
+            "popularity": 6
           },
           {
             "no": 3,
-            "odds": 10.7,
-            "popularity": 4
+            "odds": 8.4,
+            "popularity": 3
           },
           {
             "no": 4,
-            "odds": 64.2,
+            "odds": 43.8,
             "popularity": 9
           },
           {
             "no": 5,
-            "odds": 11.3,
-            "popularity": 5
+            "odds": 8.7,
+            "popularity": 4
           },
           {
             "no": 6,
-            "odds": 9.1,
-            "popularity": 3
+            "odds": 10.4,
+            "popularity": 5
           },
           {
             "no": 7,
-            "odds": 32.1,
+            "odds": 21.9,
             "popularity": 8
           },
           {
             "no": 8,
-            "odds": 8.7,
+            "odds": 8.1,
             "popularity": 2
           },
           {
             "no": 9,
-            "odds": 1.5,
+            "odds": 1.7,
             "popularity": 1
           },
           {
             "no": 10,
-            "odds": 12.8,
-            "popularity": 6
+            "odds": 14.6,
+            "popularity": 7
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -3117,61 +3122,61 @@
         "horses": [
           {
             "no": 1,
-            "odds": 14.0,
+            "odds": 15.1,
             "popularity": 5
           },
           {
             "no": 2,
-            "odds": 3.3,
+            "odds": 3.5,
             "popularity": 2
           },
           {
             "no": 3,
-            "odds": 45.6,
+            "odds": 39.3,
             "popularity": 6
           },
           {
             "no": 4,
-            "odds": 8.6,
+            "odds": 7.5,
             "popularity": 4
           },
           {
             "no": 5,
-            "odds": 91.2,
+            "odds": 98.4,
             "popularity": 10
           },
           {
             "no": 6,
-            "odds": 3.3,
+            "odds": 3.5,
             "popularity": 2
           },
           {
             "no": 7,
-            "odds": 2.7,
+            "odds": 2.4,
             "popularity": 1
           },
           {
             "no": 8,
-            "odds": 182.4,
+            "odds": 196.8,
             "popularity": 11
           },
           {
             "no": 9,
-            "odds": 60.8,
+            "odds": 65.6,
             "popularity": 8
           },
           {
             "no": 10,
-            "odds": 45.6,
-            "popularity": 6
+            "odds": 49.2,
+            "popularity": 7
           },
           {
             "no": 11,
-            "odds": 60.8,
+            "odds": 65.6,
             "popularity": 8
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -3360,41 +3365,41 @@
           },
           {
             "no": 2,
-            "odds": 19.6,
+            "odds": 24.4,
             "popularity": 6
           },
           {
             "no": 3,
-            "odds": 43.5,
+            "odds": 44.8,
             "popularity": 8
           },
           {
             "no": 4,
-            "odds": 9.3,
-            "popularity": 4
+            "odds": 5.0,
+            "popularity": 3
           },
           {
             "no": 5,
-            "odds": 3.8,
+            "odds": 4.0,
             "popularity": 2
           },
           {
             "no": 6,
-            "odds": 14.0,
+            "odds": 13.4,
             "popularity": 5
           },
           {
             "no": 7,
-            "odds": 21.7,
+            "odds": 25.6,
             "popularity": 7
           },
           {
             "no": 8,
-            "odds": 4.2,
-            "popularity": 3
+            "odds": 5.7,
+            "popularity": 4
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -3866,71 +3871,71 @@
         "horses": [
           {
             "no": 1,
-            "odds": 7.4,
-            "popularity": 4
+            "odds": 9.1,
+            "popularity": 5
           },
           {
             "no": 2,
-            "odds": 21.9,
+            "odds": 19.3,
             "popularity": 7
           },
           {
             "no": 3,
-            "odds": 33.6,
-            "popularity": 9
+            "odds": 32.9,
+            "popularity": 10
           },
           {
             "no": 4,
-            "odds": 25.2,
+            "odds": 22.7,
             "popularity": 8
           },
           {
             "no": 5,
-            "odds": 63.1,
-            "popularity": 12
-          },
-          {
-            "no": 6,
-            "odds": 56.0,
-            "popularity": 11
-          },
-          {
-            "no": 7,
-            "odds": 72.1,
+            "odds": 54.9,
             "popularity": 13
           },
           {
+            "no": 6,
+            "odds": 50.7,
+            "popularity": 12
+          },
+          {
+            "no": 7,
+            "odds": 38.7,
+            "popularity": 11
+          },
+          {
             "no": 8,
-            "odds": 2.4,
+            "odds": 2.6,
             "popularity": 1
           },
           {
             "no": 9,
-            "odds": 7.5,
-            "popularity": 5
+            "odds": 8.7,
+            "popularity": 4
           },
           {
             "no": 10,
-            "odds": 42.0,
-            "popularity": 10
+            "odds": 29.9,
+            "popularity": 9
           },
           {
             "no": 11,
-            "odds": 6.1,
-            "popularity": 3
-          },
-          {
-            "no": 12,
-            "odds": 6.0,
+            "odds": 4.4,
             "popularity": 2
           },
           {
+            "no": 12,
+            "odds": 7.4,
+            "popularity": 3
+          },
+          {
             "no": 13,
-            "odds": 15.2,
+            "odds": 15.6,
             "popularity": 6
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -4134,57 +4139,57 @@
         "horses": [
           {
             "no": 1,
-            "odds": 26.4,
-            "popularity": 7
+            "odds": 28.1,
+            "popularity": 8
           },
           {
             "no": 2,
-            "odds": 3.7,
+            "odds": 3.6,
             "popularity": 2
           },
           {
             "no": 3,
-            "odds": 27.9,
-            "popularity": 8
+            "odds": 27.2,
+            "popularity": 7
           },
           {
             "no": 4,
-            "odds": 86.0,
+            "odds": 96.0,
             "popularity": 9
           },
           {
             "no": 5,
-            "odds": 243.0,
-            "popularity": 11
+            "odds": 285.8,
+            "popularity": 12
           },
           {
             "no": 6,
-            "odds": 5.2,
-            "popularity": 3
+            "odds": 5.8,
+            "popularity": 4
           },
           {
             "no": 7,
-            "odds": 110.4,
+            "odds": 131.0,
             "popularity": 10
           },
           {
             "no": 8,
-            "odds": 15.6,
+            "odds": 12.6,
             "popularity": 6
           },
           {
             "no": 9,
-            "odds": 270.0,
-            "popularity": 12
+            "odds": 273.3,
+            "popularity": 11
           },
           {
             "no": 10,
-            "odds": 6.7,
-            "popularity": 4
+            "odds": 5.1,
+            "popularity": 3
           },
           {
             "no": 11,
-            "odds": 2.5,
+            "odds": 2.9,
             "popularity": 1
           },
           {
@@ -4193,7 +4198,7 @@
             "popularity": 5
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -4397,12 +4402,12 @@
           },
           {
             "no": 2,
-            "odds": 34.1,
+            "odds": 34.5,
             "popularity": 8
           },
           {
             "no": 3,
-            "odds": 28.8,
+            "odds": 29.1,
             "popularity": 7
           },
           {
@@ -4412,7 +4417,7 @@
           },
           {
             "no": 5,
-            "odds": 65.0,
+            "odds": 65.7,
             "popularity": 10
           },
           {
@@ -4422,7 +4427,7 @@
           },
           {
             "no": 7,
-            "odds": 149.4,
+            "odds": 151.0,
             "popularity": 11
           },
           {
@@ -4437,7 +4442,7 @@
           },
           {
             "no": 10,
-            "odds": 7.0,
+            "odds": 6.9,
             "popularity": 6
           },
           {
@@ -4446,7 +4451,7 @@
             "popularity": 5
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -4650,17 +4655,17 @@
         "horses": [
           {
             "no": 1,
-            "odds": 61.2,
+            "odds": 69.3,
             "popularity": 8
           },
           {
             "no": 2,
-            "odds": 134.4,
+            "odds": 134.0,
             "popularity": 11
           },
           {
             "no": 3,
-            "odds": 268.8,
+            "odds": 295.6,
             "popularity": 12
           },
           {
@@ -4670,46 +4675,46 @@
           },
           {
             "no": 5,
-            "odds": 29.8,
+            "odds": 32.8,
             "popularity": 7
           },
           {
             "no": 6,
-            "odds": 101.6,
+            "odds": 114.2,
             "popularity": 10
           },
           {
             "no": 7,
-            "odds": 81.6,
+            "odds": 85.9,
             "popularity": 9
           },
           {
             "no": 8,
-            "odds": 10.6,
+            "odds": 10.7,
             "popularity": 5
           },
           {
             "no": 9,
-            "odds": 12.7,
+            "odds": 12.8,
             "popularity": 6
           },
           {
             "no": 10,
-            "odds": 5.5,
+            "odds": 4.8,
             "popularity": 3
           },
           {
             "no": 11,
-            "odds": 3.0,
-            "popularity": 1
+            "odds": 3.1,
+            "popularity": 2
           },
           {
             "no": 12,
             "odds": 3.1,
-            "popularity": 2
+            "popularity": 1
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -4903,42 +4908,42 @@
         "horses": [
           {
             "no": 1,
-            "odds": 6.6,
+            "odds": 6.7,
             "popularity": 3
           },
           {
             "no": 2,
-            "odds": 18.9,
+            "odds": 19.0,
             "popularity": 6
           },
           {
             "no": 3,
-            "odds": 18.9,
+            "odds": 19.0,
             "popularity": 6
           },
           {
             "no": 4,
-            "odds": 11.3,
+            "odds": 11.4,
             "popularity": 4
           },
           {
             "no": 5,
-            "odds": 16.2,
+            "odds": 16.3,
             "popularity": 5
           },
           {
             "no": 6,
-            "odds": 22.7,
-            "popularity": 9
+            "odds": 19.0,
+            "popularity": 6
           },
           {
             "no": 8,
-            "odds": 1.6,
+            "odds": 1.7,
             "popularity": 1
           },
           {
             "no": 9,
-            "odds": 18.9,
+            "odds": 19.0,
             "popularity": 6
           },
           {
@@ -4947,7 +4952,7 @@
             "popularity": 2
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -5151,47 +5156,47 @@
         "horses": [
           {
             "no": 1,
-            "odds": 16.8,
+            "odds": 16.4,
             "popularity": 6
           },
           {
             "no": 2,
-            "odds": 316.5,
+            "odds": 342.9,
             "popularity": 10
           },
           {
             "no": 3,
-            "odds": 104.6,
+            "odds": 57.8,
             "popularity": 8
           },
           {
             "no": 4,
-            "odds": 124.0,
+            "odds": 138.5,
             "popularity": 9
           },
           {
             "no": 5,
-            "odds": 3.4,
+            "odds": 3.1,
             "popularity": 2
           },
           {
             "no": 6,
-            "odds": 334.1,
+            "odds": 370.7,
             "popularity": 11
           },
           {
             "no": 7,
-            "odds": 44.3,
+            "odds": 47.1,
             "popularity": 7
           },
           {
             "no": 8,
-            "odds": 8.2,
+            "odds": 8.3,
             "popularity": 4
           },
           {
             "no": 9,
-            "odds": 7.6,
+            "odds": 7.7,
             "popularity": 3
           },
           {
@@ -5201,11 +5206,11 @@
           },
           {
             "no": 12,
-            "odds": 1.9,
+            "odds": 2.0,
             "popularity": 1
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -5414,61 +5419,61 @@
           },
           {
             "no": 2,
-            "odds": 15.0,
+            "odds": 15.2,
             "popularity": 8
           },
           {
             "no": 3,
-            "odds": 135.2,
+            "odds": 137.6,
             "popularity": 12
           },
           {
             "no": 4,
-            "odds": 9.6,
+            "odds": 9.8,
             "popularity": 7
           },
           {
             "no": 5,
-            "odds": 45.0,
+            "odds": 45.8,
             "popularity": 10
           },
           {
             "no": 6,
-            "odds": 4.3,
+            "odds": 4.4,
             "popularity": 2
           },
           {
             "no": 7,
-            "odds": 27.0,
+            "odds": 27.5,
             "popularity": 9
           },
           {
             "no": 8,
-            "odds": 8.4,
+            "odds": 8.6,
             "popularity": 5
           },
           {
             "no": 9,
-            "odds": 7.1,
+            "odds": 6.8,
             "popularity": 3
           },
           {
             "no": 10,
-            "odds": 7.9,
+            "odds": 7.6,
             "popularity": 4
           },
           {
             "no": 11,
-            "odds": 45.0,
+            "odds": 45.8,
             "popularity": 10
           },
           {
             "no": 12,
-            "odds": 9.0,
+            "odds": 9.1,
             "popularity": 6
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -5925,66 +5930,66 @@
         "horses": [
           {
             "no": 1,
-            "odds": 28.9,
-            "popularity": 7
+            "odds": 25.1,
+            "popularity": 6
           },
           {
             "no": 2,
-            "odds": 42.5,
+            "odds": 47.3,
             "popularity": 10
           },
           {
             "no": 3,
-            "odds": 38.1,
+            "odds": 40.2,
             "popularity": 8
           },
           {
             "no": 4,
-            "odds": 3.2,
+            "odds": 3.0,
             "popularity": 2
           },
           {
             "no": 5,
-            "odds": 65.8,
+            "odds": 67.1,
             "popularity": 11
           },
           {
             "no": 6,
-            "odds": 25.8,
+            "odds": 25.1,
             "popularity": 6
           },
           {
             "no": 7,
-            "odds": 72.4,
+            "odds": 73.2,
             "popularity": 12
           },
           {
             "no": 8,
-            "odds": 7.3,
+            "odds": 6.7,
             "popularity": 3
           },
           {
             "no": 9,
             "odds": 40.2,
-            "popularity": 9
+            "popularity": 8
           },
           {
             "no": 10,
-            "odds": 10.3,
+            "odds": 11.0,
             "popularity": 4
           },
           {
             "no": 11,
-            "odds": 2.0,
+            "odds": 2.2,
             "popularity": 1
           },
           {
             "no": 12,
-            "odds": 19.5,
+            "odds": 20.1,
             "popularity": 5
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -6188,7 +6193,7 @@
         "horses": [
           {
             "no": 1,
-            "odds": 38.8,
+            "odds": 39.0,
             "popularity": 10
           },
           {
@@ -6198,7 +6203,7 @@
           },
           {
             "no": 3,
-            "odds": 10.3,
+            "odds": 9.7,
             "popularity": 5
           },
           {
@@ -6208,17 +6213,17 @@
           },
           {
             "no": 5,
-            "odds": 19.4,
+            "odds": 19.5,
             "popularity": 8
           },
           {
             "no": 6,
-            "odds": 22.1,
+            "odds": 22.2,
             "popularity": 9
           },
           {
             "no": 7,
-            "odds": 77.6,
+            "odds": 78.0,
             "popularity": 12
           },
           {
@@ -6228,17 +6233,17 @@
           },
           {
             "no": 9,
-            "odds": 15.5,
+            "odds": 15.6,
             "popularity": 7
           },
           {
             "no": 10,
-            "odds": 10.3,
-            "popularity": 5
+            "odds": 10.4,
+            "popularity": 6
           },
           {
             "no": 11,
-            "odds": 51.7,
+            "odds": 52.0,
             "popularity": 11
           },
           {
@@ -6247,7 +6252,7 @@
             "popularity": 3
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -6714,47 +6719,47 @@
         "horses": [
           {
             "no": 1,
-            "odds": 12.7,
+            "odds": 12.6,
             "popularity": 7
           },
           {
             "no": 2,
-            "odds": 11.5,
-            "popularity": 4
+            "odds": 12.1,
+            "popularity": 6
           },
           {
             "no": 3,
-            "odds": 48.3,
+            "odds": 53.2,
             "popularity": 10
           },
           {
             "no": 4,
-            "odds": 11.5,
+            "odds": 9.5,
             "popularity": 4
           },
           {
             "no": 5,
-            "odds": 3.0,
+            "odds": 3.2,
             "popularity": 1
           },
           {
             "no": 6,
-            "odds": 16.1,
+            "odds": 15.6,
             "popularity": 8
           },
           {
             "no": 7,
-            "odds": 18.5,
+            "odds": 19.0,
             "popularity": 9
           },
           {
             "no": 8,
-            "odds": 12.0,
-            "popularity": 6
+            "odds": 10.2,
+            "popularity": 5
           },
           {
             "no": 9,
-            "odds": 6.3,
+            "odds": 6.8,
             "popularity": 3
           },
           {
@@ -6763,7 +6768,7 @@
             "popularity": 2
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -6967,12 +6972,12 @@
         "horses": [
           {
             "no": 1,
-            "odds": 56.0,
+            "odds": 56.2,
             "popularity": 12
           },
           {
             "no": 2,
-            "odds": 10.5,
+            "odds": 9.9,
             "popularity": 6
           },
           {
@@ -6992,7 +6997,7 @@
           },
           {
             "no": 6,
-            "odds": 24.0,
+            "odds": 24.1,
             "popularity": 10
           },
           {
@@ -7002,12 +7007,12 @@
           },
           {
             "no": 8,
-            "odds": 33.6,
+            "odds": 33.7,
             "popularity": 11
           },
           {
             "no": 9,
-            "odds": 5.7,
+            "odds": 5.8,
             "popularity": 3
           },
           {
@@ -7026,7 +7031,7 @@
             "popularity": 7
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -7473,37 +7478,37 @@
         "horses": [
           {
             "no": 1,
-            "odds": 22.1,
+            "odds": 27.4,
             "popularity": 10
           },
           {
             "no": 2,
-            "odds": 22.1,
-            "popularity": 10
+            "odds": 31.6,
+            "popularity": 11
           },
           {
             "no": 3,
-            "odds": 11.5,
-            "popularity": 7
+            "odds": 16.4,
+            "popularity": 8
           },
           {
             "no": 4,
-            "odds": 10.2,
+            "odds": 13.2,
             "popularity": 5
           },
           {
             "no": 5,
-            "odds": 11.0,
+            "odds": 13.7,
             "popularity": 6
           },
           {
             "no": 6,
-            "odds": 7.2,
+            "odds": 8.9,
             "popularity": 3
           },
           {
             "no": 7,
-            "odds": 7.7,
+            "odds": 11.1,
             "popularity": 4
           },
           {
@@ -7513,26 +7518,26 @@
           },
           {
             "no": 9,
-            "odds": 96.0,
+            "odds": 137.3,
             "popularity": 12
           },
           {
             "no": 10,
-            "odds": 19.2,
+            "odds": 17.1,
             "popularity": 9
           },
           {
             "no": 11,
-            "odds": 2.9,
+            "odds": 2.0,
             "popularity": 1
           },
           {
             "no": 12,
-            "odds": 15.1,
-            "popularity": 8
+            "odds": 14.2,
+            "popularity": 7
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -7731,51 +7736,51 @@
           },
           {
             "no": 2,
-            "odds": 1.3,
+            "odds": 1.4,
             "popularity": 1
           },
           {
             "no": 3,
-            "odds": 23.0,
+            "odds": 21.4,
             "popularity": 6
           },
           {
             "no": 4,
-            "odds": 10.2,
+            "odds": 10.3,
             "popularity": 4
           },
           {
             "no": 5,
-            "odds": 276.8,
+            "odds": 278.4,
             "popularity": 10
           },
           {
             "no": 6,
-            "odds": 27.6,
+            "odds": 27.8,
             "popularity": 7
           },
           {
             "no": 7,
-            "odds": 34.6,
+            "odds": 30.9,
             "popularity": 8
           },
           {
             "no": 8,
-            "odds": 13.8,
+            "odds": 13.9,
             "popularity": 5
           },
           {
             "no": 9,
-            "odds": 46.1,
+            "odds": 46.4,
             "popularity": 9
           },
           {
             "no": 10,
-            "odds": 8.3,
+            "odds": 8.4,
             "popularity": 2
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -7969,56 +7974,56 @@
         "horses": [
           {
             "no": 1,
-            "odds": 25.1,
+            "odds": 32.2,
             "popularity": 7
           },
           {
             "no": 2,
-            "odds": 40.1,
-            "popularity": 8
+            "odds": 58.0,
+            "popularity": 9
           },
           {
             "no": 3,
-            "odds": 8.6,
-            "popularity": 2
+            "odds": 10.7,
+            "popularity": 3
           },
           {
             "no": 4,
-            "odds": 17.7,
+            "odds": 21.7,
             "popularity": 6
           },
           {
             "no": 5,
-            "odds": 11.8,
+            "odds": 16.1,
             "popularity": 5
           },
           {
             "no": 6,
-            "odds": 1.4,
+            "odds": 1.2,
             "popularity": 1
           },
           {
             "no": 7,
-            "odds": 60.2,
+            "odds": 87.1,
             "popularity": 10
           },
           {
             "no": 8,
-            "odds": 43.0,
-            "popularity": 9
+            "odds": 51.2,
+            "popularity": 8
           },
           {
             "no": 9,
-            "odds": 9.2,
-            "popularity": 3
+            "odds": 10.2,
+            "popularity": 2
           },
           {
             "no": 10,
-            "odds": 9.2,
-            "popularity": 3
+            "odds": 11.4,
+            "popularity": 4
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -8222,66 +8227,66 @@
         "horses": [
           {
             "no": 1,
-            "odds": 34.1,
+            "odds": 40.0,
             "popularity": 7
           },
           {
             "no": 2,
-            "odds": 14.4,
+            "odds": 15.6,
             "popularity": 5
           },
           {
             "no": 3,
-            "odds": 1.7,
+            "odds": 1.4,
             "popularity": 1
           },
           {
             "no": 4,
-            "odds": 28.1,
+            "odds": 32.0,
             "popularity": 6
           },
           {
             "no": 5,
-            "odds": 36.8,
-            "popularity": 9
+            "odds": 49.2,
+            "popularity": 10
           },
           {
             "no": 6,
-            "odds": 4.3,
+            "odds": 4.8,
             "popularity": 2
           },
           {
             "no": 7,
-            "odds": 36.8,
+            "odds": 45.7,
             "popularity": 9
           },
           {
             "no": 8,
-            "odds": 68.3,
-            "popularity": 12
+            "odds": 80.1,
+            "popularity": 11
           },
           {
             "no": 9,
-            "odds": 59.8,
+            "odds": 80.1,
             "popularity": 11
           },
           {
             "no": 10,
-            "odds": 9.5,
+            "odds": 11.8,
             "popularity": 3
           },
           {
             "no": 11,
-            "odds": 9.5,
-            "popularity": 3
+            "odds": 12.3,
+            "popularity": 4
           },
           {
             "no": 12,
-            "odds": 34.1,
-            "popularity": 7
+            "odds": 42.7,
+            "popularity": 8
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -8490,12 +8495,12 @@
           },
           {
             "no": 2,
-            "odds": 9.6,
+            "odds": 9.7,
             "popularity": 4
           },
           {
             "no": 3,
-            "odds": 19.3,
+            "odds": 19.4,
             "popularity": 9
           },
           {
@@ -8505,17 +8510,17 @@
           },
           {
             "no": 5,
-            "odds": 58.0,
+            "odds": 58.2,
             "popularity": 11
           },
           {
             "no": 6,
-            "odds": 58.0,
+            "odds": 58.2,
             "popularity": 11
           },
           {
             "no": 7,
-            "odds": 29.0,
+            "odds": 29.1,
             "popularity": 10
           },
           {
@@ -8530,7 +8535,7 @@
           },
           {
             "no": 10,
-            "odds": 3.8,
+            "odds": 3.7,
             "popularity": 2
           },
           {
@@ -8540,11 +8545,11 @@
           },
           {
             "no": 12,
-            "odds": 16.5,
+            "odds": 16.6,
             "popularity": 8
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -8748,66 +8753,66 @@
         "horses": [
           {
             "no": 1,
-            "odds": 68.6,
+            "odds": 61.9,
             "popularity": 11
           },
           {
             "no": 2,
-            "odds": 8.5,
-            "popularity": 3
+            "odds": 4.1,
+            "popularity": 2
           },
           {
             "no": 3,
-            "odds": 18.7,
-            "popularity": 5
-          },
-          {
-            "no": 4,
-            "odds": 22.8,
+            "odds": 24.7,
             "popularity": 6
           },
           {
+            "no": 4,
+            "odds": 30.9,
+            "popularity": 8
+          },
+          {
             "no": 5,
-            "odds": 37.4,
+            "odds": 41.2,
             "popularity": 9
           },
           {
             "no": 6,
-            "odds": 1.7,
+            "odds": 2.0,
             "popularity": 1
           },
           {
             "no": 7,
-            "odds": 31.6,
-            "popularity": 8
+            "odds": 19.9,
+            "popularity": 5
           },
           {
             "no": 8,
-            "odds": 82.4,
+            "odds": 68.8,
             "popularity": 12
           },
           {
             "no": 9,
-            "odds": 12.4,
+            "odds": 15.4,
             "popularity": 4
           },
           {
             "no": 10,
-            "odds": 45.7,
-            "popularity": 10
+            "odds": 41.2,
+            "popularity": 9
           },
           {
             "no": 11,
-            "odds": 24.2,
+            "odds": 29.4,
             "popularity": 7
           },
           {
             "no": 12,
-            "odds": 4.2,
-            "popularity": 2
+            "odds": 4.6,
+            "popularity": 3
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -8991,46 +8996,46 @@
         "horses": [
           {
             "no": 1,
-            "odds": 2.1,
+            "odds": 2.5,
             "popularity": 1
           },
           {
             "no": 2,
-            "odds": 8.1,
-            "popularity": 3
+            "odds": 6.6,
+            "popularity": 4
           },
           {
             "no": 3,
-            "odds": 26.7,
-            "popularity": 7
+            "odds": 16.3,
+            "popularity": 6
           },
           {
             "no": 4,
-            "odds": 11.1,
+            "odds": 10.0,
             "popularity": 5
           },
           {
             "no": 5,
-            "odds": 8.5,
-            "popularity": 4
+            "odds": 5.4,
+            "popularity": 3
           },
           {
             "no": 6,
-            "odds": 34.3,
+            "odds": 31.7,
             "popularity": 8
           },
           {
             "no": 7,
-            "odds": 2.9,
+            "odds": 3.4,
             "popularity": 2
           },
           {
             "no": 8,
-            "odds": 18.9,
-            "popularity": 6
+            "odds": 22.6,
+            "popularity": 7
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
@@ -9224,56 +9229,56 @@
         "horses": [
           {
             "no": 1,
-            "odds": 32.2,
+            "odds": 39.1,
             "popularity": 7
           },
           {
             "no": 2,
-            "odds": 82.3,
+            "odds": 105.0,
             "popularity": 10
           },
           {
             "no": 3,
-            "odds": 1.4,
+            "odds": 1.6,
             "popularity": 1
           },
           {
             "no": 4,
-            "odds": 22.9,
+            "odds": 27.0,
             "popularity": 6
           },
           {
             "no": 5,
-            "odds": 81.5,
+            "odds": 85.8,
             "popularity": 9
           },
           {
             "no": 6,
-            "odds": 7.8,
-            "popularity": 3
+            "odds": 6.3,
+            "popularity": 4
           },
           {
             "no": 7,
-            "odds": 45.4,
+            "odds": 48.7,
             "popularity": 8
           },
           {
             "no": 8,
-            "odds": 6.8,
-            "popularity": 2
+            "odds": 5.9,
+            "popularity": 3
           },
           {
             "no": 9,
-            "odds": 18.1,
+            "odds": 17.6,
             "popularity": 5
           },
           {
             "no": 10,
-            "odds": 8.3,
-            "popularity": 4
+            "odds": 5.8,
+            "popularity": 2
           }
         ],
-        "updated_at": "2026-11-03T10:39:32+09:00"
+        "updated_at": "2026-11-03T10:44:15+09:00"
       }
     },
     {
