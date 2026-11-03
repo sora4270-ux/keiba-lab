@@ -41,6 +41,10 @@ async function run() {
     await page.goto('http://127.0.0.1:'+server.address().port+'/',{waitUntil:'domcontentloaded'});
     await page.waitForFunction(()=>document.querySelector('#nar-count')?.textContent?.includes('開催情報'),{timeout:15000});
     assert.equal(await page.locator('.quick-link').count(),4,'home shortcuts');
+    assert.ok((await page.locator('#quick-live-summary').innerText()).includes('開催情報 2R'),'summary includes schedule');
+    assert.ok((await page.locator('#quick-next-race').innerText()).includes('発走まで約'),'next-race countdown shown');
+    assert.ok(await page.locator('#quick-refresh').isVisible(),'manual refresh is available');
+    assert.equal(await page.locator('.mobile-dock [data-jump="nar"][data-display="predictions"]').getAttribute('aria-current'),'page','NAR prediction is the initial active menu');
     assert.equal(await page.locator('.mobile-dock button').count(),5,'mobile bottom navigation');
     assert.ok(await page.locator('.mobile-dock').isVisible(),'bottom navigation visible on phone');
     assert.ok((await page.locator('#quick-next-race').innerText()).includes('発走予定'),'next race preview');
@@ -54,6 +58,7 @@ async function run() {
 
     await page.locator('.quick-link[data-jump="nar"][data-display="results"]').click();
     assert.equal(await page.locator('#nar-view-mode').inputValue(),'results','NAR result mode');
+    assert.equal(await page.locator('.mobile-dock [data-jump="nar"][data-display="results"]').getAttribute('aria-current'),'page','active menu follows result tab');
     assert.equal(await page.locator('[data-mode-select="nar-view-mode"] [data-mode="results"]').getAttribute('aria-pressed'),'true');
     assert.ok(await page.locator('#nar-results-summary').isVisible(),'statistics on results mode');
     await page.locator('[data-reset-scope="nar"]').click();
@@ -62,6 +67,7 @@ async function run() {
 
     await page.locator('.mobile-dock [data-jump="jra"][data-display="results"]').click();
     assert.equal(await page.locator('#jra-view-mode').inputValue(),'results','JRA result mode');
+    assert.equal(await page.locator('.mobile-dock [data-jump="jra"][data-display="results"]').getAttribute('aria-current'),'page','JRA result active menu');
     await page.locator('[data-mode-select="jra-view-mode"] [data-mode="predictions"]').click();
     assert.equal(await page.locator('#jra-view-mode').inputValue(),'predictions','JRA prediction mode');
     await page.locator('#jra-view-number').selectOption('11');
@@ -69,7 +75,7 @@ async function run() {
     await page.locator('[data-reset-scope="jra"]').click();
     assert.equal(await page.locator('#jra-view-number').inputValue(),'all','JRA reset filters');
     assert.deepEqual(errors,[],'no uncaught JavaScript errors');
-    console.log('PASS mobile Chromium: shortcuts, 5-button dock, NAR data loading, race filters, reset, prediction/result switches, JRA controls');
+    console.log('PASS mobile Chromium: home counts, race countdown, refresh, active dock, NAR/JRA filters, reset and prediction/result switches');
   }finally{
     if(browser)await browser.close();
     await new Promise(resolve=>server.close(resolve));
