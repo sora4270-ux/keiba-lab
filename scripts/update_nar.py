@@ -685,12 +685,13 @@ def selftest():
     assert update_data(races, late, again, paybacks, market)[3] == 0
     assert "ranking" in pre and len(pre["ranking"]) == len(races[0]["horses"])
     # Regression: the odds leader must influence the NEW forecast at T-17.
-    big_fav = {i: {"no": i, "odds": 1.1 if i == 8 else 100.0}
+    big_fav = {i: {"no": i, "odds": 1.1 if i == 1 else 100.0}
                for i in range(1, 9)}
     trained = forecast(races[0], dt.datetime(2026, 11, 2, 15, 23, tzinfo=JST),
                        big_fav, {"form_alpha": 1., "market_weight": .8,
                                  "form_training_races": 33, "market_training_races": 0})
-    assert trained["top3"][0]["no"] == 8
+    assert trained["top3"][0]["no"] == 1
+    assert trained["top3"][0]["no"] != forecast(races[0], now)["top3"][0]["no"]
     assert trained["market_at_lock"]["updated_at"] == trained["locked_at"]
     assert trained["cutoff_at"] == "2026-11-02T15:25+09:00"
     assert forecast(races[0], now)["model"] == "form_v2_no_odds"
