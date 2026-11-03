@@ -598,7 +598,8 @@ def main():
     if "--selftest" in sys.argv:
         selftest()
         return
-    now = dt.datetime.now(JST)
+    # Capture the clock AFTER network fetches, so a slow ZIP download cannot
+    # produce forecasts timestamped before the T-15 cutoff retroactively.
     source_bytes = fetch_daily_zip()
     tables = load_zip_tables(source_bytes)
     races = parse_races(tables)
@@ -610,6 +611,7 @@ def main():
         odds_index = odds_market_index(fetch_daily_zip(ODDS_URL, MAX_ODDS_DOWNLOAD))
     except Exception as exc:
         print(f"NAR公式オッズ未取得（予想・結果は続行）: {exc}", file=sys.stderr)
+    now = dt.datetime.now(JST)
     out, added, settled_count, payout_count = update_data(races, now, previous, payback_index(tables), odds_index)
     if added or settled_count or payout_count or out["schedule"] != previous.get("schedule", []) or not DATA_PATH.exists():
         DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
