@@ -230,32 +230,48 @@ def simulated_trio_tickets(record):
 
 
 def backtest(records, day=None):
-    """Offline historical comparison. NOT a prospective estimate or training."""
+    """Same-cohort historical comparison. Never rank from result information."""
     relevant = [r for r in records if isinstance(r.get("result"), list) and len(r["result"]) == 3
                 and isinstance(r.get("payouts", {}).get("trio"), int)
                 and (day is None or r.get("date") == day)]
-    strategies = {f"{model}_{n}": {"races": 0, "hits": 0, "spent": 0, "paid": 0}
-                  for model in ("saved", "simulation") for n in (4, 6, 8)}
+    def empty():
+        return {"races": 0, "hits": 0, "spent": 0, "paid": 0}
+    strategies = {f"{model}_{n}": empty() for model in ("saved", "simulation") for n in (4, 6, 8)}
+    paired = {f"{model}_{n}": empty() for model in ("saved", "simulation") for n in (4, 6, 8)}
+    paired_venues = {}
     by_venue = {}
+    def tally(row, numbers, actual, n, payment):
+        row["races"] += 1
+        row["spent"] += n * 100
+        if actual in numbers[:n]:
+            row["hits"] += 1
+            row["paid"] += payment
     for r in relevant:
         result = tuple(sorted(r["result"]))
-        for model, tickets in (("saved", archived_trio_tickets(r)), ("simulation", simulated_trio_tickets(r))):
+        candidates = {"saved": archived_trio_tickets(r), "simulation": simulated_trio_tickets(r)}
+        for model, tickets in candidates.items():
             for n in (4, 6, 8):
-                picks = tickets[:n]
-                if len(picks) < n:
-                    continue
-                record = strategies[f"{model}_{n}"]
-                record["races"] += 1
-                record["spent"] += n*100
-                if result in picks:
-                    record["hits"] += 1
-                    record["paid"] += r["payouts"]["trio"]
+                if len(tickets) >= n:
+                    tally(strategies[f"{model}_{n}"], tickets, result, n, r["payouts"]["trio"])
+        for n in (4, 6, 8):
+            if any(len(candidates[model]) < n for model in candidates):
+                continue
+            for model, tickets in candidates.items():
+                tally(paired[f"{model}_{n}"], tickets, result, n, r["payouts"]["trio"])
+            if n == 8:
+                venue = paired_venues.setdefault(r["venue"], {"saved": empty(), "simulation": empty()})
+                for model, tickets in candidates.items():
+                    tally(venue[model], tickets, result, n, r["payouts"]["trio"])
         by_venue[r["venue"]] = by_venue.get(r["venue"], 0) + 1
-    for row in strategies.values():
+    for row in [*strategies.values(), *paired.values(), *(m for v in paired_venues.values() for m in v.values())]:
         row["roi_pct"] = round(row["paid"]/row["spent"]*100, 1) if row["spent"] else None
         row["hit_pct"] = round(row["hits"]/row["races"]*100, 1) if row["races"] else None
-    return {"date": day or "all", "eligible_races": len(relevant), "venue_counts": by_venue,
-            "strategies": strategies, "warning": "過去データの再計算。実運用と将来成績を保証しない。過去の買い目は不変更。"}
+    return {
+        "date": day or "all", "eligible_races": len(relevant), "venue_counts": by_venue,
+        "strategies": strategies, "same_race_comparison": paired,
+        "same_race_venue_comparison_8": paired_venues,
+        "warning": "同じレースの保存済み事前情報だけで再計算。旧記録の特徴量欠損は比較対象から除外。将来成績を保証しない。過去の買い目は不変更。"
+    }
 
 
 def selftest():
@@ -288,6 +304,7 @@ def selftest():
                  "trio_tickets": [[1, 2, 3], [1, 2, 4], [1, 2, 5], [1, 2, 6]]}
     stat = backtest([synthetic], "2026-11-04")["strategies"]["saved_4"]
     assert stat["hits"] == 1 and stat["spent"] == 400 and stat["paid"] == 500
+    assert backtest([synthetic], "2026-11-04")["same_race_comparison"]["saved_8"]["races"] == 0
     print("PASS: pre-race trio quotes only, normalized podium model, odds-gated 4/6/8/skip and honest offline backtest")
 
 
