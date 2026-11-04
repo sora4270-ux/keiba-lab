@@ -29,9 +29,9 @@ MAX_FILE = 20 * 1024 * 1024
 TRACK_FIELDS = ("競馬場", "日付", "レース番号")
 BET_TYPES = ("win", "quinella", "exacta", "trio", "trifecta")
 FORECAST_LOCK_BEFORE_START = dt.timedelta(minutes=15)
-# Re-evaluate current official inputs on scheduled runs; only publish
-# within the T-20 to T-15 window. GitHub Actions may be delayed.
-FORECAST_FINALIZATION_WINDOW = dt.timedelta(minutes=5)
+# Publish provisional forecasts as soon as the official entries arrive.
+# A later scheduled run seals the most recent pre-cutoff snapshot; if GitHub
+# Actions is delayed, no data observed after T-15 is used to change its picks.
 
 
 def as_int(value):
@@ -497,9 +497,15 @@ def update_data(races, now, previous, paybacks=None, odds_index=None):
     if not isinstance(old, list):
         raise ValueError("保存された予想履歴の形式が不正です")
     entries = {p["id"]: p for p in old if isinstance(p, dict) and p.get("id")}
+    old_drafts = previous.get("drafts", [])
+    if not isinstance(old_drafts, list):
+        raise ValueError("事前予想の保存形式が不正です")
+    drafts = {
+        p["id"]: p for p in old_drafts
+        if isinstance(p, dict) and isinstance(p.get("id"), str)
+        and p["id"] not in entries
+    }
     calibration = learn_parameters(old, now)
-    # A lightweight race calendar is published independently of frozen picks.
-    # The public feed contains only date/venue/race/time metadata, never raw CSV.
     past_schedule = previous.get("schedule", [])
     if not isinstance(past_schedule, list):
         past_schedule = []
@@ -526,24 +532,51 @@ def update_data(races, now, previous, paybacks=None, odds_index=None):
     odds_updated = 0
     paybacks = paybacks or {}
     odds_index = odds_index or {}
+
+    # Seal a snapshot that was computed before T-15, even if this scheduled
+    # workflow was delayed or today's official CSV no longer lists that race.
+    # Never recompute a snapshot after the deadline or use race results in it.
+    for ident, draft in list(drafts.items()):
+        try:
+            cutoff = dt.datetime.fromisoformat(draft["cutoff_at"])
+            predicted = dt.datetime.fromisoformat(draft["predicted_at"])
+            start_at = dt.datetime.fromisoformat(draft["start_at"])
+            valid = (predicted < cutoff == start_at - FORECAST_LOCK_BEFORE_START
+                     and predicted < now and len(draft.get("top3", [])) == 3)
+        except (KeyError, TypeError, ValueError):
+            valid = False
+        if not valid or ident in entries:
+            del drafts[ident]
+            continue
+        if now >= cutoff:
+            sealed = dict(draft)
+            sealed.pop("status", None)
+            # locked_at is the source snapshot timestamp, not an invented
+            # action execution time; finalized_at records actual commit work.
+            sealed["locked_at"] = sealed["predicted_at"]
+            sealed["finalized_at"] = now.isoformat(timespec="seconds")
+            entries[ident] = sealed
+            del drafts[ident]
+            added += 1
+
     for race in races:
         ident = race["id"]
-        is_new = ident not in entries
-        if is_new:
-            # A forecast made after the race or shortly before off is not valid.
-            deadline = race["start"] - FORECAST_LOCK_BEFORE_START
-            # Do not publish early; calculate using the latest official inputs.
-            # Do not backfill when the T-20 to T-15 run was missed.
-            if not (deadline - FORECAST_FINALIZATION_WINDOW <= now < deadline):
-                continue
-            # Strictly exclude races that already report results.
-            if any(h["rank"] in (1, 2, 3) for h in race["horses"]):
-                continue
-            locked_market = odds_index.get((race["venue"], race["date"].replace("-", ""), race["race_no"]), {})
-            entries[ident] = forecast(race, now, locked_market, calibration)
-            added += 1
-        # Keep the forecast frozen. Later display odds are never training features.
         market = odds_index.get((race["venue"], race["date"].replace("-", ""), race["race_no"]), {})
+        deadline = race["start"] - FORECAST_LOCK_BEFORE_START
+        if ident not in entries:
+            if now < deadline and not any(h["rank"] in (1, 2, 3) for h in race["horses"]):
+                # Publish a preliminary prediction early, keep updating it
+                # with only data available strictly before the T-15 cutoff.
+                prior = drafts.get(ident)
+                proposal = forecast(race, now, market, calibration)
+                proposal.pop("locked_at", None)
+                proposal["status"] = "draft"
+                proposal["created_at"] = prior.get("created_at", prior["predicted_at"]) if prior else proposal["predicted_at"]
+                drafts[ident] = proposal
+            continue
+
+        # Frozen picks never change. Display-only market data and verified
+        # results may still be added after the race without touching the picks.
         if market:
             valid_nos = {h["no"] for h in race["horses"]}
             items = [market[n] for n in sorted(market) if n in valid_nos]
@@ -551,31 +584,35 @@ def update_data(races, now, previous, paybacks=None, odds_index=None):
             if items and record.get("market", {}).get("horses") != items:
                 record["market"] = {"horses": items, "updated_at": now.isoformat(timespec="seconds")}
                 odds_updated += 1
-        if not is_new:
-            order = settled_order(race["horses"])
-            if order and settle(entries[ident], order, now):
-                settled += 1
-            # Payback CSV can arrive after the race results; add amounts later
-            # without altering originally published pre-race predictions.
-            record = entries[ident]
-            if isinstance(record.get("result"), list):
-                verified = official_payouts(paybacks, race, record["result"])
-                if verified:
-                    old_amounts = record.get("payouts") or {}
-                    if any(old_amounts.get(k) != v for k, v in verified.items()):
-                        record["payouts"] = {**old_amounts, **verified}
-                        payout_updated += 1
-    # Prevent unbounded site data growth. Keep latest 5000 independently timestamped forecasts.
+        order = settled_order(race["horses"])
+        if order and settle(entries[ident], order, now):
+            settled += 1
+        record = entries[ident]
+        if isinstance(record.get("result"), list):
+            verified = official_payouts(paybacks, race, record["result"])
+            if verified:
+                old_amounts = record.get("payouts") or {}
+                if any(old_amounts.get(k) != v for k, v in verified.items()):
+                    record["payouts"] = {**old_amounts, **verified}
+                    payout_updated += 1
+
     predictions = sorted(entries.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)[:5000]
-    model_changed = (previous.get("method") != "新規予想は発走前の単勝オッズと過去成績を融合し、確定済みレースだけで確率を補正。過去の予想は変更しません。的中保証なし。" or previous.get("learning") != calibration)
+    # Keep draft storage bounded, but not at the expense of upcoming races.
+    previews = sorted(drafts.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)[:500]
+    method = "出馬表取得後に事前予想を公開し発走15分前まで更新。締切時点の最新の事前予想を固定。確定結果のみで学習し予想を遡及変更しません。"
+    model_changed = previous.get("method") != method or previous.get("learning") != calibration
+    drafts_changed = previews != previous.get("drafts", [])
     return {
         "schema_version": 1, "scope": "NAR地方競馬のみ（中央JRAは対象外）",
         "source": "NAR公式CSVデータ（分析結果のみ表示）",
-        "method": "新規予想は発走前の単勝オッズと過去成績を融合し、確定済みレースだけで確率を補正。過去の予想は変更しません。的中保証なし。",
+        "method": method,
         "learning": calibration,
-        "updated_at": now.isoformat(timespec="seconds") if added or settled or payout_updated or odds_updated or schedule_changed or model_changed or not previous else previous.get("updated_at"),
+        "updated_at": now.isoformat(timespec="seconds") if (added or settled or payout_updated or odds_updated
+                         or schedule_changed or drafts_changed or model_changed or not previous)
+                      else previous.get("updated_at"),
         "schedule_updated_at": now.isoformat(timespec="seconds") if schedule_changed or not previous else previous.get("schedule_updated_at"),
         "schedule": calendar,
+        "drafts": previews,
         "races": predictions, "summary": summary(predictions)
     }, added, settled, payout_updated + odds_updated
 
@@ -605,15 +642,19 @@ def selftest():
     races = parse_races({"racelist": [(row, {})], "horselist": horse_template})
     assert len(races) == 1
     early, early_added, _, _ = update_data(races, now - dt.timedelta(minutes=15), {})
-    assert early_added == 0 and early["races"] == [] and len(early["schedule"]) == 1
-    out, added, settled_count, payout_count = update_data(races, now, {})
-    assert added == 1 and settled_count == 0 and out["summary"]["settled"] == 0
-    assert len(out["schedule"]) == 1 and out["schedule"][0]["date"] == "2026-11-02"
-    assert out["schedule"][0]["start_at"] == "2026-11-02T15:40+09:00"
-    pre = out["races"][0]
-    assert (dt.datetime.fromisoformat(pre["predicted_at"]) <=
-            dt.datetime.fromisoformat(pre["cutoff_at"]))
-    assert pre["locked_at"] == pre["predicted_at"]
+    assert early_added == 0 and early["races"] == [] and len(early["drafts"]) == 1
+    assert len(early["schedule"]) == 1 and early["schedule"][0]["date"] == "2026-11-02"
+    assert early["schedule"][0]["start_at"] == "2026-11-02T15:40+09:00"
+    preview = early["drafts"][0]
+    assert preview["status"] == "draft" and "locked_at" not in preview
+    assert preview["predicted_at"] == "2026-11-02T15:07:00+09:00"
+    assert preview["created_at"] == preview["predicted_at"]
+    draft_updated, n, _, _ = update_data(races, now, early)
+    assert n == 0 and len(draft_updated["drafts"]) == 1
+    latest = draft_updated["drafts"][0]
+    assert latest["predicted_at"] == now.isoformat(timespec="seconds")
+    assert latest["created_at"] == preview["created_at"]
+    assert "locked_at" not in latest
     assert forecast(races[0], races[0]["start"] - dt.timedelta(minutes=16))["top3"]
     for delta in (dt.timedelta(minutes=15), dt.timedelta(minutes=14)):
         try:
@@ -622,15 +663,34 @@ def selftest():
             pass
         else:
             raise AssertionError("15分前以降の予想作成が許可されました")
+    cutoff = races[0]["start"] - FORECAST_LOCK_BEFORE_START
+    # If the scheduled action runs after T-15, it must ONLY seal the
+    # pre-existing early snapshot; no new or result-derived picks.
+    locked, added, settled_count, payout_count = update_data(
+        races, cutoff + dt.timedelta(minutes=2), draft_updated)
+    assert added == 1 and settled_count == 0 and payout_count == 0
+    assert len(locked["drafts"]) == 0 and len(locked["races"]) == 1
+    pre = locked["races"][0]
+    assert pre["predicted_at"] == latest["predicted_at"]
+    assert pre["locked_at"] == latest["predicted_at"]
+    assert pre["top3"] == latest["top3"] and pre["tickets"] == latest["tickets"]
+    assert pre["trio_tickets"] == latest["trio_tickets"]
+    assert dt.datetime.fromisoformat(pre["finalized_at"]) > dt.datetime.fromisoformat(pre["cutoff_at"])
     assert len(pre["tickets"]) == 12 and abs(sum(x["win_probability"] for x in pre["top3"])) < 1.001
     assert len(pre["trio_tickets"]) == 8
     assert all(ticket == sorted(ticket) and len(ticket) == len(set(ticket)) == 3 for ticket in pre["trio_tickets"])
     assert len({tuple(ticket) for ticket in pre["trio_tickets"]}) == 8
+    # Never backfill if an entire prediction was missed before the cutoff.
+    missed, missed_added, _, _ = update_data(races, cutoff + dt.timedelta(minutes=1), {})
+    assert missed_added == 0 and missed["races"] == [] and missed["drafts"] == []
+    # A late workflow can still seal a verified previously saved preview.
+    delayed, count, _, _ = update_data([], races[0]["start"] + dt.timedelta(minutes=12), early)
+    assert count == 1 and delayed["races"][0]["top3"] == preview["top3"]
     for i, (_, _) in enumerate(horse_template):
         horse_template[i][0][31] = str(i+1) if i < 3 else ""
     races = parse_races({"racelist": [(row, {})], "horselist": horse_template})
     late = dt.datetime(2026, 11, 2, 16, 0, tzinfo=JST)
-    out2, a, s, p = update_data(races, late, out)
+    out2, a, s, p = update_data(races, late, locked)
     assert a == 0 and s == 1 and out2["summary"]["settled"] == 1
     assert out2["summary"]["trio_multi_settled"] == 1
     assert out2["races"][0]["hits"]["trio_multi"] == trio_multi_hit(out2["races"][0], [1, 2, 3])
@@ -705,7 +765,7 @@ def selftest():
     assert learn_parameters(past, dt.datetime(2026, 11, 2, 15, tzinfo=JST))["form_training_races"] == 0
     print("PASS: pre-lock odds, history-only calibration and immutable predictions")
     print("PASS: official NAR single-win odds, popularity and frozen ranking")
-    print("PASS: T-15 cutoff, finalisation window, frozen picks, result scoring and verified payouts")
+    print("PASS: early provisional forecasts, T-15 cutoff, late safe finalization, frozen picks and results")
 
 
 def main():
@@ -728,11 +788,12 @@ def main():
     now = dt.datetime.now(JST)
     out, added, settled_count, payout_count = update_data(races, now, previous, payback_index(tables), odds_index)
     if (added or settled_count or payout_count or out["schedule"] != previous.get("schedule", [])
+            or out.get("drafts") != previous.get("drafts", [])
             or out.get("method") != previous.get("method") or out.get("learning") != previous.get("learning")
             or not DATA_PATH.exists()):
         DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
         DATA_PATH.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"NAR calendar entries: {len(out['schedule'])}; NAR races: {len(races)}, newly predicted: {added}, newly settled: {settled_count}, market/payout updates: {payout_count}; total: {out['summary']['predicted']}, settled: {out['summary']['settled']}")
+    print(f"NAR calendar entries: {len(out['schedule'])}; NAR races: {len(races)}, preliminary: {len(out['drafts'])}, newly frozen: {added}, newly settled: {settled_count}, market/payout updates: {payout_count}; total frozen: {out['summary']['predicted']}, settled: {out['summary']['settled']}")
 
 
 if __name__ == "__main__":
