@@ -33,6 +33,13 @@ assert.equal(combined.races,1);
 assert.equal(combined.stats.spent,600);
 assert.equal(combined.stats.returned,13450);
 assert.ok(Math.abs(combined.stats.rate-(13450/600*100))<0.001);
+const experimental={...nar,trio_value:{tickets:[[1,2,3],[1,2,4],[1,3,4],[2,3,4]]}};
+assert.equal(api.narReferenceWager(experimental,'trio_value').spent,400);
+assert.equal(api.narReferenceWager(experimental,'trio_value').returned,2000);
+assert.equal(api.narReferenceWager({...experimental,trio_value:{tickets:[]}},'trio_value'),null);
+assert.equal(api.narReferenceWager(nar,'trio_value'),null);
+assert.equal(api.completeBasket([experimental],api.narReferenceWager).stats.spent,600,
+  'Experimental wagers must NOT be mixed into the existing 5-type basket');
 const noPay={...nar,payouts:{...payouts,trio:null}};
 assert.equal(api.completeBasket([noPay],api.narReferenceWager).races,0);
 assert.equal(api.narReferenceWager(noPay,'trio'),null);
