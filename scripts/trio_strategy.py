@@ -115,6 +115,21 @@ def ticket_ranking(horses, win, form, market, config=None):
     return ordered, sorted(trios.items(), key=lambda x: (-x[1], x[0]))
 
 
+def reference_ticket_ranking(horses, win_probs):
+    """Frozen v2 reference ticket ranking, unchanged for fair comparison."""
+    ranked, trios = [], {}
+    n = len(horses)
+    for i, j, k in itertools.permutations(range(n), 3):
+        probability = win_probs[i] * win_probs[j] / max(1e-12, 1-win_probs[i])
+        probability *= win_probs[k] / max(1e-12, 1-win_probs[i]-win_probs[j])
+        numbers = [horses[i]["no"], horses[j]["no"], horses[k]["no"]]
+        ranked.append((probability, numbers))
+        key = tuple(sorted(numbers))
+        trios[key] = trios.get(key, 0) + probability
+    ranked.sort(key=lambda x: (-x[0], x[1]))
+    return ranked, sorted(trios.items(), key=lambda x: (-x[1], x[0]))
+
+
 def value_selection(ranked_trios, official_quotes, observed_at, threshold=1.15):
     """Use observed pre-cutoff TRIO odds. Missing or insufficient value -> skip."""
     available = isinstance(official_quotes, dict) and bool(official_quotes)
@@ -249,6 +264,9 @@ def selftest():
     form = normalize([.25, .16, .12, .2, .15, .12])
     ordered, trios = ticket_ranking(horses, win, form, win)
     assert len(ordered) == 120 and len(trios) == 20
+    reference, old_trios = reference_ticket_ranking(horses, win)
+    assert len(reference) == len(ordered) and len(old_trios) == len(trios)
+    assert abs(sum(p for _, p in old_trios) - 1) < 1e-8
     assert abs(sum(p for _, p in trios) - 1) < 1e-8
     quotes = {t: 100. for t, _ in trios}
     picked = value_selection(trios, quotes, "2026-11-04T19:00+09:00")
