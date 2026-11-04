@@ -17,6 +17,7 @@ import sys
 import urllib.request
 import zipfile
 from zoneinfo import ZoneInfo
+from trio_strategy import trio_odds_index, ticket_ranking, value_selection, calibration_for_podium
 
 JST = ZoneInfo("Asia/Tokyo")
 BASE_URL = "https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=daily"
@@ -316,11 +317,12 @@ def learn_parameters(records, now):
                         for p, m, i in prelock) / len(prelock)
                     + .01 * (w-.8)**2)
         weight = min([.5, .6, .7, .8, .9], key=market_loss)
-    return {"form_alpha": alpha, "market_weight": weight,
+    podium = calibration_for_podium(records, now)
+    return {"form_alpha": alpha, "market_weight": weight, **podium,
             "form_training_races": n, "market_training_races": len(prelock)}
 
 
-def forecast(race, timestamp, market=None, calibration=None):
+def forecast(race, timestamp, market=None, calibration=None, trio_market=None):
     deadline = race["start"] - FORECAST_LOCK_BEFORE_START
     if timestamp >= deadline:
         raise ValueError("発走15分前以降のレースの予想は新規作成しません")
@@ -335,18 +337,10 @@ def forecast(race, timestamp, market=None, calibration=None):
     ranked = sorted(range(len(horses)), key=lambda i: (-probs[i], horses[i]["no"]))
     pick = [{"no": horses[i]["no"], "name": horses[i]["name"],
              "win_probability": round(probs[i], 4)} for i in ranked[:3]]
-    # All ordered three-horse finishing combinations; no result lookup.
-    tickets = []
-    for i, j, k in itertools.permutations(range(len(horses)), 3):
-        p = probs[i] * probs[j] / max(1e-12, 1-probs[i])
-        p *= probs[k] / max(1e-12, 1-probs[i]-probs[j])
-        tickets.append((p, [horses[i]["no"], horses[j]["no"], horses[k]["no"]]))
-    tickets.sort(key=lambda x: (-x[0], x[1]))
-    trio_scores = {}
-    for p, numbers in tickets:
-        key = tuple(sorted(numbers))
-        trio_scores[key] = trio_scores.get(key, 0.) + p
-    trio_sorted = sorted(trio_scores.items(), key=lambda x: (-x[1], x[0]))
+    # Keep separate probabilities for first, second and third place.
+    # All inputs are from a snapshot strictly before the T-15 cutoff.
+    tickets, trio_sorted = ticket_ranking(horses, probs, form, market_p, cfg)
+    value = value_selection(trio_sorted, trio_market, timestamp.isoformat(timespec="seconds"))
     output = {
         "id": race["id"], "date": race["date"], "venue": race["venue"],
         "race_no": race["race_no"], "name": race["name"],
@@ -354,15 +348,17 @@ def forecast(race, timestamp, market=None, calibration=None):
         "predicted_at": timestamp.isoformat(timespec="seconds"),
         "locked_at": timestamp.isoformat(timespec="seconds"),
         "cutoff_at": deadline.isoformat(timespec="minutes"),
-        "model": "form_market_v2_calibrated" if market_p else "form_v2_no_odds",
-        "calibration": {k: cfg[k] for k in ("form_alpha","market_weight",
-                                           "form_training_races","market_training_races")},
+        "model": "form_market_v3_podium" if market_p else "form_v3_podium_no_odds",
+        "calibration": {k: cfg.get(k) for k in ("form_alpha", "market_weight",
+                  "form_training_races", "market_training_races", "place_market_weight",
+                  "show_market_weight", "podium_training_races")},
         "top3": pick,
         "ranking": [{"no": horses[i]["no"], "name": horses[i]["name"],
                      "win_probability": round(probs[i], 6),
                      "form_probability": round(original_form[i], 6)} for i in ranked],
         "tickets": [numbers for _, numbers in tickets[:12]],
         "trio_tickets": [list(numbers) for numbers, _ in trio_sorted[:8]],
+        "trio_value": value,
         "result": None, "settled_at": None, "hits": None
     }
     # Display verified official quotes even in preliminary forecasts. These
@@ -475,6 +471,7 @@ def settle(pred, result, now):
         "exacta": guessed[:2] == [a, b],
         "trio": same_pair(guessed, result),
         "trio_multi": trio_multi_hit(pred, result),
+        "trio_value": sorted(result) in [sorted(t) for t in (pred.get("trio_value") or {}).get("tickets", [])],
         "trifecta": result in pred["tickets"]
     }
     return True
@@ -500,7 +497,7 @@ def summary(predictions):
     }
 
 
-def update_data(races, now, previous, paybacks=None, odds_index=None):
+def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index=None):
     old = previous.get("races", [])
     if not isinstance(old, list):
         raise ValueError("保存された予想履歴の形式が不正です")
@@ -540,6 +537,7 @@ def update_data(races, now, previous, paybacks=None, odds_index=None):
     odds_updated = 0
     paybacks = paybacks or {}
     odds_index = odds_index or {}
+    trio_index = trio_index or {}
 
     # Seal a snapshot that was computed before T-15, even if this scheduled
     # workflow was delayed or today's official CSV no longer lists that race.
@@ -576,7 +574,8 @@ def update_data(races, now, previous, paybacks=None, odds_index=None):
                 # Publish a preliminary prediction early, keep updating it
                 # with only data available strictly before the T-15 cutoff.
                 prior = drafts.get(ident)
-                proposal = forecast(race, now, market, calibration)
+                official_trios = trio_index.get((race["venue"], race["date"].replace("-", ""), race["race_no"]), {})
+                proposal = forecast(race, now, market, calibration, official_trios)
                 # If an odds ZIP temporarily fails, keep the prior observed
                 # quote timestamp for display. Never pretend it is current.
                 if not proposal.get("market") and prior and isinstance(prior.get("market"), dict):
@@ -611,7 +610,7 @@ def update_data(races, now, previous, paybacks=None, odds_index=None):
     predictions = sorted(entries.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)[:5000]
     # Keep draft storage bounded, but not at the expense of upcoming races.
     previews = sorted(drafts.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)[:500]
-    method = "出馬表取得後に事前予想を公開し発走15分前まで更新。締切時点の最新の事前予想を固定。確定結果のみで学習し予想を遡及変更しません。"
+    method = "発走15分前まで事前予想を更新。2着・3着の確率を別評価し公式三連複オッズ取得時だけ実験的な4/6/8点・見送りを併記。確定済みの予想と買い目を遡及変更しません。"
     model_changed = previous.get("method") != method or previous.get("learning") != calibration
     drafts_changed = previews != previous.get("drafts", [])
     return {
@@ -746,6 +745,11 @@ def selftest():
         2: {"no": 2, "odds": 3.4, "popularity": 1},
         1: {"no": 1, "odds": 10.8, "popularity": 4},
     }
+    # Regression: 2nd/3rd-place score is normalized and the value picks must
+    # never be synthesized from a single-win market quote.
+    assert len(forecast(races[0], now)["trio_tickets"]) == 8
+    assert forecast(races[0], now)["trio_value"]["status"] == "no_official_trio_odds"
+    assert len(forecast(races[0], now)["trio_value"]["tickets"]) == 0
     # Regression: a live draft must expose official popularity/odds before T-15.
     # Sealing the draft must retain the same quote and original predictions.
     upcoming = {**races[0],
@@ -811,13 +815,15 @@ def main():
     if not races:
         raise RuntimeError("有効なレースがありません。CSV形式か配信状況を確認してください")
     previous = json.loads(DATA_PATH.read_text(encoding="utf-8")) if DATA_PATH.exists() else {}
-    odds_index = {}
+    odds_index, trio_index = {}, {}
     try:
-        odds_index = odds_market_index(fetch_daily_zip(ODDS_URL, MAX_ODDS_DOWNLOAD))
+        odds_archive = fetch_daily_zip(ODDS_URL, MAX_ODDS_DOWNLOAD)
+        odds_index = odds_market_index(odds_archive)
+        trio_index = trio_odds_index(odds_archive)
     except Exception as exc:
         print(f"NAR公式オッズ未取得（予想・結果は続行）: {exc}", file=sys.stderr)
     now = dt.datetime.now(JST)
-    out, added, settled_count, payout_count = update_data(races, now, previous, payback_index(tables), odds_index)
+    out, added, settled_count, payout_count = update_data(races, now, previous, payback_index(tables), odds_index, trio_index)
     if (added or settled_count or payout_count or out["schedule"] != previous.get("schedule", [])
             or out.get("drafts") != previous.get("drafts", [])
             or out.get("method") != previous.get("method") or out.get("learning") != previous.get("learning")
