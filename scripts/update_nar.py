@@ -17,7 +17,8 @@ import sys
 import urllib.request
 import zipfile
 from zoneinfo import ZoneInfo
-from trio_strategy import trio_odds_index, ticket_ranking, value_selection, calibration_for_podium
+from trio_strategy import (trio_odds_index, reference_ticket_ranking, ticket_ranking,
+                           value_selection, calibration_for_podium)
 
 JST = ZoneInfo("Asia/Tokyo")
 BASE_URL = "https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=daily"
@@ -339,8 +340,9 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None):
              "win_probability": round(probs[i], 4)} for i in ranked[:3]]
     # Keep separate probabilities for first, second and third place.
     # All inputs are from a snapshot strictly before the T-15 cutoff.
-    tickets, trio_sorted = ticket_ranking(horses, probs, form, market_p, cfg)
-    value = value_selection(trio_sorted, trio_market, timestamp.isoformat(timespec="seconds"))
+    tickets, trio_sorted = reference_ticket_ranking(horses, probs)
+    _, podium_trios = ticket_ranking(horses, probs, form, market_p, cfg)
+    value = value_selection(podium_trios, trio_market, timestamp.isoformat(timespec="seconds"))
     output = {
         "id": race["id"], "date": race["date"], "venue": race["venue"],
         "race_no": race["race_no"], "name": race["name"],
@@ -358,6 +360,7 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None):
                      "form_probability": round(original_form[i], 6)} for i in ranked],
         "tickets": [numbers for _, numbers in tickets[:12]],
         "trio_tickets": [list(numbers) for numbers, _ in trio_sorted[:8]],
+        "podium_trio_tickets": [list(numbers) for numbers, _ in podium_trios[:8]],
         "trio_value": value,
         "result": None, "settled_at": None, "hits": None
     }
@@ -610,7 +613,7 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
     predictions = sorted(entries.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)[:5000]
     # Keep draft storage bounded, but not at the expense of upcoming races.
     previews = sorted(drafts.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)[:500]
-    method = "発走15分前まで事前予想を更新。2着・3着の確率を別評価し公式三連複オッズ取得時だけ実験的な4/6/8点・見送りを併記。確定済みの予想と買い目を遡及変更しません。"
+    method = "従来の三連複8点を比較用に保持し、2着・3着を別評価した実験候補と公式三連複オッズによる4/6/8点・見送りを併記。発走15分前まで更新、確定済みの予想を変更しません。"
     model_changed = previous.get("method") != method or previous.get("learning") != calibration
     drafts_changed = previews != previous.get("drafts", [])
     return {
@@ -748,6 +751,7 @@ def selftest():
     # Regression: 2nd/3rd-place score is normalized and the value picks must
     # never be synthesized from a single-win market quote.
     assert len(forecast(races[0], now)["trio_tickets"]) == 8
+    assert len(forecast(races[0], now)["podium_trio_tickets"]) == 8
     assert forecast(races[0], now)["trio_value"]["status"] == "no_official_trio_odds"
     assert len(forecast(races[0], now)["trio_value"]["tickets"]) == 0
     # Regression: a live draft must expose official popularity/odds before T-15.
