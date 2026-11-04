@@ -2,14 +2,17 @@
   "schema_version": 1,
   "scope": "NAR地方競馬のみ（中央JRAは対象外）",
   "source": "NAR公式CSVデータ（分析結果のみ表示）",
-  "method": "出馬表取得後に事前予想を公開し発走15分前まで更新。締切時点の最新の事前予想を固定。確定結果のみで学習し予想を遡及変更しません。",
+  "method": "発走15分前まで事前予想を更新。2着・3着の確率を別評価し公式三連複オッズ取得時だけ実験的な4/6/8点・見送りを併記。確定済みの予想と買い目を遡及変更しません。",
   "learning": {
     "form_alpha": 2.0,
     "market_weight": 0.8,
+    "place_market_weight": 0.65,
+    "show_market_weight": 0.5,
+    "podium_training_races": 51,
     "form_training_races": 91,
     "market_training_races": 51
   },
-  "updated_at": "2026-11-04T22:19:25+09:00",
+  "updated_at": "2026-11-04T23:01:57+09:00",
   "schedule_updated_at": "2026-11-04T18:31:10+09:00",
   "schedule": [
     {
