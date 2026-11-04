@@ -217,7 +217,7 @@
    <p id="nar-status" class="hint" role="status" aria-live="polite">自動予想データを読み込み中...</p>
    <span id="nar-last-check" aria-live="polite">新着レースを画面表示中に約2分ごと確認します。</span>
    <div class="venue-toolbar date-toolbar"><div class="field"><label for="nar-view-date">開催日</label><select id="nar-view-date"><option value="today">今日</option><option value="all">すべての日付</option></select></div><div class="field"><label for="nar-view-venue">競馬場</label><select id="nar-view-venue"><option value="all">全競馬場</option></select></div><div class="field"><label for="nar-view-number">レース番号</label><select id="nar-view-number"><option value="all">全レース</option><option value="1">1R</option><option value="2">2R</option><option value="3">3R</option><option value="4">4R</option><option value="5">5R</option><option value="6">6R</option><option value="7">7R</option><option value="8">8R</option><option value="9">9R</option><option value="10">10R</option><option value="11">11R</option><option value="12">12R</option></select></div><button type="button" class="btn sm reset-filter" data-reset-scope="nar">今日・全競馬場に戻す</button></div>
-   <div class="view-mode"><div class="field"><label for="nar-view-mode">表示内容を選択</label><select id="nar-view-mode"><option value="predictions">レース予想</option><option value="results">レース結果</option></select></div><div class="mode-choices" data-mode-select="nar-view-mode" role="group" aria-label="地方競馬の表示内容"><button type="button" class="mode-choice" data-mode="predictions" aria-pressed="true">🏇 レース予想</button><button type="button" class="mode-choice" data-mode="results" aria-pressed="false">🎯 レース結果</button></div><span class="hint-copy">予想は確定買い目のみ、結果は着順・的中・払戻・回収率を表示します。</span></div>
+   <div class="view-mode"><div class="field"><label for="nar-view-mode">表示内容を選択</label><select id="nar-view-mode"><option value="predictions">レース予想</option><option value="results">レース結果</option></select></div><div class="mode-choices" data-mode-select="nar-view-mode" role="group" aria-label="地方競馬の表示内容"><button type="button" class="mode-choice" data-mode="predictions" aria-pressed="true">🏇 レース予想</button><button type="button" class="mode-choice" data-mode="results" aria-pressed="false">🎯 レース結果</button></div><span class="hint-copy">予想は事前公開→発走15分前締切→確定保存。結果表示・的中率には確定予想のみを使います。</span></div>
    <div id="nar-results-summary" hidden>
    <div id="nar-kpis" class="metric-grid" aria-label="自動予想の的中率"></div>
     <div class="hrow" style="margin-top:16px"><h3 style="margin:0">参考回収率・収支</h3><label class="field" for="nar-roi-period"><span class="tiny muted">集計期間</span><select class="roi-select" id="nar-roi-period"><option value="all">全期間</option><option value="today">本日</option><option value="7d">直近7日間</option><option value="30d">直近30日間</option></select></label></div>
@@ -232,7 +232,7 @@
    <div id="nar-races"><div class="empty">データ読み込み待ち</div></div>
    <p class="section-note">地方競馬の単勝オッズ・人気は公式オッズCSVを取得できた場合のみ表示。未取得の場合は空欄とし、保存済みの買い目には影響しません。</p>
    <p class="section-note">確定済みレースはNAR公式CSVに払戻が掲載されると券種別の確定金額（100円あたり）と、保存済み買い目を各100円購入した場合の参考収支を表示します。払戻未取得時は金額を表示しません。</p>
-    <p class="section-note">自動予想は毎回のデータ取得とGitHub Actionsの稼働状況によって遅延・欠測する場合があります。実際の発走・確定結果は主催者発表でご確認ください。旧モデルの予想はそのまま保存。新規予想は発走前の単勝オッズを主に使い、確定結果で過去成績モデルの確率を補正します（学習件数が不足すると固定係数）。発走15分前の確定に間に合わない場合は未予想です。的中・収益を保証せず、確定済みの買い目は後から変更しません。</p>
+    <p class="section-note">自動予想は毎回のデータ取得とGitHub Actionsの稼働状況によって遅延・欠測する場合があります。実際の発走・確定結果は主催者発表でご確認ください。旧モデルの予想はそのまま保存。新規予想は発走前の単勝オッズを主に使い、確定結果で過去成績モデルの確率を補正します（学習件数が不足すると固定係数）。出馬表取得後は事前予想を表示・更新し、発走15分前を締切として直前の保存済み予想を固定します。GitHub Actionsの実行遅延により確定保存の反映時刻が遅れる場合があります。事前予想は的中率・回収率に含めず、確定済みの買い目は後から変更しません。的中・収益は保証しません。</p>
  </section>
 
 
@@ -958,6 +958,8 @@ function narRender(data,localCopy=false){
  $('nar-results-summary').hidden=mode!=='results';
  $('nar-list-title').textContent=mode==='results'?'レース結果':'レース予想';
  const now=new Date(),arr=Array.isArray(data?.races)?data.races:[];
+ const sealedIds=new Set(arr.map(r=>r.id));
+ const previews=(Array.isArray(data?.drafts)?data.drafts:[]).filter(r=>r?.status==='draft'&&!sealedIds.has(r.id));
  const calendar=Array.isArray(data?.schedule)?data.schedule.filter(r=>r&&typeof r.id==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(r.date||'')):[];
  const stamp=typeof data?.updated_at==='string'?Date.parse(data.updated_at):NaN;
  const old=Number.isFinite(stamp)&&now.getTime()-stamp>24*60*60*1000;
@@ -966,13 +968,14 @@ function narRender(data,localCopy=false){
  if(learned)status.push('確率補正の学習元：照合済み'+Number(data.learning.form_training_races)+'R ／ 発走前オッズの学習元：'+Number(data.learning.market_training_races)+'R');
  if(Number.isFinite(stamp))status.push('最後の新規予想・結果更新：'+new Date(stamp).toLocaleString('ja-JP'));
  if(old)status.push('データが24時間以上更新されていません');
+ status.push('事前予想 '+previews.length+'R ／ 確定予想 '+arr.length+'R ／ 最終確定締切：発走15分前');
  if(localCopy)status.push('端末内キャッシュから表示中（最大70件のため競馬場別集計が一部になる場合があります）');
  $('nar-status').textContent=status.join(' ／ ');
  const confirmedResults=arr.filter(r=>Array.isArray(r.result)&&r.result.length===3).length;
  const updatedLabel=Number.isFinite(stamp)?new Date(stamp).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'不明';
- $('quick-live-summary').textContent='地方競馬：予想確定 '+arr.length+'R ／ 結果照合 '+confirmedResults+'R ／ 開催情報 '+calendar.length+'R　｜　更新 '+updatedLabel+(localCopy?'（保存済み）':'')+(old?' ⚠ 24時間以上前':'')+'　※取得済み情報';
+ $('quick-live-summary').textContent='地方競馬：事前予想 '+previews.length+'R ／ 確定予想 '+arr.length+'R ／ 結果照合 '+confirmedResults+'R ／ 開催情報 '+calendar.length+'R　｜　更新 '+updatedLabel+(localCopy?'（保存済み）':'')+(old?' ⚠ 24時間以上前':'')+'　※取得済み情報';
  const nextMap=new Map(),nowMillis=Date.now(),today=jstRaceToday();
- for(const r of [...calendar,...arr]){
+ for(const r of [...calendar,...previews,...arr]){
   const when=Date.parse(r.start_at);
   if(r.date!==today||!Number.isFinite(when)||when<=nowMillis)continue;
   const key=String(r.id||r.date+'-'+r.venue+'-'+r.race_no);
@@ -982,19 +985,20 @@ function narRender(data,localCopy=false){
  if(quickNextRace){
   const r=quickNextRace;
   const scheduledTime=new Date(r.start_at).toLocaleTimeString('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hour12:false});
-  const ready=arr.some(x=>x.id===r.id);
+  const ready=sealedIds.has(r.id),prepared=previews.some(x=>x.id===r.id);
   const remaining=Math.max(0,Math.ceil((Date.parse(r.start_at)-nowMillis)/60000));
-  const state=ready?'予想確定済み':remaining<=15?'締切を過ぎたため未予想':'予想確定待ち';
+  const state=ready?'予想確定済み':prepared?(Date.parse(r.start_at)-nowMillis<=900000?'事前予想あり・確定保存待ち':'事前予想公開中・15分前に確定'):(remaining<=15?'締切を過ぎたため未予想':'事前予想の準備中');
   $('quick-next-race').innerHTML='<div><strong>次の発走予定：'+esc(scheduledTime)+' '+esc(r.venue)+' '+esc(r.race_no)+'R</strong><small>'+('発走まで約'+remaining+'分 ／ '+state)+(localCopy?' ／ 保存データを表示中':'')+'</small></div><button type="button" class="btn sm primary" id="quick-open-next">このレースを見る</button>';
  }else{
   $('quick-next-race').innerHTML='<div><strong>取得済みデータに本日のこれからのレースはありません</strong><small>開催日を切り替えると過去の予想・結果も確認できます。'+(localCopy?' 現在は保存データを表示中。':'')+'</small></div>';
  }
- const venue=updateVenueOptions($('nar-view-venue'),[...arr,...calendar],NAR_VENUES);
- const date=updateRaceDateOptions($('nar-view-date'),[...arr,...calendar]);
+ const venue=updateVenueOptions($('nar-view-venue'),[...arr,...previews,...calendar],NAR_VENUES);
+ const date=updateRaceDateOptions($('nar-view-date'),[...arr,...previews,...calendar]);
  const dateMatches=r=>date==='all'||r.date===date;
  const raceNumber=$('nar-view-number').value;
  const matchesNumber=r=>raceNumber==='all'||Number(r.race_no)===Number(raceNumber);
  const viewed=arr.filter(r=>(venue==='all'||r.venue===venue)&&dateMatches(r)&&matchesNumber(r));
+ const viewedPreviews=previews.filter(r=>(venue==='all'||r.venue===venue)&&dateMatches(r)&&matchesNumber(r));
  const modelStats=[
   ['旧モデル',r=>!String(r.model||'').startsWith('form_market_v2')&&!String(r.model||'').startsWith('form_v2')],
   ['新モデル：オッズ併用',r=>String(r.model||'').startsWith('form_market_v2')],
@@ -1032,24 +1036,24 @@ function narRender(data,localCopy=false){
   return '<div class="metric-card"><small>'+label+'</small><b>'+roiLabel(x)+'</b><div class="roi-detail">対象 '+x.n+'レース ／ 購入 '+amount(x.spent)+' ／ 払戻 '+amount(x.returned)+'<br>収支 '+roiSigned(x.profit)+'</div></div>';
  }).join("");
  $("nar-roi-footnote").textContent="回収率＝仮想払戻合計÷仮想購入額×100。結果照合済み "+roiRaces.length+"レースのうち、5券種すべての払戻金がある "+basket.races+"レースを全体回収率に使用。券種別は払戻取得済みのレースのみ。全体は三連複の候補全点を採用し、本線1点は二重計上しません。返還・同着等の特殊ケースはこの簡易集計の対象外。実際の購入実績ではありません。";
- const upcoming=viewed.filter(r=>!r.result&&Date.parse(r.start_at)>Date.now()).sort((a,b)=>Date.parse(a.start_at)-Date.parse(b.start_at));
+ const upcoming=[...viewed,...viewedPreviews].filter(r=>!r.result&&Date.parse(r.start_at)>Date.now()).sort((a,b)=>Date.parse(a.start_at)-Date.parse(b.start_at));
  const finished=forecastResultRows(viewed,'results').sort((a,b)=>Date.parse(b.start_at)-Date.parse(a.start_at));
- const pending=viewed.filter(r=>!r.result&&Date.parse(r.start_at)<=Date.now()).sort((a,b)=>Date.parse(b.start_at)-Date.parse(a.start_at));
- const predictedIds=new Set(viewed.map(r=>r.id));
+ const pending=[...viewed,...viewedPreviews].filter(r=>!r.result&&Date.parse(r.start_at)<=Date.now()).sort((a,b)=>Date.parse(b.start_at)-Date.parse(a.start_at));
+ const predictedIds=new Set([...viewed,...viewedPreviews].map(r=>r.id));
  const unpredicted=scheduled.filter(r=>!predictedIds.has(r.id)).map(r=>({...r,_scheduleOnly:true}));
  const futureUnpredicted=unpredicted.filter(r=>Date.parse(r.start_at)>Date.now());
  const pastUnpredicted=unpredicted.filter(r=>Date.parse(r.start_at)<=Date.now());
  const front=[...upcoming,...futureUnpredicted].sort((a,b)=>Date.parse(a.start_at)-Date.parse(b.start_at));
  const shown=mode==='results'?finished.slice(0,60):[...front.slice(0,40),...pending.slice(0,10),...pastUnpredicted.sort((a,b)=>Date.parse(b.start_at)-Date.parse(a.start_at)).slice(0,10),...finished.slice(0,30)];
- $('nar-count').textContent=mode==='results'?'確定結果 '+finished.length+'R ／ 予想確定 '+viewed.length+'R':'開催情報 '+(viewed.length+unpredicted.length)+'R ／ 予想確定 '+viewed.length+'R ／ 未予想 '+unpredicted.length+'R';
+ $('nar-count').textContent=mode==='results'?'確定結果 '+finished.length+'R ／ 予想確定 '+viewed.length+'R':'開催情報 '+(viewed.length+viewedPreviews.length+unpredicted.length)+'R ／ 事前予想 '+viewedPreviews.length+'R ／ 確定予想 '+viewed.length+'R ／ 未予想 '+unpredicted.length+'R';
  if(!shown.length){
   const historical=mode==='results'&&arr.some(r=>Array.isArray(r.result)&&r.result.length===3);
   $('nar-races').innerHTML='<div class="empty">'+(mode==='results'?'この条件で確定結果が取得できたレースはまだありません。':'この条件で予想・開催情報はまだ登録されていません。')+(historical?'<div style="margin-top:12px"><button type="button" class="btn primary sm" data-show-all-results="nar">全日付・全競馬場の結果を見る</button></div>':'')+'</div>';return;
  }
  $('nar-races').innerHTML=shown.map(r=>{
   if(r._scheduleOnly){
-   const label=Date.parse(r.start_at)-Date.now()>900000?'予想準備中・直前データ確認待ち':'締切到達・未予想';
-   return '<div class="nar-race nar-unpredicted"><div class="nar-race-head"><strong>'+esc(r.date+' '+r.venue+' '+r.race_no+'R')+'</strong><span class="pill gray">'+label+'</span></div><div class="muted tiny">発走予定 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ 予想締切 '+esc(frozenCutoffLabel(r))+'</div><p>開催情報のみ取得しました。発走15分前までに予想が確定した場合だけ買い目を表示します。未予想は的中率・回収率の集計対象外です。</p></div>';
+   const label=Date.parse(r.start_at)-Date.now()>900000?'事前予想の準備中':'締切到達・未予想';
+   return '<div class="nar-race nar-unpredicted"><div class="nar-race-head"><strong>'+esc(r.date+' '+r.venue+' '+r.race_no+'R')+'</strong><span class="pill gray">'+label+'</span></div><div class="muted tiny">発走予定 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ 予想締切 '+esc(frozenCutoffLabel(r))+'</div><p>開催情報のみ取得しました。出馬表が確認でき次第、事前予想と買い目を公開します。発走15分前までに事前予想が作成されなかったレースは集計しません。</p></div>';
   }
   const top=Array.isArray(r.top3)?r.top3:[],tickets=Array.isArray(r.tickets)?r.tickets:[],hits=r.hits||{},trio=savedTrioList(r);
    if(mode==='results'){
@@ -1059,11 +1063,15 @@ function narRender(data,localCopy=false){
     return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(r.date+' '+r.venue+' '+r.race_no+'R')+'</strong><span class="pill">結果確定 '+esc(correct)+'</span></div><div class="muted tiny">発走予定 '+esc(r.start_at.replace('T',' ').slice(0,16))+' ／ 予想確定 '+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+'</div><div class="nar-result">実際の1〜3着：<b>'+esc(correct)+'</b><div>当初の予想：'+esc(main)+'</div><div>'+hitText+'</div></div>'+purchaseDetailHtml(r)+narPayoutHtml(r,trioHit)+'</div>';
    }
   const displayDate=String(r.date||'')+' '+String(r.venue||'')+' '+String(r.race_no||'')+'R';
-  const actual=Date.parse(r.start_at)<Date.now()?'予想固定・発走済み':'予想固定・発走前';
+  const draft=r.status==='draft';
+  const afterCutoff=Date.now()>=Date.parse(r.cutoff_at);
+  const actual=draft?(afterCutoff?'事前予想あり・確定保存待ち':'事前予想・更新中'):(Date.parse(r.start_at)<Date.now()?'予想固定・発走済み':'予想確定・発走前');
+  const stampLabel=draft?'事前予想の最終更新 ':'最終予想の作成 ';
+  const finalizeLabel=!draft&&r.finalized_at?' ／ 確定処理 '+String(r.finalized_at).replace('T',' ').slice(0,16):'';
   const trioMultiHit=Array.isArray(r.result)&&trio.some(t=>t.join('-')===[...r.result].sort((a,b)=>a-b).join('-'));
   const simple='';
   const modelTag=String(r.model||'').startsWith('form_market_v2')?'新モデル｜発走前オッズ併用':String(r.model||'').startsWith('form_v2')?'新モデル｜オッズなし': '旧モデル｜過去成績のみ';
-  return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></div><div class="muted tiny">発走予定 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ 予想確定 '+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+' ／ 締切 '+esc(frozenCutoffLabel(r))+' ／ '+esc(modelTag)+'</div><div class="nar-line">'+top.map((p,i)=>'<span class="nar-pick">'+(i===0?'◎':i===1?'○':'▲')+' '+esc(p.no)+'番 '+esc(p.name)+' <b>'+narPct(100*Number(p.win_probability))+'</b></span>').join('')+'</div>'+raceInsightHtml(r,'NAR')+'<div class="nar-trio-title">三連複の買い目 <span class="pill">'+trio.length+'点</span></div><div class="nar-trio-list">'+trioTokens(trio)+'</div><div class="nar-trio-note">'+(Array.isArray(r.trio_tickets)?'順位に関係なく3頭が入れば的中。候補上位8点までを発走前に固定。':'旧予想の保存済み三連単候補を順不同に換算（新規予想ではありません）。')+'</div><div class="nar-result">'+simple+'</div>'+purchaseDetailHtml(r)+'<details><summary>三連単候補12点を確認</summary><p>'+tickets.map((t,i)=>esc(Array.isArray(t)?t.join('→'):t)+'（100円）').join(' ／ ')+'</p></details></div>';
+  return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></div><div class="muted tiny">発走予定 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ '+stampLabel+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+finalizeLabel+' ／ 締切 '+esc(frozenCutoffLabel(r))+' ／ '+esc(modelTag)+'</div><div class="nar-line">'+top.map((p,i)=>'<span class="nar-pick">'+(i===0?'◎':i===1?'○':'▲')+' '+esc(p.no)+'番 '+esc(p.name)+' <b>'+narPct(100*Number(p.win_probability))+'</b></span>').join('')+'</div>'+raceInsightHtml(r,'NAR')+'<div class="nar-trio-title">三連複の買い目 <span class="pill">'+trio.length+'点</span></div><div class="nar-trio-list">'+trioTokens(trio)+'</div><div class="nar-trio-note">'+(Array.isArray(r.trio_tickets)?'順位に関係なく3頭が入れば的中。候補上位8点。'+(draft?'確定前のため買い目は更新されます。':'予想固定済みで変更しません。')+'':'旧予想の保存済み三連単候補を順不同に換算（新規予想ではありません）。')+'</div><div class="nar-result">'+simple+'</div>'+purchaseDetailHtml(r)+'<details><summary>三連単候補12点を確認</summary><p>'+tickets.map((t,i)=>esc(Array.isArray(t)?t.join('→'):t)+'（100円）').join(' ／ ')+'</p></details></div>';
  }).join('');
 }
 let narFetching=false,narLastPollAt=0;
@@ -1080,7 +1088,7 @@ async function narRefresh(silent=false){
   const data=JSON.parse(text);if(data?.schema_version!==1||!Array.isArray(data.races)||!data.summary)throw Error('データの形式が不正です');
   narRender(data);
   $('nar-last-check').textContent='最終確認：'+new Date().toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})+' ／ 画面表示中は約2分ごとに新規レースを確認';
-  try{localStorage.setItem('keiba_lab_nar_auto_preview',JSON.stringify({...data,races:data.races.slice(0,70),schedule:(data.schedule||[]).slice(-200)}));}catch(e){}
+  try{localStorage.setItem('keiba_lab_nar_auto_preview',JSON.stringify({...data,races:data.races.slice(0,70),drafts:(data.drafts||[]).slice(0,120),schedule:(data.schedule||[]).slice(-200)}));}catch(e){}
  }catch(e){
   let cached;try{cached=JSON.parse(localStorage.getItem('keiba_lab_nar_auto_preview')||'null');}catch(e){}
   if(cached&&Array.isArray(cached.races)){narRender(cached,true);$('nar-status').textContent+=' ／ 最新版の取得失敗：'+e.message;}
@@ -1091,6 +1099,7 @@ $('nar-refresh').addEventListener('click',()=>narRefresh(false));
 $('quick-refresh').addEventListener('click',()=>narRefresh(false));
 narRefresh();
 setInterval(()=>{if(document.visibilityState==='visible')narRefresh(true);},120000);
+setInterval(()=>{if(document.visibilityState==='visible'&&narViewedData?.drafts?.length)narRender(narViewedData,narViewedCached);},30000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-narLastPollAt>60000)narRefresh(true);});
 
 const JRA_VENUES=new Set(['東京','中山','京都','阪神','中京','新潟','福島','小倉','札幌','函館']);
