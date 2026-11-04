@@ -790,7 +790,7 @@ def selftest():
     assert trained["top3"][0]["no"] != forecast(races[0], now)["top3"][0]["no"]
     assert trained["market_at_lock"]["updated_at"] == trained["locked_at"]
     assert trained["cutoff_at"] == "2026-11-02T15:25+09:00"
-    assert forecast(races[0], now)["model"] == "form_v2_no_odds"
+    assert forecast(races[0], now)["model"] == "form_v3_podium_no_odds"
     past = [dict(pre, result=[1, 2, 3], settled_at="2026-11-02T16:01:00+09:00",
                  market={"horses": list(big_fav.values()),
                          "updated_at": "2026-11-02T16:10:00+09:00"})
