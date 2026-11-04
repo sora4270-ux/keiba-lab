@@ -229,6 +229,7 @@
    </div>
    <div class="hrow"><h3 style="margin:15px 0 8px" id="nar-list-title">レース予想</h3><span id="nar-count" class="muted tiny"></span></div>
    <div id="nar-model-comparison" class="roi-mini" aria-live="polite">新旧モデルの成績を読み込み中...</div>
+   <div id="nar-coverage" class="roi-mini" aria-live="polite">予想対象レースの取得状況を確認中...</div>
    <div id="nar-races"><div class="empty">データ読み込み待ち</div></div>
    <p class="section-note">新モデルは1着と2・3着を別に評価します。三連複8点の比較用候補とは別に、公式の発走前三連複オッズがある場合だけ「4・6・8点または見送り」の参考買い目を表示します。オッズ未取得時は見送り。モデルの推定倍率は検証途上で利益を保証しません。</p>
    <p class="section-note">確定済みレースはNAR公式CSVに払戻が掲載されると券種別の確定金額（100円あたり）と、保存済み買い目を各100円購入した場合の参考収支を表示します。払戻未取得時は金額を表示しません。</p>
@@ -1024,6 +1025,12 @@ function narRender(data,localCopy=false){
  const prospective=compared.length?'　｜　凍結済み同条件比較 '+compared.length+'R：従来8点 '+simulate(compared,savedTrioList)+' ／ 着順別の実験8点 '+simulate(compared,r=>r.podium_trio_tickets)+(compared.length<100?'（標本少・参考）':''):'　｜　着順別の実験方式：今後の結果を蓄積して比較';
  $('nar-model-comparison').textContent='新旧モデルの結果比較（選択した開催日・競馬場）：'+modelStats.join('　｜　')+prospective;
  const scheduled=calendar.filter(r=>(venue==='all'||r.venue===venue)&&dateMatches(r)&&matchesNumber(r));
+ const snapshotIds=new Set([...viewed,...viewedPreviews].map(r=>r.id));
+ const unavailable=scheduled.filter(r=>!snapshotIds.has(r.id));
+ const stale=viewed.filter(r=>Number.isFinite(Date.parse(r.cutoff_at)-Date.parse(r.predicted_at))
+   && Date.parse(r.cutoff_at)-Date.parse(r.predicted_at)>15*60000);
+ const missedLabel=unavailable.length?' ／ 未予想 '+unavailable.length+'R（'+unavailable.slice(0,5).map(r=>r.venue+r.race_no+'R').join('・')+(unavailable.length>5?'ほか':'')+'）':' ／ 未予想0R';
+ $('nar-coverage').textContent='開催情報 '+scheduled.length+'R ／ 事前予想＋確定予想 '+(scheduled.length-unavailable.length)+'R'+missedLabel+(stale.length?' ／ ⚠ 締切より15分以上前の予想 '+stale.length+'R':'')+'。過去の未予想レースは後から補完しません。';
  let ss=data?.summary||{};
  const cards=[['win','単勝・本命1点'],['quinella','馬連・上位2頭'],['exacta','馬単・上位2頭'],['trio','三連複・本線1点'],['trio_multi','三連複・候補最大8点'],['trifecta','三連単・12点']];
  if(venue!=='all'||date!=='all'||raceNumber!=='all'){
