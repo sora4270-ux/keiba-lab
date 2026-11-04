@@ -35,6 +35,21 @@ assert.match(jra, /2番・6番/);
 assert.match(jra, /全頭の人気順と予想順位を見る/);
 assert.ok(jra.indexOf('2番</b> 逃げA') < jra.indexOf('6番</b> 逃げB'));
 
+// A saved pre-lock snapshot must display for previews created before the fix.
+const historicPreview = render({
+  ranking: [
+    {no: 8,name: '予想本命',win_probability:.6},
+    {no: 2,name: 'オッズ最人気',win_probability:.3}
+  ],
+  market_at_lock: {horses:[
+    {no:8,odds:7.8,popularity:2},
+    {no:2,odds:2.1,popularity:1}
+  ],updated_at:'2026-11-04T11:18:22+09:00'}
+},'NAR');
+assert.match(historicPreview,/2\.1倍/);
+assert.match(historicPreview,/1番人気/);
+assert.match(historicPreview,/予想時点の保存値/);
+
 // Missing odds must never be replaced with imagined odds.
 const missing = render({top3:[{no:1,name:'オッズ不明',win_probability:.3}]},'NAR');
 assert.match(missing, /単勝オッズ未取得/);

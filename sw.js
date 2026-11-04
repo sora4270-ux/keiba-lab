@@ -1,4 +1,4 @@
-const CACHE = 'keiba-lab-static-v3.16.0';
+const CACHE = 'keiba-lab-static-v3.16.1';
 const APP_SHELL = ['./', './index.html', './race-intel.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 self.addEventListener('install', event => { event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(APP_SHELL)).then(()=>self.skipWaiting())); });
 self.addEventListener('activate', event => { event.waitUntil(caches.keys().then(names=>Promise.all(names.filter(n=>n.startsWith('keiba-lab-static-')&&n!==CACHE).map(n=>caches.delete(n)))).then(()=>self.clients.claim())); });

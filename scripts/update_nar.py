@@ -365,6 +365,14 @@ def forecast(race, timestamp, market=None, calibration=None):
         "trio_tickets": [list(numbers) for numbers, _ in trio_sorted[:8]],
         "result": None, "settled_at": None, "hits": None
     }
+    # Display verified official quotes even in preliminary forecasts. These
+    # are observations, not model guesses, and can be incomplete.
+    if isinstance(market, dict) and market:
+        eligible = {h["no"] for h in horses}
+        visible = [dict(market[no]) for no in sorted(market) if no in eligible]
+        if visible:
+            output["market"] = {
+                "horses": visible, "updated_at": timestamp.isoformat(timespec="seconds")}
     if market_p:
         # Immutable pre-lock input; the display-only 'market' can change later.
         output["market_at_lock"] = {
@@ -569,6 +577,10 @@ def update_data(races, now, previous, paybacks=None, odds_index=None):
                 # with only data available strictly before the T-15 cutoff.
                 prior = drafts.get(ident)
                 proposal = forecast(race, now, market, calibration)
+                # If an odds ZIP temporarily fails, keep the prior observed
+                # quote timestamp for display. Never pretend it is current.
+                if not proposal.get("market") and prior and isinstance(prior.get("market"), dict):
+                    proposal["market"] = prior["market"]
                 proposal.pop("locked_at", None)
                 proposal["status"] = "draft"
                 proposal["created_at"] = prior.get("created_at", prior["predicted_at"]) if prior else proposal["predicted_at"]
@@ -734,6 +746,25 @@ def selftest():
         2: {"no": 2, "odds": 3.4, "popularity": 1},
         1: {"no": 1, "odds": 10.8, "popularity": 4},
     }
+    # Regression: a live draft must expose official popularity/odds before T-15.
+    # Sealing the draft must retain the same quote and original predictions.
+    upcoming = {**races[0],
+                "horses": [{**h, "rank": None} for h in races[0]["horses"]]}
+    draft_odds, _, _, _ = update_data([upcoming], now, {}, odds_index=market)
+    displayed = draft_odds["drafts"][0]
+    assert displayed["market"]["horses"] == [
+        {"no": 1, "odds": 10.8, "popularity": 4},
+        {"no": 2, "odds": 3.4, "popularity": 1}]
+    assert displayed["market"]["updated_at"] == displayed["predicted_at"]
+    # A temporarily missing ZIP should not erase the last observed numbers.
+    kept_odds, _, _, _ = update_data(
+        [upcoming], now + dt.timedelta(minutes=1), draft_odds)
+    assert kept_odds["drafts"][0]["market"] == displayed["market"]
+    lock_odds, count_odds, _, _ = update_data(
+        [upcoming], cutoff + dt.timedelta(seconds=30), kept_odds)
+    assert count_odds == 1
+    assert lock_odds["races"][0]["market"] == displayed["market"]
+    assert lock_odds["races"][0]["top3"] == kept_odds["drafts"][0]["top3"]
     again, a, settled_again, changed = update_data(
         races, late, enriched, paybacks, market)
     assert (a, settled_again, changed) == (0, 0, 1)

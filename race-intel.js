@@ -14,7 +14,14 @@ function raceInsightHtml(record, source = 'NAR') {
     {no:x,name:record.horseNames?.[record.horseNos?.indexOf(x)] || '馬名未保存'} : x)
     .sort((a,b) => Number(b.win_probability ?? -1) - Number(a.win_probability ?? -1));
   if (!runners.length) return '';
-  const marketRows = Array.isArray(record?.market?.horses) ? record.market.horses :
+  // Historic/preliminary NAR forecasts saved pre-lock odds separately.
+  // Prefer the latest published quote, then a labelled saved pre-lock snapshot.
+  const latestMarket = Array.isArray(record?.market?.horses) && record.market.horses.length
+    ? record.market : null;
+  const snapshotMarket = Array.isArray(record?.market_at_lock?.horses) && record.market_at_lock.horses.length
+    ? record.market_at_lock : null;
+  const observedMarket = latestMarket || snapshotMarket;
+  const marketRows = observedMarket ? observedMarket.horses :
     (source === 'input' || source === 'JRA') ? runners : [];
   const market = new Map(marketRows.filter(x => Number.isInteger(Number(x.no)))
     .map(x => [Number(x.no), x]));
@@ -65,8 +72,9 @@ function raceInsightHtml(record, source = 'NAR') {
     oddsSorted.map(x => '<tr><td>' + esc(x.popularity) + '人気</td><td>' + esc(x.no) +
       ' ' + esc(x.name) + '</td><td>' + x.predictedRank + '位</td><td>' +
       esc(x.odd.toFixed(1)) + '倍</td></tr>').join('') + '</tbody></table></details>' : '';
-  const savedAt = record?.market?.updated_at ? new Date(record.market.updated_at).toLocaleString('ja-JP') : '予想保存・入力時点';
-  const label = source === 'NAR' ? '地方競馬公式の単勝オッズ' :
+  const savedAt = observedMarket?.updated_at ? new Date(observedMarket.updated_at).toLocaleString('ja-JP') : '予想保存・入力時点';
+  const label = source === 'NAR'
+    ? ('地方競馬公式の単勝オッズ' + (!latestMarket && snapshotMarket ? '（予想時点の保存値）' : '')) :
     source === 'JRA' ? '利用者が登録した単勝オッズ' : '入力した単勝オッズ';
   return '<div class="race-intel"><div class="race-intel-head"><span>🏁 展開予想・単勝オッズ・人気順</span><span class="pace-tag">' +
     esc(pace) + '</span></div><p class="pace-note">' + esc(paceText + topGap) +
