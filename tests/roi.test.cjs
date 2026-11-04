@@ -40,6 +40,15 @@ assert.equal(api.narReferenceWager({...experimental,trio_value:{tickets:[]}},'tr
 assert.equal(api.narReferenceWager(nar,'trio_value'),null);
 assert.equal(api.completeBasket([experimental],api.narReferenceWager).stats.spent,600,
   'Experimental wagers must NOT be mixed into the existing 5-type basket');
+// v3 experimental tickets are accounted for separately: 0 tickets = skip.
+const valueFixture={...nar,trio_value:{status:'candidate',tickets:[[1,2,3],[1,2,4],[1,3,4],[2,3,4]]}};
+assert.equal(api.narReferenceWager(valueFixture,'trio_value').spent,400);
+assert.equal(api.narReferenceWager(valueFixture,'trio_value').returned,2000);
+assert.equal(api.narReferenceWager({...valueFixture,result:[2,3,4]},'trio_value').returned,2000);
+assert.equal(api.narReferenceWager({...valueFixture,trio_value:{status:'below_threshold',tickets:[]}},'trio_value'),null);
+assert.equal(api.narReferenceWager(nar,'trio_value'),null);
+assert.equal(api.completeBasket([valueFixture],api.narReferenceWager).stats.spent,600,
+  'Optional experiment must not be double-counted in the 5-type basket');
 const noPay={...nar,payouts:{...payouts,trio:null}};
 assert.equal(api.completeBasket([noPay],api.narReferenceWager).races,0);
 assert.equal(api.narReferenceWager(noPay,'trio'),null);
