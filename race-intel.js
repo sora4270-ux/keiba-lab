@@ -11,8 +11,10 @@ function raceInsightHtml(record, source = 'NAR') {
   // JRA saved runners use source/input order; sort by the frozen win estimate.
   // Older JRA ledgers only saved top3 numbers and names (no historical odds).
   const runners = rawRunners.map(x => typeof x === 'number' ?
-    {no:x,name:record.horseNames?.[record.horseNos?.indexOf(x)] || '馬名未保存'} : x)
-    .sort((a,b) => Number(b.win_probability ?? -1) - Number(a.win_probability ?? -1));
+    {no:x,name:record.horseNames?.[record.horseNos?.indexOf(x)] || '馬名未保存'} : x);
+  if (!Array.isArray(record?.ranking)) {
+    runners.sort((a,b) => Number(b.win_probability ?? -1) - Number(a.win_probability ?? -1));
+  }
   if (!runners.length) return '';
   // Historic/preliminary NAR forecasts saved pre-lock odds separately.
   // Prefer the latest published quote, then a labelled saved pre-lock snapshot.

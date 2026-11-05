@@ -20,9 +20,8 @@ const source = [
   "const raceKey = r => r.date+'|'+r.id;",
   'const model = {trained:false};',
   "const probs = ()=>{throw Error('not needed for odds-only test');};",
-  "const $ = id => id==='budget'?{value:'1000'}:{value:'main',checked:false};",
-  'const exactCombinations = ()=>[];',
-  'const chooseTickets = ()=>[];',
+  'const $ = ()=>({checked:false});',
+  between('function predictionTickets(', 'const pct='),
   'const persistLedger = ()=>true;',
   'const renderLedger = ()=>{};',
   lock, jra, snapshot, save,
@@ -51,6 +50,14 @@ const race=(delta,id='test')=>({...valid,id,date:jstDate(now+delta),start_at:iso
 assert.throws(()=>api.makeSnapshot(race(14*60*1000),'licensed feed'),/15分前/);
 assert.throws(()=>api.makeSnapshot({...race(16*60*1000),start_at:''},'licensed feed'),/発走日時は必須/);
 const available=api.makeSnapshot(race(16*60*1000),'licensed feed');
+assert.equal(available.trio_tickets.length,1);
+assert.equal(available.tickets.length,6);
+const largerField=[...horses,{no:4,name:'Horse D',odds:11},{no:5,name:'Horse E',odds:14},{no:6,name:'Horse F',odds:22}];
+const larger=api.makeSnapshot({...race(16*60*1000,'larger'),horses:largerField},'licensed feed');
+assert.equal(larger.trio_tickets.length,10);
+assert.equal(larger.tickets.length,24);
+assert.equal(new Set(larger.tickets.map(t=>t.join('-'))).size,24);
+assert.ok([...larger.trio_tickets,...larger.tickets].every(t=>!t.includes(6)));
 assert.equal(available.cutoffAt,new Date(Date.parse(available.startAt)-900000).toISOString());
 assert.ok(Date.parse(available.lockedAt)<Date.parse(available.cutoffAt));
 api.addPredictions([available]);

@@ -6,7 +6,6 @@ Initial model is an explicitly untrained, shrinkage-based form heuristic.
 import csv
 import datetime as dt
 import io
-import itertools
 import unicodedata
 import json
 import math
@@ -17,7 +16,7 @@ import sys
 import urllib.request
 import zipfile
 from zoneinfo import ZoneInfo
-from trio_strategy import (trio_odds_index, reference_ticket_ranking, ticket_ranking,
+from trio_strategy import (trio_odds_index, ticket_ranking, top_five_tickets,
                            value_selection, calibration_for_podium)
 
 JST = ZoneInfo("Asia/Tokyo")
@@ -323,7 +322,7 @@ def learn_parameters(records, now):
             "form_training_races": n, "market_training_races": len(prelock)}
 
 
-def forecast(race, timestamp, market=None, calibration=None, trio_market=None):
+def forecast(race, timestamp, market=None, calibration=None, trio_market=None, market_observed_at=None):
     deadline = race["start"] - FORECAST_LOCK_BEFORE_START
     if timestamp >= deadline:
         raise ValueError("発走15分前以降のレースの予想は新規作成しません")
@@ -336,12 +335,19 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None):
     w = cfg["market_weight"] if market_p else 0.
     probs = [(1-w)*p + w*market_p[i] if market_p else p for i, p in enumerate(form)]
     ranked = sorted(range(len(horses)), key=lambda i: (-probs[i], horses[i]["no"]))
-    pick = [{"no": horses[i]["no"], "name": horses[i]["name"],
-             "win_probability": round(probs[i], 4)} for i in ranked[:3]]
-    # Keep separate probabilities for first, second and third place.
-    # All inputs are from a snapshot strictly before the T-15 cutoff.
-    tickets, trio_sorted = reference_ticket_ranking(horses, probs)
-    _, podium_trios = ticket_ranking(horses, probs, form, market_p, cfg)
+    ordered, podium_trios = ticket_ranking(horses, probs, form, market_p, cfg)
+    podium = {horse["no"]: 0. for horse in horses}
+    for probability, ticket in ordered:
+        for no in ticket:
+            podium[no] += probability
+    # Anchor the ranking on the most likely winner. Rank the other
+    # contenders by their chance of making the podium.
+    ranked[1:] = sorted(ranked[1:], key=lambda i: (-podium[horses[i]["no"]], -probs[i], horses[i]["no"]))
+    ranking = [{"no": horses[i]["no"], "name": horses[i]["name"],
+                "win_probability": round(probs[i], 6),
+                "podium_probability": round(podium[horses[i]["no"]], 6),
+                "form_probability": round(original_form[i], 6)} for i in ranked]
+    trio_tickets, tickets = top_five_tickets([row["no"] for row in ranking], ordered)
     value = value_selection(podium_trios, trio_market, timestamp.isoformat(timespec="seconds"))
     output = {
         "id": race["id"], "date": race["date"], "venue": race["venue"],
@@ -350,17 +356,12 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None):
         "predicted_at": timestamp.isoformat(timespec="seconds"),
         "locked_at": timestamp.isoformat(timespec="seconds"),
         "cutoff_at": deadline.isoformat(timespec="minutes"),
-        "model": "form_market_v3_podium" if market_p else "form_v3_podium_no_odds",
+        "model": "form_market_v4_box" if market_p else "form_v4_box_no_odds",
         "calibration": {k: cfg.get(k) for k in ("form_alpha", "market_weight",
                   "form_training_races", "market_training_races", "place_market_weight",
                   "show_market_weight", "podium_training_races")},
-        "top3": pick,
-        "ranking": [{"no": horses[i]["no"], "name": horses[i]["name"],
-                     "win_probability": round(probs[i], 6),
-                     "form_probability": round(original_form[i], 6)} for i in ranked],
-        "tickets": [numbers for _, numbers in tickets[:12]],
-        "trio_tickets": [list(numbers) for numbers, _ in trio_sorted[:8]],
-        "podium_trio_tickets": [list(numbers) for numbers, _ in podium_trios[:8]],
+        "top3": ranking[:3], "top5": ranking[:5], "ranking": ranking,
+        "tickets": tickets, "trio_tickets": trio_tickets,
         "trio_value": value,
         "result": None, "settled_at": None, "hits": None
     }
@@ -371,12 +372,12 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None):
         visible = [dict(market[no]) for no in sorted(market) if no in eligible]
         if visible:
             output["market"] = {
-                "horses": visible, "updated_at": timestamp.isoformat(timespec="seconds")}
+                "horses": visible, "updated_at": market_observed_at or timestamp.isoformat(timespec="seconds")}
     if market_p:
         # Immutable pre-lock input; the display-only 'market' can change later.
         output["market_at_lock"] = {
             "horses": [dict(market[h["no"]]) for h in horses],
-            "updated_at": timestamp.isoformat(timespec="seconds")}
+            "updated_at": market_observed_at or timestamp.isoformat(timespec="seconds")}
     return output
 
 
@@ -496,7 +497,7 @@ def summary(predictions):
         "exacta": rate("exacta"), "trio": rate("trio"),
         "trio_multi": trio_multi_rate, "trio_multi_settled": len(multi_eligible),
         "trifecta": rate("trifecta"),
-        "note": "発走前に予想した確定レースのみ。三連複本線1点と三連複候補最大8点は別集計。以前のレースの三連複候補は保存済み三連単12点を順不同に換算。三連単候補は12点。"
+        "note": "発走前に予想した確定レースのみ。三連複本線1点と三連複候補は別集計。各レースの保存済み買い目を使用し、点数は予想方式により異なります。"
     }
 
 
@@ -568,6 +569,7 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
             del drafts[ident]
             added += 1
 
+    result_details_updated = 0
     for race in races:
         ident = race["id"]
         market = odds_index.get((race["venue"], race["date"].replace("-", ""), race["race_no"]), {})
@@ -578,7 +580,16 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
                 # with only data available strictly before the T-15 cutoff.
                 prior = drafts.get(ident)
                 official_trios = trio_index.get((race["venue"], race["date"].replace("-", ""), race["race_no"]), {})
-                proposal = forecast(race, now, market, calibration, official_trios)
+                prior_market = (prior or {}).get("market_at_lock") or {}
+                prior_quotes = {row["no"]: row for row in prior_market.get("horses", [])}
+                observed = prior_market.get("updated_at")
+                use_prior = (observed and not market_probabilities(race["horses"], market)
+                             and dt.timedelta(0) <= now - dt.datetime.fromisoformat(observed) <= dt.timedelta(minutes=30)
+                             and market_probabilities(race["horses"], prior_quotes))
+                proposal = forecast(race, now, prior_quotes if use_prior else market, calibration,
+                                    official_trios, observed if use_prior else None)
+                if use_prior and market:
+                    proposal["market"] = {"horses": list(market.values()), "updated_at": proposal["predicted_at"]}
                 # If an odds ZIP temporarily fails, keep the prior observed
                 # quote timestamp for display. Never pretend it is current.
                 if not proposal.get("market") and prior and isinstance(prior.get("market"), dict):
@@ -603,6 +614,14 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
             settled += 1
         record = entries[ident]
         if isinstance(record.get("result"), list):
+            if order == record["result"]:
+                finish_order = sorted(
+                    ({"no": h["no"], "name": h["name"], "rank": h["rank"]}
+                     for h in race["horses"] if h["rank"] and h["rank"] > 0),
+                    key=lambda h: (h["rank"], h["no"]))
+                if len(finish_order) > len(record.get("finish_order", [])):
+                    record["finish_order"] = finish_order
+                    result_details_updated += 1
             verified = official_payouts(paybacks, race, record["result"])
             if verified:
                 old_amounts = record.get("payouts") or {}
@@ -613,7 +632,7 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
     predictions = sorted(entries.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)[:5000]
     # Keep draft storage bounded, but not at the expense of upcoming races.
     previews = sorted(drafts.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)[:500]
-    method = "従来の三連複8点を比較用に保持し、2着・3着を別評価した実験候補と公式三連複オッズによる4/6/8点・見送りを併記。発走15分前まで更新、確定済みの予想を変更しません。"
+    method = "本命は勝率、相手は3着内確率で選び、上位5頭で三連複BOXと三連単最大24点を保存。発走15分前まで更新、確定済みの予想を変更しません。"
     model_changed = previous.get("method") != method or previous.get("learning") != calibration
     drafts_changed = previews != previous.get("drafts", [])
     return {
@@ -622,13 +641,13 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
         "method": method,
         "learning": calibration,
         "updated_at": now.isoformat(timespec="seconds") if (added or settled or payout_updated or odds_updated
-                         or schedule_changed or drafts_changed or model_changed or not previous)
+                         or result_details_updated or schedule_changed or drafts_changed or model_changed or not previous)
                       else previous.get("updated_at"),
         "schedule_updated_at": now.isoformat(timespec="seconds") if schedule_changed or not previous else previous.get("schedule_updated_at"),
         "schedule": calendar,
         "drafts": previews,
         "races": predictions, "summary": summary(predictions)
-    }, added, settled, payout_updated + odds_updated
+    }, added, settled, payout_updated + odds_updated + result_details_updated
 
 
 def fetch_daily_zip(url=BASE_URL, max_download=MAX_DOWNLOAD):
@@ -690,10 +709,13 @@ def selftest():
     assert pre["top3"] == latest["top3"] and pre["tickets"] == latest["tickets"]
     assert pre["trio_tickets"] == latest["trio_tickets"]
     assert dt.datetime.fromisoformat(pre["finalized_at"]) > dt.datetime.fromisoformat(pre["cutoff_at"])
-    assert len(pre["tickets"]) == 12 and abs(sum(x["win_probability"] for x in pre["top3"])) < 1.001
-    assert len(pre["trio_tickets"]) == 8
+    assert len(pre["tickets"]) == 24 and abs(sum(x["win_probability"] for x in pre["top3"])) < 1.001
+    assert len(pre["trio_tickets"]) == 10
+    selected = {row["no"] for row in pre["top5"]}
+    assert len(selected) == 5 and all(set(t) <= selected for t in pre["tickets"])
+    assert len({tuple(t) for t in pre["tickets"]}) == 24
     assert all(ticket == sorted(ticket) and len(ticket) == len(set(ticket)) == 3 for ticket in pre["trio_tickets"])
-    assert len({tuple(ticket) for ticket in pre["trio_tickets"]}) == 8
+    assert len({tuple(ticket) for ticket in pre["trio_tickets"]}) == 10
     # Never backfill if an entire prediction was missed before the cutoff.
     missed, missed_added, _, _ = update_data(races, cutoff + dt.timedelta(minutes=1), {})
     assert missed_added == 0 and missed["races"] == [] and missed["drafts"] == []
@@ -707,6 +729,7 @@ def selftest():
     out2, a, s, p = update_data(races, late, locked)
     assert a == 0 and s == 1 and out2["summary"]["settled"] == 1
     assert out2["summary"]["trio_multi_settled"] == 1
+    assert [(h["rank"], h["no"]) for h in out2["races"][0]["finish_order"]] == [(1, 1), (2, 2), (3, 3)]
     assert out2["races"][0]["hits"]["trio_multi"] == trio_multi_hit(out2["races"][0], [1, 2, 3])
     out3, a, s, p = update_data(races, late, out2)
     assert a == 0 and s == 0 and out3["races"][0]["predicted_at"] == pre["predicted_at"]
@@ -750,8 +773,7 @@ def selftest():
     }
     # Regression: 2nd/3rd-place score is normalized and the value picks must
     # never be synthesized from a single-win market quote.
-    assert len(forecast(races[0], now)["trio_tickets"]) == 8
-    assert len(forecast(races[0], now)["podium_trio_tickets"]) == 8
+    assert len(forecast(races[0], now)["trio_tickets"]) == 10
     assert forecast(races[0], now)["trio_value"]["status"] == "no_official_trio_odds"
     assert len(forecast(races[0], now)["trio_value"]["tickets"]) == 0
     # Regression: a live draft must expose official popularity/odds before T-15.
@@ -787,6 +809,11 @@ def selftest():
     # Regression: the odds leader must influence the NEW forecast at T-17.
     big_fav = {i: {"no": i, "odds": 1.1 if i == 1 else 100.0}
                for i in range(1, 9)}
+    quoted, _, _, _ = update_data([upcoming], now, {}, odds_index={("門別", "20261102", 1): big_fav})
+    fallback, _, _, _ = update_data([upcoming], now + dt.timedelta(minutes=1), quoted, odds_index=market)
+    assert fallback["drafts"][0]["market_at_lock"] == quoted["drafts"][0]["market_at_lock"]
+    assert fallback["drafts"][0]["market"]["updated_at"] == fallback["drafts"][0]["predicted_at"]
+    assert fallback["drafts"][0]["top3"][0]["no"] == 1
     trained = forecast(races[0], dt.datetime(2026, 11, 2, 15, 23, tzinfo=JST),
                        big_fav, {"form_alpha": 1., "market_weight": .8,
                                  "form_training_races": 33, "market_training_races": 0})
@@ -794,7 +821,7 @@ def selftest():
     assert trained["top3"][0]["no"] != forecast(races[0], now)["top3"][0]["no"]
     assert trained["market_at_lock"]["updated_at"] == trained["locked_at"]
     assert trained["cutoff_at"] == "2026-11-02T15:25+09:00"
-    assert forecast(races[0], now)["model"] == "form_v3_podium_no_odds"
+    assert forecast(races[0], now)["model"] == "form_v4_box_no_odds"
     past = [dict(pre, result=[1, 2, 3], settled_at="2026-11-02T16:01:00+09:00",
                  market={"horses": list(big_fav.values()),
                          "updated_at": "2026-11-02T16:10:00+09:00"})

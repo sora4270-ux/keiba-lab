@@ -26,3 +26,14 @@ assert.ok(html.includes("const mode=$('nar-view-mode').value"));
 assert.ok(html.includes("const mode=$('jra-view-mode').value"));
 assert.ok(html.includes("const FORECAST_LOCK_MINUTES=15;"));
 console.log('PASS: NAR and JRA forecast/result mode selection and result-only filtering');
+
+const resultTable=new Function('esc',html.slice(html.indexOf('function resultOrderHtml('),html.indexOf('function trioTokens('))+';return resultOrderHtml;')(String);
+const detail=resultTable({
+ result:[3,1,2],finish_order:[{no:3,rank:1},{no:1,rank:2},{no:2,rank:3},{no:4,rank:4}],
+ ranking:[{no:1,name:'A'},{no:3,name:'C'}],
+ market:{horses:[{no:3,odds:7.5}]},market_at_lock:{horses:[{no:1,odds:2.8}]}
+});
+assert.match(detail, /1着<\/td><td>3番 C<\/td><td>7\.5倍<\/td><td>2位/);
+assert.match(detail, /2着<\/td><td>1番 A<\/td><td>2\.8倍.*予想時.*<\/td><td>1位/);
+assert.match(detail, /3着<\/td><td>2番 <\/td><td>未取得<\/td><td>未記録/);
+assert.ok(detail.includes('全着順を見る')&&detail.includes('4着'));

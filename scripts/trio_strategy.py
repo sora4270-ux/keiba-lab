@@ -115,6 +115,14 @@ def ticket_ranking(horses, win, form, market, config=None):
     return ordered, sorted(trios.items(), key=lambda x: (-x[1], x[0]))
 
 
+def top_five_tickets(ranked_ids, ordered):
+    """BOX covers every unordered triple. Keep only the most likely 24 orders."""
+    five = set(ranked_ids[:5])
+    box = [list(combo) for combo in itertools.combinations(sorted(five), 3)]
+    trifecta = [ticket for _, ticket in ordered if five.issuperset(ticket)][:24]
+    return box, trifecta
+
+
 def reference_ticket_ranking(horses, win_probs):
     """Frozen v2 reference ticket ranking, unchanged for fair comparison."""
     ranked, trios = [], {}
@@ -164,7 +172,8 @@ def calibration_for_podium(records, now):
     observations = []
     for r in records:
         try:
-            if dt.datetime.fromisoformat(r["settled_at"]) >= now:
+            settled = dt.datetime.fromisoformat(r["settled_at"])
+            if settled >= now:
                 continue
             snap = r.get("market_at_lock") or {}
             if dt.datetime.fromisoformat(snap["updated_at"]) >= dt.datetime.fromisoformat(r["cutoff_at"]):
@@ -180,20 +189,22 @@ def calibration_for_podium(records, now):
             if not form or not market:
                 continue
             indices = [ids.index(n) for n in r["result"]]
-            observations.append((form, market, indices))
+            observations.append((settled, form, market, indices))
         except (KeyError, TypeError, ValueError, IndexError, OverflowError):
             continue
     defaults = (.65, .50)
     if len(observations) < 60:
         return {"place_market_weight": defaults[0], "show_market_weight": defaults[1], "podium_training_races": len(observations)}
+    recent = sorted(observations, key=lambda row: row[0])[-400:]
+
     def loss(weight, position, prior):
         total = 0
-        for form, market, ids in observations[-400:]:
+        for _, form, market, ids in recent:
             probs = normalize([(1-weight)*f + weight*m for f, m in zip(form, market)])
             excluded = ids[:position]
             conditional = probs[ids[position]] / max(1e-12, 1-sum(probs[j] for j in excluded))
             total -= math.log(max(conditional, 1e-12))
-        return total / len(observations[-400:]) + .02*(weight-prior)**2
+        return total / len(recent) + .02*(weight-prior)**2
     weights = [.3, .5, .65, .8, 1.0]
     return {
         "place_market_weight": min(weights, key=lambda w: loss(w, 1, defaults[0])),

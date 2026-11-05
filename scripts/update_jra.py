@@ -17,6 +17,7 @@ import sys
 import urllib.parse
 import urllib.request
 from zoneinfo import ZoneInfo
+from trio_strategy import top_five_tickets
 
 JST = ZoneInfo("Asia/Tokyo")
 OUT = Path("data/auto/jra_predictions.json")
@@ -74,25 +75,21 @@ def forecast(r, now):
     popularity = {i: rank + 1 for rank, i in enumerate(odds_order)}
     ranks = sorted(range(len(p)), key=lambda i: (-p[i], r["horses"][i]["no"]))
     runners = r["horses"]
-    top3 = [
+    ranking = [
         {"no": runners[i]["no"], "name": runners[i]["name"],
          "win_probability": round(p[i], 6), "odds": runners[i]["odds"], "popularity": popularity[i]}
-        for i in ranks[:3]
+        for i in ranks
     ]
     trifecta = []
-    trio = {}
-    for i, j, k in itertools.permutations(range(len(runners)), 3):
+    for i, j, k in itertools.permutations(ranks[:5], 3):
         denom1 = 1 - p[i]
         denom2 = 1 - p[i] - p[j]
         if denom1 <= 0 or denom2 <= 0:
             continue
         probability = p[i] * p[j] / denom1 * p[k] / denom2
-        pick = [runners[i]["no"], runners[j]["no"], runners[k]["no"]]
-        trifecta.append((probability, pick))
-        key = tuple(sorted(pick))
-        trio[key] = trio.get(key, 0) + probability
+        trifecta.append((probability, [runners[i]["no"], runners[j]["no"], runners[k]["no"]]))
     trifecta.sort(key=lambda t: (-t[0], t[1]))
-    trio_sorted = sorted(trio.items(), key=lambda t: (-t[1], t[0]))
+    trio_tickets, tickets = top_five_tickets([h["no"] for h in ranking], trifecta)
     cutoff = iso(r["start_at"]) - CUT_OFF
     return {
         "id": r["id"], "date": r["date"], "venue": r["venue"], "race_no": r["race_no"],
@@ -100,8 +97,8 @@ def forecast(r, now):
         "cutoff_at": cutoff.isoformat(timespec="seconds"),
         "status": "draft", "predicted_at": now.isoformat(timespec="seconds"),
         "model": "market_only_plackett_luce_untrained",
-        "top3": top3, "trio_tickets": [list(t[0]) for t in trio_sorted[:8]],
-        "tickets": [t[1] for t in trifecta[:12]],
+        "top3": ranking[:3], "top5": ranking[:5], "ranking": ranking,
+        "trio_tickets": trio_tickets, "tickets": tickets,
     }
 
 
@@ -284,8 +281,8 @@ def selftest():
     unconfirmed = update({"races": [], "results": [{**race, "confirmed": False,
                                                    "result": [4, 5, 6]}]}, after, now + dt.timedelta(hours=2))
     assert not unconfirmed["races"][0].get("result")
-    assert len(final["races"][0]["trio_tickets"]) == 8
-    assert len(final["races"][0]["tickets"]) == 12
+    assert len(final["races"][0]["trio_tickets"]) == 10
+    assert len(final["races"][0]["tickets"]) == 24
     assert not_configured()["races"] == []
     print("PASS: licensed JRA provider guard, 15-minute freeze, no retroactive prediction, confirmed results only")
 
