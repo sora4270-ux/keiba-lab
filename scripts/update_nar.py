@@ -501,6 +501,23 @@ def summary(predictions):
     }
 
 
+def display_market(race, quotes, previous, now):
+    """Keep the last official quote per horse without redating missing rows."""
+    previous = previous or {}
+    saved = previous.get("market") or previous.get("market_at_lock") or {}
+    eligible = {h["no"] for h in race["horses"]}
+    latest = {no: quote for no, quote in quotes.items() if no in eligible}
+    saved_rows = {h["no"]: h for h in saved.get("horses", []) if h["no"] in eligible}
+    if not latest:
+        return {**saved, "horses": list(saved_rows.values())} if saved_rows else None
+    rows = [latest[no] if no in latest else
+            {**saved_rows[no], "observed_at": saved_rows[no].get("observed_at", saved.get("updated_at"))}
+            for no in sorted(latest.keys() | saved_rows.keys())]
+    if rows == saved.get("horses"):
+        return saved
+    return {"horses": rows, "updated_at": now.isoformat(timespec="seconds")}
+
+
 def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index=None):
     old = previous.get("races", [])
     if not isinstance(old, list):
@@ -588,12 +605,11 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
                              and market_probabilities(race["horses"], prior_quotes))
                 proposal = forecast(race, now, prior_quotes if use_prior else market, calibration,
                                     official_trios, observed if use_prior else None)
-                if use_prior and market:
-                    proposal["market"] = {"horses": list(market.values()), "updated_at": proposal["predicted_at"]}
-                # If an odds ZIP temporarily fails, keep the prior observed
-                # quote timestamp for display. Never pretend it is current.
-                if not proposal.get("market") and prior and isinstance(prior.get("market"), dict):
-                    proposal["market"] = prior["market"]
+                visible = display_market(race, market, prior, now)
+                if visible:
+                    proposal["market"] = visible
+                else:
+                    proposal.pop("market", None)
                 proposal.pop("locked_at", None)
                 proposal["status"] = "draft"
                 proposal["created_at"] = prior.get("created_at", prior["predicted_at"]) if prior else proposal["predicted_at"]
@@ -602,13 +618,11 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
 
         # Frozen picks never change. Display-only market data and verified
         # results may still be added after the race without touching the picks.
-        if market:
-            valid_nos = {h["no"] for h in race["horses"]}
-            items = [market[n] for n in sorted(market) if n in valid_nos]
-            record = entries[ident]
-            if items and record.get("market", {}).get("horses") != items:
-                record["market"] = {"horses": items, "updated_at": now.isoformat(timespec="seconds")}
-                odds_updated += 1
+        record = entries[ident]
+        visible = display_market(race, market, record, now)
+        if visible and visible != record.get("market"):
+            record["market"] = visible
+            odds_updated += 1
         order = settled_order(race["horses"])
         if order and settle(entries[ident], order, now):
             settled += 1
@@ -814,6 +828,18 @@ def selftest():
     assert fallback["drafts"][0]["market_at_lock"] == quoted["drafts"][0]["market_at_lock"]
     assert fallback["drafts"][0]["market"]["updated_at"] == fallback["drafts"][0]["predicted_at"]
     assert fallback["drafts"][0]["top3"][0]["no"] == 1
+    mixed = fallback["drafts"][0]["market"]
+    assert len(mixed["horses"]) == 8
+    assert mixed["horses"][0] == market[("門別", "20261102", 1)][1]
+    assert mixed["horses"][2]["observed_at"] == quoted["drafts"][0]["market"]["updated_at"]
+    sealed, _, _, _ = update_data([upcoming], cutoff, fallback)
+    partial = {("門別", "20261102", 1): {1: {"no": 1, "odds": 2.3, "popularity": 1}}}
+    refreshed, _, _, _ = update_data([upcoming], cutoff + dt.timedelta(minutes=1), sealed, odds_index=partial)
+    before, after = sealed["races"][0], refreshed["races"][0]
+    assert len(after["market"]["horses"]) == 8 and after["market"]["horses"][0]["odds"] == 2.3
+    assert after["market"]["horses"][1]["observed_at"] == mixed["updated_at"]
+    assert after["market_at_lock"] == before["market_at_lock"]
+    assert after["tickets"] == before["tickets"]
     trained = forecast(races[0], dt.datetime(2026, 11, 2, 15, 23, tzinfo=JST),
                        big_fav, {"form_alpha": 1., "market_weight": .8,
                                  "form_training_races": 33, "market_training_races": 0})
@@ -847,18 +873,19 @@ def main():
         raise RuntimeError("有効なレースがありません。CSV形式か配信状況を確認してください")
     previous = json.loads(DATA_PATH.read_text(encoding="utf-8")) if DATA_PATH.exists() else {}
     odds_index, trio_index = {}, {}
+    odds_status = "unavailable"
     try:
         odds_archive = fetch_daily_zip(ODDS_URL, MAX_ODDS_DOWNLOAD)
         odds_index = odds_market_index(odds_archive)
+        odds_status = "available" if odds_index else "empty"
         trio_index = trio_odds_index(odds_archive)
     except Exception as exc:
         print(f"NAR公式オッズ未取得（予想・結果は続行）: {exc}", file=sys.stderr)
     now = dt.datetime.now(JST)
     out, added, settled_count, payout_count = update_data(races, now, previous, payback_index(tables), odds_index, trio_index)
-    if (added or settled_count or payout_count or out["schedule"] != previous.get("schedule", [])
-            or out.get("drafts") != previous.get("drafts", [])
-            or out.get("method") != previous.get("method") or out.get("learning") != previous.get("learning")
-            or not DATA_PATH.exists()):
+    out["odds_feed"] = {"date": now.date().isoformat(), "status": odds_status}
+    print(f"NAR single-win feed: {odds_status}; {len(odds_index)} races with quotes")
+    if out != previous:
         DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
         DATA_PATH.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"NAR calendar entries: {len(out['schedule'])}; NAR races: {len(races)}, preliminary: {len(out['drafts'])}, newly frozen: {added}, newly settled: {settled_count}, market/payout updates: {payout_count}; total frozen: {out['summary']['predicted']}, settled: {out['summary']['settled']}")

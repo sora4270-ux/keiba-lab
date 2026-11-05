@@ -50,6 +50,16 @@ assert.match(historicPreview,/2\.1倍/);
 assert.match(historicPreview,/1番人気/);
 assert.match(historicPreview,/予想時点の保存値/);
 
+// An incomplete live update must not hide previously observed odds.
+const mixedMarket = render({
+  ranking: [{no: 8, name:'予想本命'}, {no: 2, name:'人気馬'}, {no: 3, name:'オッズなし'}],
+  market_at_lock: {horses:[{no:8, odds:7.8, popularity:2}], updated_at:'2026-11-04T11:18:22+09:00'},
+  market: {horses:[{no:2, odds:2.2}], updated_at:'2026-11-04T11:20:00+09:00'}
+}, 'NAR');
+assert.match(mixedMarket, /7\.8倍（保存値）/);
+assert.match(mixedMarket, /2\.2倍/);
+assert.doesNotMatch(mixedMarket, /1番人気/);
+
 // Missing odds must never be replaced with imagined odds.
 const missing = render({top3:[{no:1,name:'オッズ不明',win_probability:.3}]},'NAR');
 assert.match(missing, /単勝オッズ未取得/);

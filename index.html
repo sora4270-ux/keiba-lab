@@ -414,7 +414,7 @@
 </nav>
 <div class="toast" id="toast" role="status"></div>
 <input type="file" id="result-file" accept=".csv,.json,text/csv,application/json" hidden><input type="file" id="ledger-file" accept=".json,application/json" hidden><input type="file" id="feed-file" accept=".json,.csv,application/json,text/csv" hidden><input type="file" id="race-file" accept=".csv,text/csv" hidden><input type="file" id="history-file" accept=".csv,text/csv" hidden><input type="file" id="model-file" accept=".json,application/json" hidden>
-<script src="./race-intel.js"></script>
+<script src="./race-intel.js?v=4.0.1"></script>
 <script>
 (()=>{'use strict';
 const DEFAULT_W=[0.85,0.45,0.32,0.37,0.26];
@@ -932,13 +932,13 @@ function resultOrderHtml(r){
  const ranking=Array.isArray(r.ranking)?r.ranking:
    Array.isArray(r.runners)?[...r.runners].sort((a,b)=>b.win_probability-a.win_probability):r.top3||[];
  const rankByNo=new Map(ranking.map((h,i)=>[Number(h.no??h),{rank:i+1,name:h.name,odds:h.odds}]));
- const latest=new Map((r.market?.horses||[]).map(h=>[Number(h.no),h.odds]));
+ const latest=new Map((r.market?.horses||[]).map(h=>[Number(h.no),h]));
  const snapshot=new Map((r.market_at_lock?.horses||[]).map(h=>[Number(h.no),h.odds]));
  const validOdds=value=>Number.isFinite(Number(value))&&Number(value)>=1;
  const rows=finish.map(h=>{
   const no=Number(h.no),pick=rankByNo.get(no),observed=latest.get(no);
   const saved=snapshot.get(no)??pick?.odds;
-  const odds=validOdds(observed)?Number(observed).toFixed(1)+'倍':
+  const odds=validOdds(observed?.odds)?Number(observed.odds).toFixed(1)+'倍'+(observed.observed_at?' <small>（保存値）</small>':''):
     validOdds(saved)?Number(saved).toFixed(1)+'倍 <small>（予想時）</small>':'未取得';
   const name=h.name||pick?.name||r.horseNames?.[r.horseNos?.indexOf(no)]||'';
   return '<tr><td>'+esc(h.rank)+'着</td><td>'+esc(no)+'番 '+esc(name)+'</td><td>'+odds+
@@ -946,7 +946,7 @@ function resultOrderHtml(r){
  });
  const table=list=>'<table class="intel-all-table"><thead><tr><th>着順</th><th>馬番・馬名</th><th>単勝オッズ</th><th>予想順位</th></tr></thead><tbody>'+list.join('')+'</tbody></table>';
  const extra=rows.length>3?'<details><summary>全着順を見る</summary>'+table(rows)+'</details>':'';
- const label='<p class="tiny muted">単勝は取得済みの値を表示。発走前に保存した値は「予想時」と表示します。</p>';
+ const label='<p class="tiny muted">単勝は取得済みの値を表示します。「保存値」は以前の取得値、「予想時」は予想時の保存値です。</p>';
  return table(rows.slice(0,3))+extra+label;
 }
 function trioTokens(tickets){return tickets.map((t,i)=>'<span class="nar-trio-item" title="'+(i===0?'本線':'三連複候補')+'">'+esc(t.join(' - '))+'<small class="nar-price">100円</small></span>').join('');}
@@ -1060,12 +1060,15 @@ function narRender(data,localCopy=false){
  const viewed=arr.filter(r=>(venue==='all'||r.venue===venue)&&dateMatches(r)&&matchesNumber(r));
  const viewedPreviews=previews.filter(r=>(venue==='all'||r.venue===venue)&&dateMatches(r)&&matchesNumber(r));
  const shownForOdds=[...viewed,...viewedPreviews];
- const hasQuote=r=>Array.isArray(r.market?.horses)&&r.market.horses.some(h=>Number.isFinite(Number(h.odds))&&Number(h.odds)>=1);
- const quoted=shownForOdds.filter(hasQuote),unquoted=shownForOdds.filter(r=>!hasQuote(r));
- const lastQuotedAt=quoted.map(r=>Date.parse(r.market.updated_at)).filter(Number.isFinite).sort((a,b)=>b-a)[0];
+ const markets=shownForOdds.map(narDisplayMarket);
+ const quoted=markets.filter(m=>m.horses.length);
+ const lastQuotedAt=Math.max(0,...quoted.map(m=>Date.parse(m.updated_at)).filter(Number.isFinite));
  const quotedInfo=lastQuotedAt?' ／ 最終取得 '+new Date(lastQuotedAt).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}):'';
- $('nar-odds-status').textContent='単勝オッズ（選択条件）：取得 '+quoted.length+'/'+shownForOdds.length+'R ／ 未取得 '+unquoted.length+'R'+quotedInfo+
-   (unquoted.length?'。未取得レースは公式データの未公開・配信遅延等の可能性があり、推測値で補いません。':'。取得済みの数値は確認時点のオッズで、最新値とは限りません。');
+ const feed=data.odds_feed;
+ const feedMessage=feed?.date===jstRaceToday()&&(date==='all'||date===feed.date)
+   ? (feed.status==='empty'?' ／ 当日の公式ファイルに単勝オッズはまだありません':
+      feed.status==='unavailable'?' ／ 当日の公式オッズ取得に失敗。保存済みの値がある馬は表示しています':'') : '';
+ $('nar-odds-status').textContent='単勝オッズ（選択条件）：取得 '+quoted.length+'/'+shownForOdds.length+'R'+quotedInfo+feedMessage;
  const modelStats=[
   ['旧方式',r=>!/^form_(market_)?v[234]/.test(r.model||'')],
   ['v2：従来モデル',r=>String(r.model||'').startsWith('form_market_v2')||String(r.model||'').startsWith('form_v2')],
@@ -1154,17 +1157,18 @@ function narRender(data,localCopy=false){
   const finalizeLabel=!draft&&r.finalized_at?' ／ 確定処理 '+String(r.finalized_at).replace('T',' ').slice(0,16):'';
   const trioMultiHit=Array.isArray(r.result)&&trio.some(t=>t.join('-')===[...r.result].sort((a,b)=>a-b).join('-'));
   const simple='';
-  const marketList=Array.isArray(r.market?.horses)?r.market.horses:(Array.isArray(r.market_at_lock?.horses)?r.market_at_lock.horses:[]);
+  const {horses:marketList,updated_at:marketAt}=narDisplayMarket(r);
   const marketByNo=new Map(marketList.map(h=>[Number(h.no),h]));
-  const marketOrder=marketList.filter(h=>Number.isFinite(Number(h.odds))&&Number(h.odds)>=1).sort((a,b)=>Number(a.odds)-Number(b.odds)||Number(a.no)-Number(b.no));
+  const fullMarket=marketList.length===r.ranking?.length&&!marketList.some(h=>h.observed_at);
+  const marketOrder=fullMarket?[...marketList].sort((a,b)=>Number(a.odds)-Number(b.odds)):[];
   const pickOdds=(no)=>{
-   const item=marketByNo.get(Number(no)),v=item?.odds;
-   if(v===undefined||v===null||v===''||!Number.isFinite(Number(v))||Number(v)<1)return ' ／ 単勝未取得';
+   const item=marketByNo.get(Number(no));
+   if(!item)return ' ／ 単勝未取得';
    const rank=Number(item.popularity);
-   const pos=Number.isInteger(rank)&&rank>=1?rank:marketOrder.findIndex(h=>Number(h.odds)===Number(v))+1;
-   return ' ／ 単勝'+Number(v).toFixed(1)+'倍'+(pos>0?'・'+pos+'人気':'');
+   const pos=Number.isInteger(rank)&&rank>=1?rank:marketOrder.findIndex(h=>Number(h.odds)===Number(item.odds))+1;
+   return ' ／ 単勝'+Number(item.odds).toFixed(1)+'倍'+(pos>0?'・'+pos+'人気':'')+(item.observed_at?'（保存値）':'');
   };
-  const marketLabel=marketList.length?'単勝オッズ：公式取得 '+marketList.length+'頭（最終確認 '+esc(String(r.market?.updated_at||r.market_at_lock?.updated_at||'時刻不明').replace('T',' ').slice(0,19))+'。確定後の値は予想や買い目へ反映しません）':'⚠ 単勝オッズは未取得です。予想時点で公式の単勝オッズが確認できず、人気順は算出していません。';
+  const marketLabel=marketList.length?'単勝オッズ：公式取得 '+marketList.length+'頭（最終確認 '+esc(String(marketAt||'時刻不明').replace('T',' ').slice(0,19))+'）':'単勝オッズは未取得です。取得後に表示します。';
   const modelTag=String(r.model||'').includes('_v4_box')?'v4｜本命は勝率・相手は3着内確率':String(r.model||'').startsWith('form_market_v3')?'v3｜着順別モデル／単勝あり':String(r.model||'').startsWith('form_v3')?'v3｜着順別モデル／単勝なし':String(r.model||'').startsWith('form_market_v2')?'v2｜単勝あり':String(r.model||'').startsWith('form_v2')?'v2｜単勝なし':'旧モデル';
   const gapMinutes=(Date.parse(r.cutoff_at)-Date.parse(r.predicted_at))/60000;
   const staleNote=!draft&&Number.isFinite(gapMinutes)&&gapMinutes>15?' ／ ⚠ 締切より'+Math.round(gapMinutes)+'分前の予想（直前情報不足）':'';

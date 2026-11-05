@@ -1,5 +1,5 @@
-const CACHE = 'keiba-lab-static-v4.0.0';
-const APP_SHELL = ['./', './index.html', './race-intel.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
+const CACHE = 'keiba-lab-static-v4.0.1';
+const APP_SHELL = ['./', './index.html', './race-intel.js?v=4.0.1', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 self.addEventListener('install', event => { event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(APP_SHELL)).then(()=>self.skipWaiting())); });
 self.addEventListener('activate', event => { event.waitUntil(caches.keys().then(names=>Promise.all(names.filter(n=>n.startsWith('keiba-lab-static-')&&n!==CACHE).map(n=>caches.delete(n)))).then(()=>self.clients.claim())); });
 self.addEventListener('fetch', event => {
