@@ -74,6 +74,20 @@ async function run() {
     assert.equal(await page.locator('#jra-view-number').inputValue(),'11','JRA race filter');
     await page.locator('[data-reset-scope="jra"]').click();
     assert.equal(await page.locator('#jra-view-number').inputValue(),'all','JRA reset filters');
+    // Import a future JRA race through the shared CSV intake, then forecast via JRA one-tap controls.
+    const future=new Date(Date.now()+48*3600000);
+    const nextJst=future.toLocaleDateString('sv-SE',{timeZone:'Asia/Tokyo'});
+    const nextTime=future.toLocaleTimeString('en-GB',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hour12:false});
+    const startAt=nextJst+'T'+nextTime+':00+09:00';
+    const header='race_id,race_name,date,venue,race_no,start_at,horse_no,horse_name,odds';
+    const lines=[['1','青空','3.2'],['2','新風','4.8'],['3','飛躍','6.9'],['4','星空','10.0']]
+      .map(([no,name,odds])=>['ui-jra-future','試験競走',nextJst,'東京','11',startAt,no,name,odds].join(','));
+    await page.locator('#feed-file').setInputFiles({name:'central-races.csv',mimeType:'text/csv',buffer:Buffer.from([header,...lines].join('\n'))});
+    assert.ok((await page.locator('#jra-import-count').innerText()).includes('予想可能 1R'),'new JRA import is eligible');
+    await page.locator('#jra-predict-imported').click();
+    assert.ok((await page.locator('#jra-list').innerText()).includes('東京 11R'),'JRA forecast saved and displayed');
+    assert.ok((await page.locator('#jra-list').innerText()).includes('単勝オッズ'),'JRA odds/popularity detail available');
+    assert.ok((await page.locator('#jra-import-count').innerText()).includes('予想可能 0R'),'duplicate prediction disabled');
     assert.deepEqual(errors,[],'no uncaught JavaScript errors');
     console.log('PASS mobile Chromium: home counts, race countdown, refresh, active dock, NAR/JRA filters, reset and prediction/result switches');
   }finally{
