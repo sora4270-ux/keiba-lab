@@ -53,6 +53,23 @@ async function run() {
     assert.ok(await page.locator('.mobile-dock').isVisible(),'bottom navigation visible on phone');
     assert.ok((await page.locator('#quick-next-race').innerText()).includes('発走予定'),'next race preview');
 
+    assert.ok((await page.locator('#nar-odds-status').innerText()).includes('取得 0/0R'),'unpublished NAR odds are explicitly reported');
+    const narRace={
+      id:schedule[0].id,date:today,venue:'園田',race_no:4,name:'架空の試験競走4R',
+      start_at:schedule[0].start_at,cutoff_at:new Date(Date.now()+1.75*3600000).toISOString(),
+      predicted_at:new Date().toISOString(),status:'draft',model:'form_market_v3_podium',
+      top3:[{no:1,name:'架空馬A',win_probability:0.5},{no:2,name:'架空馬B',win_probability:0.3},{no:3,name:'架空馬C',win_probability:0.2}],
+      ranking:[{no:1,name:'架空馬A',win_probability:0.5},{no:2,name:'架空馬B',win_probability:0.3},{no:3,name:'架空馬C',win_probability:0.2}],
+      market:{horses:[{no:1,odds:2.4,popularity:1},{no:2,odds:4.5,popularity:2},{no:3,odds:7.8,popularity:3}],updated_at:new Date().toISOString()},
+      tickets:[[1,2,3]],trio_tickets:[[1,2,3]],result:null
+    };
+    mock.drafts=[narRace];
+    await page.locator('#nar-refresh').click();
+    await page.waitForFunction(()=>document.querySelector('#nar-odds-status')?.textContent?.includes('取得 1/1R'),null,{timeout:10000});
+    const narForecastText=await page.locator('#nar-races').innerText();
+    assert.ok(narForecastText.includes('単勝2.4倍・1人気'),'NAR odds and popularity shown with top picks');
+    assert.ok(narForecastText.includes('単勝4.5倍・2人気'),'second runner also displays verified odds');
+    assert.ok(narForecastText.includes('地方競馬公式の単勝オッズ'),'official source labelled');
     await page.locator('#nar-view-date').selectOption('all');
     assert.ok((await page.locator('#nar-races').innerText()).includes('園田 4R'));
     assert.ok((await page.locator('#nar-races').innerText()).includes('園田 5R'));
