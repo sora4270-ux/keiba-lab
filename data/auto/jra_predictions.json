@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "scope": "JRA中央競馬のみ",
+  "status": "not_configured",
+  "source": "許諾済みデータ配信先が未設定",
+  "method": "取得先と公開利用許諾の設定が必要です。実データは未取得です。",
+  "updated_at": null,
+  "races": [],
+  "drafts": [],
+  "schedule": [],
+  "summary": {
+    "locked": 0,
+    "drafts": 0,
+    "settled": 0,
+    "pending": 0,
+    "win_hits": 0,
+    "trio_hits": 0,
+    "trifecta_hits": 0
+  }
+}
