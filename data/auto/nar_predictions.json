@@ -5,14 +5,14 @@
   "method": "従来の三連複8点を比較用に保持し、2着・3着を別評価した実験候補と公式三連複オッズによる4/6/8点・見送りを併記。発走15分前まで更新、確定済みの予想を変更しません。",
   "learning": {
     "form_alpha": 2.0,
-    "market_weight": 0.8,
-    "place_market_weight": 0.65,
-    "show_market_weight": 0.5,
-    "podium_training_races": 58,
-    "form_training_races": 105,
-    "market_training_races": 58
+    "market_weight": 0.9,
+    "place_market_weight": 0.8,
+    "show_market_weight": 1.0,
+    "podium_training_races": 63,
+    "form_training_races": 110,
+    "market_training_races": 63
   },
-  "updated_at": "2026-11-05T14:57:42+09:00",
+  "updated_at": "2026-11-05T16:12:47+09:00",
   "schedule_updated_at": "2026-11-05T06:44:26+09:00",
   "schedule": [
     {
@@ -1168,17 +1168,17 @@
       "race_no": 12,
       "name": "船橋 12R",
       "start_at": "2026-11-05T20:50+09:00",
-      "predicted_at": "2026-11-05T14:57:42+09:00",
+      "predicted_at": "2026-11-05T16:12:47+09:00",
       "cutoff_at": "2026-11-05T20:35+09:00",
       "model": "form_v3_podium_no_odds",
       "calibration": {
         "form_alpha": 2.0,
-        "market_weight": 0.8,
-        "form_training_races": 105,
-        "market_training_races": 58,
-        "place_market_weight": 0.65,
-        "show_market_weight": 0.5,
-        "podium_training_races": 58
+        "market_weight": 0.9,
+        "form_training_races": 110,
+        "market_training_races": 63,
+        "place_market_weight": 0.8,
+        "show_market_weight": 1.0,
+        "podium_training_races": 63
       },
       "top3": [
         {
@@ -1526,17 +1526,17 @@
       "race_no": 12,
       "name": "門別 12R",
       "start_at": "2026-11-05T20:35+09:00",
-      "predicted_at": "2026-11-05T14:57:42+09:00",
+      "predicted_at": "2026-11-05T16:12:47+09:00",
       "cutoff_at": "2026-11-05T20:20+09:00",
       "model": "form_v3_podium_no_odds",
       "calibration": {
         "form_alpha": 2.0,
-        "market_weight": 0.8,
-        "form_training_races": 105,
-        "market_training_races": 58,
-        "place_market_weight": 0.65,
-        "show_market_weight": 0.5,
-        "podium_training_races": 58
+        "market_weight": 0.9,
+        "form_training_races": 110,
+        "market_training_races": 63,
+        "place_market_weight": 0.8,
+        "show_market_weight": 1.0,
+        "podium_training_races": 63
       },
       "top3": [
         {
@@ -1851,17 +1851,17 @@
       "race_no": 11,
       "name": "船橋 11R",
       "start_at": "2026-11-05T20:15+09:00",
-      "predicted_at": "2026-11-05T14:57:42+09:00",
+      "predicted_at": "2026-11-05T16:12:47+09:00",
       "cutoff_at": "2026-11-05T20:00+09:00",
       "model": "form_v3_podium_no_odds",
       "calibration": {
         "form_alpha": 2.0,
-        "market_weight": 0.8,
-        "form_training_races": 105,
-        "market_training_races": 58,
-        "place_market_weight": 0.65,
-        "show_market_weight": 0.5,
-        "podium_training_races": 58
+        "market_weight": 0.9,
+        "form_training_races": 110,
+        "market_training_races": 63,
+        "place_market_weight": 0.8,
+        "show_market_weight": 1.0,
+        "podium_training_races": 63
       },
       "top3": [
         {
@@ -2209,17 +2209,17 @@
       "race_no": 11,
       "name": "門別 11R",
       "start_at": "2026-11-05T20:00+09:00",
-      "predicted_at": "2026-11-05T14:57:42+09:00",
+      "predicted_at": "2026-11-05T16:12:47+09:00",
       "cutoff_at": "2026-11-05T19:45+09:00",
       "model": "form_v3_podium_no_odds",
       "calibration": {
         "form_alpha": 2.0,
-        "market_weight": 0.8,
-        "form_training_races": 105,
-        "market_training_races": 58,
-        "place_market_weight": 0.65,
-        "show_market_weight": 0.5,
-        "podium_training_races": 58
+        "market_weight": 0.9,
+        "form_training_races": 110,
+        "market_training_races": 63,
+        "place_market_weight": 0.8,
+        "show_market_weight": 1.0,
+        "podium_training_races": 63
       },
       "top3": [
         {
@@ -2501,17 +2501,17 @@
       "race_no": 10,
       "name": "船橋 10R",
       "start_at": "2026-11-05T19:40+09:00",
-      "predicted_at": "2026-11-05T14:57:42+09:00",
+      "predicted_at": "2026-11-05T16:12:47+09:00",
       "cutoff_at": "2026-11-05T19:25+09:00",
       "model": "form_v3_podium_no_odds",
       "calibration": {
         "form_alpha": 2.0,
-        "market_weight": 0.8,
-        "form_training_races": 105,
-        "market_training_races": 58,
-        "place_market_weight": 0.65,
-        "show_market_weight": 0.5,
-        "podium_training_races": 58
+        "market_weight": 0.9,
+        "form_training_races": 110,
+        "market_training_races": 63,
+        "place_market_weight": 0.8,
+        "show_market_weight": 1.0,
+        "podium_training_races": 63
       },
       "top3": [
         {
@@ -2859,17 +2859,17 @@
       "race_no": 10,
       "name": "門別 10R",
       "start_at": "2026-11-05T19:25+09:00",
-      "predicted_at": "2026-11-05T14:57:42+09:00",
+      "predicted_at": "2026-11-05T16:12:47+09:00",
       "cutoff_at": "2026-11-05T19:10+09:00",
       "model": "form_v3_podium_no_odds",
       "calibration": {
         "form_alpha": 2.0,
-        "market_weight": 0.8,
-        "form_training_races": 105,
-        "market_training_races": 58,
-        "place_market_weight": 0.65,
-        "show_market_weight": 0.5,
-        "podium_training_races": 58
+        "market_weight": 0.9,
+        "form_training_races": 110,
+        "market_training_races": 63,
+        "place_market_weight": 0.8,
+        "show_market_weight": 1.0,
+        "podium_training_races": 63
       },
       "top3": [
         {
@@ -3173,17 +3173,17 @@
       "race_no": 9,
       "name": "船橋 9R",
       "start_at": "2026-11-05T19:05+09:00",
-      "predicted_at": "2026-11-05T14:57:42+09:00",
+      "predicted_at": "2026-11-05T16:12:47+09:00",
       "cutoff_at": "2026-11-05T18:50+09:00",
       "model": "form_v3_podium_no_odds",
       "calibration": {
         "form_alpha": 2.0,
-        "market_weight": 0.8,
-        "form_training_races": 105,
-        "market_training_races": 58,
-        "place_market_weight": 0.65,
-        "show_market_weight": 0.5,
-        "podium_training_races": 58
+        "market_weight": 0.9,
+        "form_training_races": 110,
+        "market_training_races": 63,
+        "place_market_weight": 0.8,
+        "show_market_weight": 1.0,
+        "podium_training_races": 63
       },
       "top3": [
         {
@@ -3487,17 +3487,17 @@
       "race_no": 9,
       "name": "門別 9R",
       "start_at": "2026-11-05T18:50+09:00",
-      "predicted_at": "2026-11-05T14:57:42+09:00",
+      "predicted_at": "2026-11-05T16:12:47+09:00",
       "cutoff_at": "2026-11-05T18:35+09:00",
       "model": "form_v3_podium_no_odds",
       "calibration": {
         "form_alpha": 2.0,
-        "market_weight": 0.8,
-        "form_training_races": 105,
-        "market_training_races": 58,
-        "place_market_weight": 0.65,
-        "show_market_weight": 0.5,
-        "podium_training_races": 58
+        "market_weight": 0.9,
+        "form_training_races": 110,
+        "market_training_races": 63,
+        "place_market_weight": 0.8,
+        "show_market_weight": 1.0,
+        "podium_training_races": 63
       },
       "top3": [
         {
@@ -3779,17 +3779,17 @@
       "race_no": 8,
       "name": "船橋 8R",
       "start_at": "2026-11-05T18:30+09:00",
-      "predicted_at": "2026-11-05T14:57:42+09:00",
+      "predicted_at": "2026-11-05T16:12:47+09:00",
       "cutoff_at": "2026-11-05T18:15+09:00",
       "model": "form_v3_podium_no_odds",
       "calibration": {
         "form_alpha": 2.0,
-        "market_weight": 0.8,
-        "form_training_races": 105,
-        "market_training_races": 58,
-        "place_market_weight": 0.65,
-        "show_market_weight": 0.5,
-        "podium_training_races": 58
+        "market_weight": 0.9,
+        "form_training_races": 110,
+        "market_training_races": 63,
+        "place_market_weight": 0.8,
+        "show_market_weight": 1.0,
+        "podium_training_races": 63
       },
       "top3": [
         {
@@ -4110,17 +4110,17 @@
       "race_no": 8,
       "name": "門別 8R",
       "start_at": "2026-11-05T18:15+09:00",
-      "predicted_at": "2026-11-05T14:57:42+09:00",
+      "predicted_at": "2026-11-05T16:12:47+09:00",
       "cutoff_at": "2026-11-05T18:00+09:00",
       "model": "form_v3_podium_no_odds",
       "calibration": {
         "form_alpha": 2.0,
-        "market_weight": 0.8,
-        "form_training_races": 105,
-        "market_training_races": 58,
-        "place_market_weight": 0.65,
-        "show_market_weight": 0.5,
-        "podium_training_races": 58
+        "market_weight": 0.9,
+        "form_training_races": 110,
+        "market_training_races": 63,
+        "place_market_weight": 0.8,
+        "show_market_weight": 1.0,
+        "podium_training_races": 63
       },
       "top3": [
         {
@@ -4413,17 +4413,17 @@
       "race_no": 7,
       "name": "船橋 7R",
       "start_at": "2026-11-05T17:55+09:00",
-      "predicted_at": "2026-11-05T14:57:42+09:00",
+      "predicted_at": "2026-11-05T16:12:47+09:00",
       "cutoff_at": "2026-11-05T17:40+09:00",
       "model": "form_v3_podium_no_odds",
       "calibration": {
         "form_alpha": 2.0,
-        "market_weight": 0.8,
-        "form_training_races": 105,
-        "market_training_races": 58,
-        "place_market_weight": 0.65,
-        "show_market_weight": 0.5,
-        "podium_training_races": 58
+        "market_weight": 0.9,
+        "form_training_races": 110,
+        "market_training_races": 63,
+        "place_market_weight": 0.8,
+        "show_market_weight": 1.0,
+        "podium_training_races": 63
       },
       "top3": [
         {
@@ -4749,17 +4749,17 @@
       "race_no": 7,
       "name": "門別 7R",
       "start_at": "2026-11-05T17:40+09:00",
-      "predicted_at": "2026-11-05T14:57:42+09:00",
+      "predicted_at": "2026-11-05T16:12:47+09:00",
       "cutoff_at": "2026-11-05T17:25+09:00",
       "model": "form_v3_podium_no_odds",
       "calibration": {
         "form_alpha": 2.0,
-        "market_weight": 0.8,
-        "form_training_races": 105,
-        "market_training_races": 58,
-        "place_market_weight": 0.65,
-        "show_market_weight": 0.5,
-        "podium_training_races": 58
+        "market_weight": 0.9,
+        "form_training_races": 110,
+        "market_training_races": 63,
+        "place_market_weight": 0.8,
+        "show_market_weight": 1.0,
+        "podium_training_races": 63
       },
       "top3": [
         {
@@ -5085,17 +5085,17 @@
       "race_no": 6,
       "name": "船橋 6R",
       "start_at": "2026-11-05T17:20+09:00",
-      "predicted_at": "2026-11-05T14:57:42+09:00",
+      "predicted_at": "2026-11-05T16:12:47+09:00",
       "cutoff_at": "2026-11-05T17:05+09:00",
       "model": "form_v3_podium_no_odds",
       "calibration": {
         "form_alpha": 2.0,
-        "market_weight": 0.8,
-        "form_training_races": 105,
-        "market_training_races": 58,
-        "place_market_weight": 0.65,
-        "show_market_weight": 0.5,
-        "podium_training_races": 58
+        "market_weight": 0.9,
+        "form_training_races": 110,
+        "market_training_races": 63,
+        "place_market_weight": 0.8,
+        "show_market_weight": 1.0,
+        "podium_training_races": 63
       },
       "top3": [
         {
@@ -5410,17 +5410,17 @@
       "race_no": 6,
       "name": "門別 6R",
       "start_at": "2026-11-05T17:05+09:00",
-      "predicted_at": "2026-11-05T14:57:42+09:00",
+      "predicted_at": "2026-11-05T16:12:47+09:00",
       "cutoff_at": "2026-11-05T16:50+09:00",
       "model": "form_v3_podium_no_odds",
       "calibration": {
         "form_alpha": 2.0,
-        "market_weight": 0.8,
-        "form_training_races": 105,
-        "market_training_races": 58,
-        "place_market_weight": 0.65,
-        "show_market_weight": 0.5,
-        "podium_training_races": 58
+        "market_weight": 0.9,
+        "form_training_races": 110,
+        "market_training_races": 63,
+        "place_market_weight": 0.8,
+        "show_market_weight": 1.0,
+        "podium_training_races": 63
       },
       "top3": [
         {
@@ -5746,17 +5746,17 @@
       "race_no": 5,
       "name": "船橋 5R",
       "start_at": "2026-11-05T16:50+09:00",
-      "predicted_at": "2026-11-05T14:57:42+09:00",
+      "predicted_at": "2026-11-05T16:12:47+09:00",
       "cutoff_at": "2026-11-05T16:35+09:00",
       "model": "form_v3_podium_no_odds",
       "calibration": {
         "form_alpha": 2.0,
-        "market_weight": 0.8,
-        "form_training_races": 105,
-        "market_training_races": 58,
-        "place_market_weight": 0.65,
-        "show_market_weight": 0.5,
-        "podium_training_races": 58
+        "market_weight": 0.9,
+        "form_training_races": 110,
+        "market_training_races": 63,
+        "place_market_weight": 0.8,
+        "show_market_weight": 1.0,
+        "podium_training_races": 63
       },
       "top3": [
         {
@@ -6027,17 +6027,17 @@
       "race_no": 12,
       "name": "園田 12R",
       "start_at": "2026-11-05T16:40+09:00",
-      "predicted_at": "2026-11-05T14:57:42+09:00",
+      "predicted_at": "2026-11-05T16:12:47+09:00",
       "cutoff_at": "2026-11-05T16:25+09:00",
       "model": "form_v3_podium_no_odds",
       "calibration": {
         "form_alpha": 2.0,
-        "market_weight": 0.8,
-        "form_training_races": 105,
-        "market_training_races": 58,
-        "place_market_weight": 0.65,
-        "show_market_weight": 0.5,
-        "podium_training_races": 58
+        "market_weight": 0.9,
+        "form_training_races": 110,
+        "market_training_races": 63,
+        "place_market_weight": 0.8,
+        "show_market_weight": 1.0,
+        "podium_training_races": 63
       },
       "top3": [
         {
@@ -6363,17 +6363,17 @@
       "race_no": 5,
       "name": "門別 5R",
       "start_at": "2026-11-05T16:35+09:00",
-      "predicted_at": "2026-11-05T14:57:42+09:00",
+      "predicted_at": "2026-11-05T16:12:47+09:00",
       "cutoff_at": "2026-11-05T16:20+09:00",
       "model": "form_v3_podium_no_odds",
       "calibration": {
         "form_alpha": 2.0,
-        "market_weight": 0.8,
-        "form_training_races": 105,
-        "market_training_races": 58,
-        "place_market_weight": 0.65,
-        "show_market_weight": 0.5,
-        "podium_training_races": 58
+        "market_weight": 0.9,
+        "form_training_races": 110,
+        "market_training_races": 63,
+        "place_market_weight": 0.8,
+        "show_market_weight": 1.0,
+        "podium_training_races": 63
       },
       "top3": [
         {
@@ -6680,7 +6680,9 @@
       },
       "status": "draft",
       "created_at": "2026-11-05T06:44:26+09:00"
-    },
+    }
+  ],
+  "races": [
     {
       "id": "nar-20261105-船橋-04",
       "date": "2026-11-05",
@@ -7014,8 +7016,9 @@
         ],
         "updated_at": "2026-11-05T13:57:20+09:00"
       },
-      "status": "draft",
-      "created_at": "2026-11-05T06:44:26+09:00"
+      "created_at": "2026-11-05T06:44:26+09:00",
+      "locked_at": "2026-11-05T14:57:42+09:00",
+      "finalized_at": "2026-11-05T16:12:47+09:00"
     },
     {
       "id": "nar-20261105-笠松-12",
@@ -7328,8 +7331,9 @@
         ],
         "updated_at": "2026-11-05T13:57:20+09:00"
       },
-      "status": "draft",
-      "created_at": "2026-11-05T06:44:26+09:00"
+      "created_at": "2026-11-05T06:44:26+09:00",
+      "locked_at": "2026-11-05T14:57:42+09:00",
+      "finalized_at": "2026-11-05T16:12:47+09:00"
     },
     {
       "id": "nar-20261105-門別-04",
@@ -7578,9 +7582,21 @@
         "tickets": [],
         "evaluated": []
       },
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        1,
+        6,
+        7
+      ],
+      "settled_at": "2026-11-05T16:12:47+09:00",
+      "hits": {
+        "win": false,
+        "quinella": false,
+        "exacta": false,
+        "trio": false,
+        "trio_multi": false,
+        "trio_value": false,
+        "trifecta": false
+      },
       "market": {
         "horses": [
           {
@@ -7631,8 +7647,16 @@
         ],
         "updated_at": "2026-11-05T13:57:20+09:00"
       },
-      "status": "draft",
-      "created_at": "2026-11-05T06:44:26+09:00"
+      "created_at": "2026-11-05T06:44:26+09:00",
+      "locked_at": "2026-11-05T14:57:42+09:00",
+      "finalized_at": "2026-11-05T16:12:47+09:00",
+      "payouts": {
+        "win": 790,
+        "quinella": 380,
+        "exacta": 1660,
+        "trio": 1900,
+        "trifecta": 13060
+      }
     },
     {
       "id": "nar-20261105-園田-11",
@@ -7893,9 +7917,21 @@
         "tickets": [],
         "evaluated": []
       },
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        9,
+        4,
+        2
+      ],
+      "settled_at": "2026-11-05T16:12:47+09:00",
+      "hits": {
+        "win": false,
+        "quinella": false,
+        "exacta": false,
+        "trio": false,
+        "trio_multi": false,
+        "trio_value": false,
+        "trifecta": false
+      },
       "market": {
         "horses": [
           {
@@ -7956,8 +7992,16 @@
         ],
         "updated_at": "2026-11-05T13:57:20+09:00"
       },
-      "status": "draft",
-      "created_at": "2026-11-05T06:44:26+09:00"
+      "created_at": "2026-11-05T06:44:26+09:00",
+      "locked_at": "2026-11-05T14:57:42+09:00",
+      "finalized_at": "2026-11-05T16:12:47+09:00",
+      "payouts": {
+        "win": 360,
+        "quinella": 560,
+        "exacta": 1250,
+        "trio": 2860,
+        "trifecta": 11260
+      }
     },
     {
       "id": "nar-20261105-船橋-03",
@@ -8188,9 +8232,21 @@
         "tickets": [],
         "evaluated": []
       },
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        6,
+        4,
+        3
+      ],
+      "settled_at": "2026-11-05T16:12:47+09:00",
+      "hits": {
+        "win": false,
+        "quinella": false,
+        "exacta": false,
+        "trio": false,
+        "trio_multi": false,
+        "trio_value": false,
+        "trifecta": false
+      },
       "market": {
         "horses": [
           {
@@ -8221,8 +8277,16 @@
         ],
         "updated_at": "2026-11-05T13:57:20+09:00"
       },
-      "status": "draft",
-      "created_at": "2026-11-05T06:44:26+09:00"
+      "created_at": "2026-11-05T06:44:26+09:00",
+      "locked_at": "2026-11-05T14:57:42+09:00",
+      "finalized_at": "2026-11-05T16:12:47+09:00",
+      "payouts": {
+        "win": 540,
+        "quinella": 1550,
+        "exacta": 2900,
+        "trio": 440,
+        "trifecta": 5730
+      }
     },
     {
       "id": "nar-20261105-笠松-11",
@@ -8471,9 +8535,21 @@
         "tickets": [],
         "evaluated": []
       },
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        2,
+        5,
+        9
+      ],
+      "settled_at": "2026-11-05T16:12:47+09:00",
+      "hits": {
+        "win": true,
+        "quinella": false,
+        "exacta": false,
+        "trio": false,
+        "trio_multi": false,
+        "trio_value": false,
+        "trifecta": false
+      },
       "market": {
         "horses": [
           {
@@ -8524,8 +8600,16 @@
         ],
         "updated_at": "2026-11-05T13:57:20+09:00"
       },
-      "status": "draft",
-      "created_at": "2026-11-05T06:44:26+09:00"
+      "created_at": "2026-11-05T06:44:26+09:00",
+      "locked_at": "2026-11-05T14:57:42+09:00",
+      "finalized_at": "2026-11-05T16:12:47+09:00",
+      "payouts": {
+        "win": 200,
+        "quinella": 410,
+        "exacta": 510,
+        "trio": 1410,
+        "trifecta": 3280
+      }
     },
     {
       "id": "nar-20261105-門別-03",
@@ -8774,9 +8858,21 @@
         "tickets": [],
         "evaluated": []
       },
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        7,
+        5,
+        4
+      ],
+      "settled_at": "2026-11-05T16:12:47+09:00",
+      "hits": {
+        "win": false,
+        "quinella": false,
+        "exacta": false,
+        "trio": false,
+        "trio_multi": true,
+        "trio_value": false,
+        "trifecta": false
+      },
       "market": {
         "horses": [
           {
@@ -8827,8 +8923,16 @@
         ],
         "updated_at": "2026-11-05T13:57:20+09:00"
       },
-      "status": "draft",
-      "created_at": "2026-11-05T06:44:26+09:00"
+      "created_at": "2026-11-05T06:44:26+09:00",
+      "locked_at": "2026-11-05T14:57:42+09:00",
+      "finalized_at": "2026-11-05T16:12:47+09:00",
+      "payouts": {
+        "win": 150,
+        "quinella": 340,
+        "exacta": 510,
+        "trio": 560,
+        "trifecta": 1430
+      }
     },
     {
       "id": "nar-20261105-園田-10",
@@ -9095,9 +9199,21 @@
         "tickets": [],
         "evaluated": []
       },
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        10,
+        5,
+        8
+      ],
+      "settled_at": "2026-11-05T16:12:47+09:00",
+      "hits": {
+        "win": false,
+        "quinella": false,
+        "exacta": false,
+        "trio": false,
+        "trio_multi": false,
+        "trio_value": false,
+        "trifecta": false
+      },
       "market": {
         "horses": [
           {
@@ -9163,8 +9279,16 @@
         ],
         "updated_at": "2026-11-05T13:57:20+09:00"
       },
-      "status": "draft",
-      "created_at": "2026-11-05T06:44:26+09:00"
+      "created_at": "2026-11-05T06:44:26+09:00",
+      "locked_at": "2026-11-05T14:57:42+09:00",
+      "finalized_at": "2026-11-05T16:12:47+09:00",
+      "payouts": {
+        "win": 290,
+        "quinella": 570,
+        "exacta": 1120,
+        "trio": 1090,
+        "trifecta": 3730
+      }
     },
     {
       "id": "nar-20261105-船橋-02",
@@ -9431,9 +9555,21 @@
         "tickets": [],
         "evaluated": []
       },
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        4,
+        9,
+        2
+      ],
+      "settled_at": "2026-11-05T16:12:47+09:00",
+      "hits": {
+        "win": false,
+        "quinella": false,
+        "exacta": false,
+        "trio": false,
+        "trio_multi": false,
+        "trio_value": false,
+        "trifecta": false
+      },
       "market": {
         "horses": [
           {
@@ -9499,11 +9635,17 @@
         ],
         "updated_at": "2026-11-05T13:57:20+09:00"
       },
-      "status": "draft",
-      "created_at": "2026-11-05T06:44:26+09:00"
-    }
-  ],
-  "races": [
+      "created_at": "2026-11-05T06:44:26+09:00",
+      "locked_at": "2026-11-05T14:57:42+09:00",
+      "finalized_at": "2026-11-05T16:12:47+09:00",
+      "payouts": {
+        "win": 830,
+        "quinella": 1840,
+        "exacta": 3910,
+        "trio": 2170,
+        "trifecta": 15910
+      }
+    },
     {
       "id": "nar-20261105-笠松-10",
       "date": "2026-11-05",
@@ -10063,9 +10205,21 @@
           }
         ]
       },
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        9,
+        8,
+        10
+      ],
+      "settled_at": "2026-11-05T16:12:47+09:00",
+      "hits": {
+        "win": true,
+        "quinella": true,
+        "exacta": true,
+        "trio": false,
+        "trio_multi": true,
+        "trio_value": true,
+        "trifecta": false
+      },
       "market": {
         "horses": [
           {
@@ -10178,7 +10332,14 @@
       },
       "created_at": "2026-11-05T06:44:26+09:00",
       "locked_at": "2026-11-05T13:57:20+09:00",
-      "finalized_at": "2026-11-05T14:57:42+09:00"
+      "finalized_at": "2026-11-05T14:57:42+09:00",
+      "payouts": {
+        "win": 170,
+        "quinella": 160,
+        "exacta": 360,
+        "trio": 2740,
+        "trifecta": 5660
+      }
     },
     {
       "id": "nar-20261105-門別-02",
@@ -10731,9 +10892,21 @@
           }
         ]
       },
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        11,
+        8,
+        12
+      ],
+      "settled_at": "2026-11-05T16:12:47+09:00",
+      "hits": {
+        "win": false,
+        "quinella": false,
+        "exacta": false,
+        "trio": false,
+        "trio_multi": false,
+        "trio_value": false,
+        "trifecta": false
+      },
       "market": {
         "horses": [
           {
@@ -10866,7 +11039,14 @@
       },
       "created_at": "2026-11-05T06:44:26+09:00",
       "locked_at": "2026-11-05T13:57:20+09:00",
-      "finalized_at": "2026-11-05T14:57:42+09:00"
+      "finalized_at": "2026-11-05T14:57:42+09:00",
+      "payouts": {
+        "win": 500,
+        "quinella": 540,
+        "exacta": 1750,
+        "trio": 600,
+        "trifecta": 5330
+      }
     },
     {
       "id": "nar-20261105-園田-09",
@@ -11417,9 +11597,21 @@
           }
         ]
       },
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        2,
+        1,
+        10
+      ],
+      "settled_at": "2026-11-05T16:12:47+09:00",
+      "hits": {
+        "win": false,
+        "quinella": false,
+        "exacta": false,
+        "trio": false,
+        "trio_multi": false,
+        "trio_value": false,
+        "trifecta": false
+      },
       "market": {
         "horses": [
           {
@@ -11532,7 +11724,14 @@
       },
       "created_at": "2026-11-05T06:44:26+09:00",
       "locked_at": "2026-11-05T13:57:20+09:00",
-      "finalized_at": "2026-11-05T14:57:42+09:00"
+      "finalized_at": "2026-11-05T14:57:42+09:00",
+      "payouts": {
+        "win": 2280,
+        "quinella": 4910,
+        "exacta": 13790,
+        "trio": 5970,
+        "trifecta": 63490
+      }
     },
     {
       "id": "nar-20261105-船橋-01",
@@ -52272,16 +52471,16 @@
     }
   ],
   "summary": {
-    "predicted": 119,
-    "settled": 116,
-    "pending": 3,
-    "win": 34.5,
-    "quinella": 16.4,
-    "exacta": 12.1,
-    "trio": 6.9,
-    "trio_multi": 31.0,
-    "trio_multi_settled": 116,
-    "trifecta": 17.2,
+    "predicted": 128,
+    "settled": 126,
+    "pending": 2,
+    "win": 33.3,
+    "quinella": 15.9,
+    "exacta": 11.9,
+    "trio": 6.3,
+    "trio_multi": 30.2,
+    "trio_multi_settled": 126,
+    "trifecta": 15.9,
     "note": "発走前に予想した確定レースのみ。三連複本線1点と三連複候補最大8点は別集計。以前のレースの三連複候補は保存済み三連単12点を順不同に換算。三連単候補は12点。"
   }
 }
