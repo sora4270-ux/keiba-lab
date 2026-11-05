@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <meta name="description" content="全レース予想、予想の日時記録、単勝・馬連・馬単・三連複・三連単の的中率集計、過去レースからの学習に対応。">
-  <title>KEIBA LAB v3.17 | 地方・中央の予想と結果を簡単チェック</title>
+  <title>KEIBA LAB v3.19 | 地方・中央の予想と結果を簡単チェック</title>
   <style>
     :root{--navy:#0b1628;--navy2:#14243a;--surface:#fff;--bg:#f5f7fb;--ink:#132338;--sub:#677488;--line:#e4eaf2;--green:#087957;--mint:#dff7ec;--blue:#235ad2;--ice:#eaf0ff;--amber:#a65e10;--shadow:0 8px 28px rgba(20,42,75,.075)}
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.65}button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.5}a{color:var(--blue)}
@@ -241,6 +241,15 @@
   <div class="hrow"><h2>🏆 中央競馬（JRA）予想</h2><span class="pill amber">発走15分前に予想固定</span></div>
   <p class="intro" style="margin-top:9px">東京・中山・京都・阪神などJRA10競馬場に対応。入力された出馬表から<b>三連複・三連単の買い目</b>を発走前に保存し、確定結果との的中率を集計します。</p>
   <div class="live-warning">JRA公式の出馬表を自動取得する接続は未設定です。JRA-VAN Data Lab.はWindows向けで、通常契約のデータをWebサイトへ再配信できません。<b>自分で入力した情報または公開利用が許可されたデータ</b>のみ取り込みます。オッズのみではAI学習予測でなく市場支持率による推定です。</div>
+  <div class="jra-card" id="jra-automated" aria-label="中央競馬の許諾済みデータ自動取得">
+   <div class="hrow"><h3 style="margin:0">⚡ 中央競馬・自動取得＆自動予想</h3><span class="pill amber">許諾済みデータ接続が必要</span></div>
+   <p class="tiny muted" style="margin-top:10px">配信権限のあるデータ提供元を設定すると、サーバーが約5分ごとに取得・予想更新し、発走15分前までの予想を固定。確定着順が提供されれば結果も自動照合します。</p>
+   <p class="hint" id="jra-auto-status" role="status" aria-live="polite">自動取得の設定状況を確認中...</p>
+   <div class="controls"><button type="button" class="btn primary sm" id="jra-auto-refresh">サーバーの最新予想を再取得</button><a class="btn sm" style="text-decoration:none" href="https://github.com/sora4270-ux/keiba-lab/blob/main/docs/JRA_AUTO_SETUP.md" target="_blank" rel="noopener noreferrer">データ接続の設定</a></div>
+   <div class="jra-summary" id="jra-auto-summary" hidden aria-label="中央競馬自動予想の参考成績"></div>
+   <div id="jra-auto-races"><div class="empty">データ接続状況を確認しています。</div></div>
+   <p class="tiny muted">自動予想の記録はサーバー側に保存し、端末の手動予想とは別集計です。最新のオッズ・結果の取得を保証するものではありません。買い目は検証用で、的中・利益は保証しません。</p>
+  </div>
   <div class="jra-card"><h3>① 取込済みJRAの一括予想</h3><p class="tiny muted">中央競馬の出馬表CSV・JSONまたは許諾済みフィードから予想できます。発走15分前までが対象です。</p>
 <p id="jra-import-count" class="hint" role="status">出馬表を取り込んでください。</p>
 <div id="jra-import-list" class="race-preview"></div>
@@ -1133,6 +1142,8 @@ setInterval(()=>{if(document.visibilityState==='visible')narRefresh(true);},1200
 setInterval(()=>{if(document.visibilityState==='visible'&&narViewedData?.drafts?.length)narRender(narViewedData,narViewedCached);},30000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-narLastPollAt>60000)narRefresh(true);});
 
+const JRA_AUTO_URL='./data/auto/jra_predictions.json';
+let jraAutoData=null,jraAutoLastPoll=0,jraAutoBusy=false;
 const JRA_VENUES=new Set(['東京','中山','京都','阪神','中京','新潟','福島','小倉','札幌','函館']);
 $('manual-venue').innerHTML='<option value="">未指定（未分類で保存）</option>'+[...JRA_VENUES,...NAR_VENUES].map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
 function jraDateTime(r){
@@ -1147,6 +1158,64 @@ function jraDateTime(r){
 function jraValidRaces(races){if(!Array.isArray(races)||!races.length)throw Error('出馬表がありません');races.forEach(jraDateTime);return races;}
 function jraMessage(message,warning=false){const elem=$('jra-message');elem.textContent=message;elem.className='hint'+(warning?' warning':'');}
 
+
+function jraAutoRender(venue,date,raceNumber,mode){
+ const data=jraAutoData,container=$('jra-auto-races'),stats=$('jra-auto-summary');
+ if(!data||data.status!=='ready'){
+  stats.hidden=true;container.innerHTML='<div class="empty">自動予想の実データは未取得です。利用許諾済みのデータ配信先を接続すると自動で表示されます。</div>';return;
+ }
+ const locked=Array.isArray(data.races)?data.races:[],drafts=Array.isArray(data.drafts)?data.drafts:[],schedule=Array.isArray(data.schedule)?data.schedule:[];
+ const selected=x=>(venue==='all'||x.venue===venue)&&(date==='all'||x.date===date)&&(raceNumber==='all'||Number(x.race_no)===Number(raceNumber));
+ const scheduled=schedule.filter(selected),stored=locked.filter(selected),updates=drafts.filter(selected),confirmed=stored.filter(r=>Array.isArray(r.result)&&r.result.length===3);
+ if(mode==='results'){
+  stats.hidden=false;
+  const hits=key=>confirmed.length?(100*confirmed.filter(r=>r.hits?.[key]===true).length/confirmed.length).toFixed(1)+'%':'—';
+  const values=[['確定結果',confirmed.length+'R'],['本命単勝',hits('win')],['三連複8点',hits('trio')],['三連単12点',hits('trifecta')]];
+  stats.innerHTML=values.map(([title,value])=>'<div class="metric"><small>'+esc(title)+'</small><strong>'+esc(value)+'</strong></div>').join('');
+ }else stats.hidden=true;
+ const already=new Set([...stored,...updates].map(r=>r.id));
+ const unknown=scheduled.filter(r=>!already.has(r.id));
+ const shown=mode==='results'?[...confirmed].sort((a,b)=>String(b.start_at).localeCompare(String(a.start_at))):
+   [...stored,...updates].sort((a,b)=>String(a.start_at).localeCompare(String(b.start_at)))
+   .concat(unknown.map(x=>({...x,_scheduleOnly:true})));
+ if(!shown.length){container.innerHTML='<div class="empty">'+(mode==='results'?'この条件で結果を照合した自動予想はまだありません。':'この条件で自動予想・開催情報はまだありません。')+'</div>';return;}
+ container.innerHTML=shown.slice(0,70).map(r=>{
+  const label=esc(r.date+' '+r.venue+' '+r.race_no+'R');
+  if(r._scheduleOnly)return '<div class="jra-card"><div class="jra-card-head"><strong>'+label+'</strong><span class="pill gray">予想データ未取得</span></div><p class="tiny muted">発走 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ 未取得データから予想を捏造しません。</p></div>';
+  const draft=r.status==='draft',hasResult=Array.isArray(r.result)&&r.result.length===3;
+  const status=draft?(Date.now()<Date.parse(r.cutoff_at)?'事前予想・更新中':'事前予想・確定待ち'):hasResult?'結果確定':'予想固定済み';
+  const top=Array.isArray(r.top3)?r.top3:[];
+  const picks=top.map((p,i)=>'<span class="nar-pick">'+['◎','○','▲'][i]+' '+esc(p.no)+'番 '+esc(p.name)+' <b>'+narPct(100*Number(p.win_probability))+'</b> ／ '+esc(p.odds)+'倍・'+esc(p.popularity)+'人気</span>').join('');
+  const trio=Array.isArray(r.trio_tickets)?r.trio_tickets:[],tickets=Array.isArray(r.tickets)?r.tickets:[];
+  const wagers=hasResult?'<div class="nar-result">実際の1〜3着：<b>'+esc(r.result.join(' → '))+'</b><div>単勝 '+(r.hits?.win?'的中':'不的中')+' ／ 三連複 '+(r.hits?.trio?'的中':'不的中')+' ／ 三連単 '+(r.hits?.trifecta?'的中':'不的中')+'</div><div>確定払戻（100円あたり）：'+[['win','単勝'],['trio','三連複'],['trifecta','三連単']].map(([key,name])=>name+' '+(Number.isInteger(r.payouts?.[key])?amount(r.payouts[key]):'未取得')).join(' ／ ')+'</div></div>':'';
+  return '<div class="jra-card"><div class="jra-card-head"><strong>'+label+'</strong><span class="pill '+(draft?'gray':'')+'">'+esc(status)+'</span></div><p class="tiny muted">発走 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ 予想取得 '+esc(String(r.predicted_at||'').replace('T',' ').slice(0,16))+' ／ 予想締切 '+esc(String(r.cutoff_at||'').replace('T',' ').slice(0,16))+' ／ 市場支持率モデル（未学習）</p><div class="nar-line">'+picks+'</div>'+wagers+(mode==='results'?'':'<div class="nar-trio-title">三連複候補 '+trio.length+'点</div><div class="nar-trio-list">'+trioTokens(trio)+'</div><details style="margin-top:8px"><summary>三連単候補 '+tickets.length+'点</summary><p class="tiny muted">'+tickets.map(t=>esc(t.join('→'))+'（100円）').join(' ／ ')+'</p></details>')+'</div>';
+ }).join('');
+}
+async function jraAutoRefresh(silent=false){
+ if(jraAutoBusy)return;
+ jraAutoBusy=true;jraAutoLastPoll=Date.now();
+ const btn=$('jra-auto-refresh');btn.disabled=true;
+ if(!silent)$('jra-auto-status').textContent='中央競馬の自動予想配信状況を確認中...';
+ try{
+  const ac=new AbortController(),timer=setTimeout(()=>ac.abort(),15000);
+  let res;try{res=await fetch(JRA_AUTO_URL+'?v='+Date.now(),{cache:'no-store',credentials:'omit',signal:ac.signal});}finally{clearTimeout(timer);}
+  if(!res.ok)throw Error('HTTP '+res.status);
+  const raw=await res.text();if(raw.length>2000000)throw Error('データが大きすぎます');
+  const json=JSON.parse(raw);if(json.schema_version!==1||!['ready','not_configured'].includes(json.status)||!Array.isArray(json.races)||!Array.isArray(json.drafts))throw Error('自動予想のデータ形式が不正です');
+  jraAutoData=json;
+  if(json.status==='not_configured')$('jra-auto-status').textContent='未接続：JRAデータの取得・公開許諾がある配信先が未設定です。取得は行っていません。';
+  else{
+   const when=Date.parse(json.updated_at||'')||0;
+   const stale=!when||Date.now()-when>30*60000;
+   $('jra-auto-status').textContent=(stale?'⚠ 更新が遅れています。':'接続済み：自動予想を取得しました。')+' 最終更新：'+(when?new Date(when).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}):'不明')+' ／ 保存済み '+json.races.length+'R ／ 事前予想 '+json.drafts.length+'R。';
+  }
+  jraRender();
+ }catch(e){
+  $('jra-auto-status').textContent='⚠ 自動予想データの取得に失敗：'+e.message+'。既存表示がある場合も最新ではありません。';
+  if(!jraAutoData)$('jra-auto-races').innerHTML='<div class="empty">自動予想データを取得できません。</div>';
+ }finally{jraAutoBusy=false;btn.disabled=false;}
+}
+$('jra-auto-refresh').addEventListener('click',()=>jraAutoRefresh());
 function jraImportedRaces(){return catalog.filter(r=>JRA_VENUES.has(String(r.venue||''))).sort((a,b)=>String(a.start_at||'').localeCompare(String(b.start_at||'')));}
 function jraImportedRender(){
  const list=jraImportedRaces(),saved=new Set(ledger.map(x=>x.key));
@@ -1191,11 +1260,14 @@ function jraAutoPredict(races,label){
 function jraRender(){
  jraImportedRender();
  const allRecords=ledger.filter(r=>JRA_VENUES.has(String(r.venue||''))).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
- const venue=updateVenueOptions($('jra-view-venue'),allRecords,[...JRA_VENUES]);
- const date=updateRaceDateOptions($('jra-view-date'),allRecords);
+ const remote=[...(jraAutoData?.races||[]),...(jraAutoData?.drafts||[]),...(jraAutoData?.schedule||[])];
+ const selectionRecords=[...allRecords,...remote];
+ const venue=updateVenueOptions($('jra-view-venue'),selectionRecords,[...JRA_VENUES]);
+ const date=updateRaceDateOptions($('jra-view-date'),selectionRecords);
  const raceNumber=$('jra-view-number').value;
  const records=allRecords.filter(r=>(venue==='all'||r.venue===venue)&&(date==='all'||r.date===date)&&(raceNumber==='all'||Number(r.raceNo??r.race_no)===Number(raceNumber)));
  const mode=$('jra-view-mode').value;
+ jraAutoRender(venue,date,raceNumber,mode);
  $('jra-results-summary').hidden=mode!=='results';
  const displayed=forecastResultRows(records,mode);
  const settled=settledOnly(records),n=settled.length;
@@ -1261,6 +1333,9 @@ $('jra-template-btn').addEventListener('click',()=>saveText('jra_race_input_temp
 $('jra-results-btn').addEventListener('click',()=>switchTab('ledger'));
 $('jra-authorized-feed').addEventListener('click',()=>{switchTab('sync');$('feed-url').focus()});
 jraRender();
+jraAutoRefresh();
+setInterval(()=>{if(document.visibilityState==='visible')jraAutoRefresh(true);},120000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-jraAutoLastPoll>60000)jraAutoRefresh(true);});
 
 // Keep visible choice buttons synchronized with existing prediction/result selectors.
 document.querySelectorAll('.mode-choices[data-mode-select]').forEach(group=>{
