@@ -112,6 +112,7 @@ async function run() {
     await page.locator('#jra-view-date').selectOption('all');
     await page.locator('#jra-view-number').selectOption('all');
     await page.locator('#jra-auto-refresh').click();
+    await page.waitForFunction(()=>document.querySelector('#jra-auto-status')?.textContent?.includes('接続済み'),null,{timeout:12000});
     assert.ok((await page.locator('#jra-auto-status').innerText()).includes('接続済み'),'licensed feed status');
     assert.ok((await page.locator('#jra-auto-races').innerText()).includes('テスト一号'),'server-side JRA drafts appear without manual input');
     assert.ok((await page.locator('#jra-auto-races').innerText()).includes('三連複候補'),'auto ticket display');
