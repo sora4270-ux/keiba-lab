@@ -1,0 +1,66 @@
+name: JRA licensed-data automatic forecasts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/update_jra.py'
+      - '.github/workflows/jra-auto.yml'
+      - 'tests/jra-auto.test.cjs'
+  schedule:
+    # UTC previous day 21:00 through 10:55 = JST 06:00–19:55.
+    # GitHub schedules may be delayed; only pre-T-15 snapshots are frozen.
+    - cron: '*/5 21-23,0-10 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: keiba-lab-jra-licensed-forecasts
+  cancel-in-progress: false
+
+jobs:
+  forecast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check parsing and cutoff without live credentials
+        run: |
+          python -m py_compile scripts/update_jra.py
+          python scripts/update_jra.py --selftest
+          node tests/jra-auto.test.cjs
+      - name: Retrieve approved JRA data and update derived forecasts
+        env:
+          JRA_LICENSED_FEED_URL: ${{ secrets.JRA_LICENSED_FEED_URL }}
+          JRA_LICENSED_RESULTS_URL: ${{ secrets.JRA_LICENSED_RESULTS_URL }}
+          JRA_LICENSED_FEED_TOKEN: ${{ secrets.JRA_LICENSED_FEED_TOKEN }}
+          JRA_PUBLICATION_RIGHTS_CONFIRMED: ${{ vars.JRA_PUBLICATION_RIGHTS_CONFIRMED }}
+        run: python scripts/update_jra.py
+      - name: Publish licensed prediction summary only
+        shell: bash
+        run: |
+          if ! git diff --quiet -- data/auto/jra_predictions.json || [ -n "$(git ls-files --others --exclude-standard data/auto/jra_predictions.json)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/auto/jra_predictions.json
+            git commit -m "Update JRA licensed-data forecast summaries"
+            for attempt in 1 2 3; do
+              git pull --rebase
+              if git push; then
+                echo "JRA prediction summary published"
+                exit 0
+              fi
+              sleep 2
+            done
+            echo "Could not push licensed JRA forecast update"
+            exit 1
+          else
+            echo "No new JRA predictions or results"
+          fi
