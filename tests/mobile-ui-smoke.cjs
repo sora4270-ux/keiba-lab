@@ -38,8 +38,12 @@ async function run() {
     await page.route('**/data/auto/nar_predictions.json*',route=>route.fulfill({
       status:200,contentType:'application/json',body:JSON.stringify(mock)
     }));
+    let licensedJraFixture={schema_version:1,status:'not_configured',updated_at:null,races:[],drafts:[],schedule:[],summary:{}};
+    await page.route('**/data/auto/jra_predictions.json*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(licensedJraFixture)}));
     await page.goto('http://127.0.0.1:'+server.address().port+'/',{waitUntil:'domcontentloaded'});
     await page.waitForFunction(()=>document.querySelector('#nar-count')?.textContent?.includes('開催情報'),{timeout:15000});
+    await page.waitForFunction(()=>document.querySelector('#jra-auto-status')?.textContent?.includes('未接続'),null,{timeout:15000});
+    assert.ok((await page.locator('#jra-auto-status').innerText()).includes('未接続'),'JRA data remains clearly unconfigured without a license');
     assert.equal(await page.locator('.quick-link').count(),4,'home shortcuts');
     assert.ok((await page.locator('#quick-live-summary').innerText()).includes('開催情報 2R'),'summary includes schedule');
     assert.ok((await page.locator('#quick-next-race').innerText()).includes('発走まで約'),'next-race countdown shown');
@@ -89,6 +93,28 @@ async function run() {
     assert.ok((await page.locator('#jra-list').innerText()).includes('東京 11R'),'JRA forecast saved and displayed');
     assert.ok((await page.locator('#jra-list').innerText()).includes('単勝オッズ'),'JRA odds/popularity detail available');
     assert.ok((await page.locator('#jra-import-count').innerText()).includes('予想可能 0R'),'duplicate prediction disabled');
+
+    // License-enabled backend JSON is rendered without requiring a manual CSV import.
+    licensedJraFixture={
+      schema_version:1,status:'ready',updated_at:new Date().toISOString(),
+      races:[],schedule:[],summary:{},
+      drafts:[{
+        id:'jra-ui-license-test',date:today,venue:'東京',race_no:11,
+        name:'自動配信の表示テスト',start_at:new Date(Date.now()+4*3600000).toISOString(),
+        cutoff_at:new Date(Date.now()+3.75*3600000).toISOString(),
+        predicted_at:new Date().toISOString(),status:'draft',
+        top3:[{no:1,name:'テスト一号',win_probability:0.5,odds:2.1,popularity:1},
+              {no:2,name:'テスト二号',win_probability:0.3,odds:4.5,popularity:2},
+              {no:3,name:'テスト三号',win_probability:0.2,odds:9.0,popularity:3}],
+        trio_tickets:[[1,2,3]],tickets:[[1,2,3]]
+      }]
+    };
+    await page.locator('#jra-view-date').selectOption('all');
+    await page.locator('#jra-view-number').selectOption('all');
+    await page.locator('#jra-auto-refresh').click();
+    assert.ok((await page.locator('#jra-auto-status').innerText()).includes('接続済み'),'licensed feed status');
+    assert.ok((await page.locator('#jra-auto-races').innerText()).includes('テスト一号'),'server-side JRA drafts appear without manual input');
+    assert.ok((await page.locator('#jra-auto-races').innerText()).includes('三連複候補'),'auto ticket display');
     assert.deepEqual(errors,[],'no uncaught JavaScript errors');
     console.log('PASS mobile Chromium: home counts, race countdown, refresh, active dock, NAR/JRA filters, reset and prediction/result switches');
   }finally{
