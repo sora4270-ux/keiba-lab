@@ -9,10 +9,10 @@
     "place_market_weight": 0.8,
     "show_market_weight": 0.8,
     "podium_training_races": 66,
-    "form_training_races": 134,
+    "form_training_races": 137,
     "market_training_races": 66
   },
-  "updated_at": "2026-11-05T20:33:36+09:00",
+  "updated_at": "2026-11-05T21:33:11+09:00",
   "schedule_updated_at": "2026-11-05T17:29:20+09:00",
   "schedule": [
     {
@@ -1160,7 +1160,8 @@
       "start_at": "2026-11-05T20:35+09:00"
     }
   ],
-  "drafts": [
+  "drafts": [],
+  "races": [
     {
       "id": "nar-20261105-船橋-12",
       "date": "2026-11-05",
@@ -1438,9 +1439,21 @@
         "tickets": [],
         "evaluated": []
       },
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        10,
+        3,
+        11
+      ],
+      "settled_at": "2026-11-05T21:33:11+09:00",
+      "hits": {
+        "win": false,
+        "quinella": false,
+        "exacta": false,
+        "trio": false,
+        "trio_multi": false,
+        "trio_value": false,
+        "trifecta": false
+      },
       "market": {
         "horses": [
           {
@@ -1516,11 +1529,17 @@
         ],
         "updated_at": "2026-11-05T13:57:20+09:00"
       },
-      "status": "draft",
-      "created_at": "2026-11-05T06:44:26+09:00"
-    }
-  ],
-  "races": [
+      "created_at": "2026-11-05T06:44:26+09:00",
+      "locked_at": "2026-11-05T20:33:36+09:00",
+      "finalized_at": "2026-11-05T21:33:11+09:00",
+      "payouts": {
+        "win": 950,
+        "quinella": 10890,
+        "exacta": 24710,
+        "trio": 3900,
+        "trifecta": 58950
+      }
+    },
     {
       "id": "nar-20261105-門別-12",
       "date": "2026-11-05",
@@ -1780,9 +1799,21 @@
         "tickets": [],
         "evaluated": []
       },
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        10,
+        4,
+        8
+      ],
+      "settled_at": "2026-11-05T21:33:11+09:00",
+      "hits": {
+        "win": true,
+        "quinella": false,
+        "exacta": false,
+        "trio": true,
+        "trio_multi": true,
+        "trio_value": false,
+        "trifecta": true
+      },
       "market": {
         "horses": [
           {
@@ -1845,7 +1876,14 @@
       },
       "created_at": "2026-11-05T06:44:26+09:00",
       "locked_at": "2026-11-05T19:36:34+09:00",
-      "finalized_at": "2026-11-05T20:33:36+09:00"
+      "finalized_at": "2026-11-05T20:33:36+09:00",
+      "payouts": {
+        "win": 100,
+        "quinella": 420,
+        "exacta": 460,
+        "trio": 460,
+        "trifecta": 1000
+      }
     },
     {
       "id": "nar-20261105-船橋-11",
@@ -52810,16 +52848,16 @@
     }
   ],
   "summary": {
-    "predicted": 144,
-    "settled": 143,
-    "pending": 1,
-    "win": 31.5,
-    "quinella": 15.4,
-    "exacta": 10.5,
-    "trio": 6.3,
-    "trio_multi": 30.1,
-    "trio_multi_settled": 143,
-    "trifecta": 14.7,
+    "predicted": 145,
+    "settled": 145,
+    "pending": 0,
+    "win": 31.7,
+    "quinella": 15.2,
+    "exacta": 10.3,
+    "trio": 6.9,
+    "trio_multi": 30.3,
+    "trio_multi_settled": 145,
+    "trifecta": 15.2,
     "note": "発走前に予想した確定レースのみ。三連複本線1点と三連複候補最大8点は別集計。以前のレースの三連複候補は保存済み三連単12点を順不同に換算。三連単候補は12点。"
   }
 }
