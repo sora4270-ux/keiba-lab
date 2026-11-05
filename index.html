@@ -203,12 +203,12 @@
   <div class="quick-actions">
    <button type="button" class="quick-link" data-jump="nar" data-display="predictions"><strong>🏇 地方・予想</strong><small>確定した印と買い目</small></button>
    <button type="button" class="quick-link" data-jump="nar" data-display="results"><strong>🎯 地方・結果</strong><small>的中率と回収率</small></button>
-   <button type="button" class="quick-link" data-jump="jra" data-display="predictions"><strong>🏆 中央・予想</strong><small>保存したJRAの買い目</small></button>
+   <button type="button" class="quick-link" data-jump="jra" data-display="predictions"><strong>🏆 中央・予想</strong><small>JRAの自動予想と保存済み買い目</small></button>
    <button type="button" class="quick-link" data-jump="jra" data-display="results"><strong>📊 中央・結果</strong><small>確定着順と収支</small></button>
   </div>
   <p id="quick-live-summary" class="quick-live-summary" role="status" aria-live="polite">地方競馬の最新データを確認しています…</p>
   <div id="quick-next-race" class="quick-next" aria-live="polite"><span>次の発走予定を確認しています…</span></div>
-  <div class="quick-bottom"><button type="button" id="quick-refresh" class="btn sm">↻ 最新データを再取得</button><span>中央競馬は自分で登録したレースを表示します。</span></div>
+  <div class="quick-bottom"><button type="button" id="quick-refresh" class="btn sm">↻ 最新データを再取得</button><span>中央競馬の自動取得は許諾済みデータが接続された場合に利用できます。</span></div>
  </section>
  <section id="nar-automated" class="panel" aria-label="地方競馬の自動予想と的中率">
    <div class="hrow"><h2>🏇 地方競馬・全レース自動予想</h2><span class="pill">NAR 自動予想</span></div>
@@ -1359,7 +1359,7 @@ document.querySelectorAll('[data-jump]').forEach(button=>button.addEventListener
  if(destination==='ledger'){switchTab('ledger');return;}
  const select=$(destination+'-view-mode');select.value=button.dataset.display||'predictions';
  select.dispatchEvent(new Event('change',{bubbles:true}));
- const target=destination==='nar'?$('nar-automated'):document.querySelector('#jra-center .date-toolbar');
+ const target=destination==='nar'?$('nar-automated'):$('jra-automated');
  target?.scrollIntoView({behavior:'smooth',block:'start'});
 }));
 document.addEventListener('click',event=>{
