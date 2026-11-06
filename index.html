@@ -915,7 +915,9 @@ $('restore-all-file').addEventListener('change',async e=>{
 
 
 const NAR_VENUES=['帯広','門別','盛岡','水沢','浦和','船橋','大井','川崎','金沢','笠松','名古屋','園田','姫路','高知','佐賀'];
-const NAR_AUTO_URL='./data/auto/nar_predictions.json';
+const NAR_AUTO_URL=location.hostname==='sora4270-ux.github.io'
+ ? 'https://raw.githubusercontent.com/sora4270-ux/keiba-lab/main/data/auto/nar_predictions.json'
+ : './data/auto/nar_predictions.json';
 function savedTrioList(r){
  if(Array.isArray(r.trio_tickets))return r.trio_tickets.filter(t=>Array.isArray(t)&&t.length===3&&t.every(n=>Number.isInteger(n))).map(t=>[...t].sort((a,b)=>a-b));
  const unique=new Map();
@@ -1099,7 +1101,8 @@ function narRender(data,localCopy=false){
  const stale=viewed.filter(r=>Number.isFinite(Date.parse(r.cutoff_at)-Date.parse(r.predicted_at))
    && Date.parse(r.cutoff_at)-Date.parse(r.predicted_at)>15*60000);
  const missedLabel=unavailable.length?' ／ 未予想 '+unavailable.length+'R（'+unavailable.slice(0,5).map(r=>r.venue+r.race_no+'R').join('・')+(unavailable.length>5?'ほか':'')+'）':' ／ 未予想0R';
- $('nar-coverage').textContent='開催情報 '+scheduled.length+'R ／ 事前予想＋確定予想 '+(scheduled.length-unavailable.length)+'R'+missedLabel+(stale.length?' ／ ⚠ 締切より15分以上前の予想 '+stale.length+'R':'')+'。過去の未予想レースは後から補完しません。';
+ const oddsCoverage=viewed.filter(r=>Array.isArray(r.market_at_lock?.horses)&&r.market_at_lock.horses.length>0).length;
+ $('nar-coverage').textContent='開催情報 '+scheduled.length+'R ／ 事前予想＋確定予想 '+(scheduled.length-unavailable.length)+'R'+missedLabel+(stale.length?' ／ ⚠ 締切より15分超前の予想 '+stale.length+'R':'')+(viewed.length?' ／ 発走前オッズを使った確定予想 '+oddsCoverage+'/'+viewed.length+'R':'')+'。過去の未予想レースは後から補完しません。';
  let ss=data?.summary||{};
  const cards=[['win','単勝・本命1点'],['quinella','馬連・上位2頭'],['exacta','馬単・上位2頭'],['trio','三連複・本線1点'],['trio_multi','三連複・保存候補'],['trifecta','三連単・保存候補']];
  if(venue!=='all'||date!=='all'||raceNumber!=='all'){

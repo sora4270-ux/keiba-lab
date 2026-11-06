@@ -13,9 +13,9 @@ on:
       - 'tests/view-switch.test.cjs'
       - 'race-intel.js'
   schedule:
-    # UTC 21:00-13:55 = JST 06:00-22:55; early intake helps cover first races.
-    # GitHub schedules can be delayed: only the last actual PRE-T-15 draft is frozen.
-    - cron: '*/5 21-23,0-13 * * *'
+    # Start away from the top of the hour. Each scheduled runner polls repeatedly
+    # so forecasts do not need a fresh GitHub schedule event for every poll.
+    - cron: '7,37 21-23,0-13 * * *'
   workflow_dispatch:
 permissions:
   contents: write
@@ -25,7 +25,7 @@ concurrency:
 jobs:
   forecast:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 70
     steps:
       - uses: actions/checkout@v4
         with:
@@ -83,18 +83,41 @@ jobs:
           node tests/forecast-lock.test.cjs
           node tests/view-switch.test.cjs
           python scripts/trio_strategy.py --backtest
-      - name: Obtain NAR official day CSV and update predictions
-        run: python scripts/update_nar.py
-      - name: Save frozen forecasts and settled hit rates
+      - name: Refresh and save NAR forecasts and results
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          if ! git diff --quiet -- data/auto/nar_predictions.json || [ -n "$(git ls-files --others --exclude-standard data/auto/nar_predictions.json)" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add data/auto/nar_predictions.json
-            git commit -m "Update NAR pre-race forecasts and confirmed hit rates"
-            git pull --rebase
-            git push
-          else
-            echo "No new forecasts or settled results."
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          attempts=1
+          if [[ "$EVENT_NAME" == schedule ]]; then
+            attempts=12
           fi
+          last_status=0
+          for ((i=0; i<attempts; i++)); do
+            hour=$(TZ=Asia/Tokyo date +%H)
+            if [[ "$EVENT_NAME" == schedule ]] && ((10#$hour < 6 || 10#$hour >= 23)); then
+              break
+            fi
+            started=$SECONDS
+            # A queued schedule may have checked out an older data commit.
+            git pull --rebase
+            if python scripts/update_nar.py; then
+              last_status=0
+              git add data/auto/nar_predictions.json
+              if ! git diff --cached --quiet; then
+                git commit -m "Update NAR pre-race forecasts and confirmed hit rates"
+                git pull --rebase
+                git push
+              fi
+            else
+              last_status=$?
+              echo "::warning::NAR refresh failed (exit ${last_status})."
+            fi
+            if ((i+1 < attempts)); then
+              pause=$((300 - (SECONDS - started)))
+              if ((pause > 0)); then sleep "$pause"; fi
+            fi
+          done
+          exit "$last_status"
