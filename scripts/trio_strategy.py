@@ -115,12 +115,38 @@ def ticket_ranking(horses, win, form, market, config=None):
     return ordered, sorted(trios.items(), key=lambda x: (-x[1], x[0]))
 
 
+def trifecta_plan(ranked_ids, ordered):
+    """Pre-race concentration rule; no results or payouts enter selection.
+
+    Cover 70% of the probability mass *within* the selected five horses,
+    with 6-36 tickets. This is not a 70% race hit-rate guarantee.
+    """
+    five = set(ranked_ids[:5])
+    eligible = sorted(((p, t) for p, t in ordered
+                       if math.isfinite(p) and p > 0 and len(set(t)) == 3
+                       and five.issuperset(t)), key=lambda x: (-x[0], x[1]))
+    mass = sum(p for p, _ in eligible)
+    tickets, covered = [], 0.
+    for probability, ticket in eligible[:36]:
+        tickets.append(ticket)
+        covered += probability
+        if len(tickets) >= 6 and covered >= mass * .70 - 1e-12:
+            break
+    return {"policy": "adaptive_mass_v1", "tickets": tickets,
+            "count": len(tickets), "stake_yen": len(tickets) * 100,
+            "target_conditional_coverage": .70,
+            "candidate_mass": round(mass, 6),
+            "covered_mass": round(covered, 6),
+            "conditional_coverage": round(covered / mass, 6) if mass else 0.,
+            "target_reached": bool(mass and covered >= mass * .70 - 1e-12),
+            "reason": "集中" if len(tickets) <= 12 else "拮抗" if len(tickets) <= 24 else "混戦"}
+
+
 def top_five_tickets(ranked_ids, ordered):
-    """BOX covers every unordered triple. Keep only the most likely 24 orders."""
+    """Keep the trio BOX; choose trifecta size from pre-race concentration."""
     five = set(ranked_ids[:5])
     box = [list(combo) for combo in itertools.combinations(sorted(five), 3)]
-    trifecta = [ticket for _, ticket in ordered if five.issuperset(ticket)][:24]
-    return box, trifecta
+    return box, trifecta_plan(ranked_ids, ordered)["tickets"]
 
 
 def reference_ticket_ranking(horses, win_probs):

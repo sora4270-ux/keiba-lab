@@ -230,9 +230,10 @@
    </div>
    <div class="hrow"><h3 style="margin:15px 0 8px" id="nar-list-title">レース予想</h3><span id="nar-count" class="muted tiny"></span></div>
    <div id="nar-model-comparison" class="roi-mini" aria-live="polite">新旧モデルの成績を読み込み中...</div>
+   <div id="nar-review" class="hint" aria-live="polite"></div>
    <div id="nar-coverage" class="roi-mini" aria-live="polite">予想対象レースの取得状況を確認中...</div>
    <div id="nar-races"><div class="empty">データ読み込み待ち</div></div>
-   <p class="section-note">本命は推定勝率、相手は3着内確率で評価。上位5頭で三連複BOX10点と三連単24点（少頭数では組める点数まで）を表示します。別枠で、公式の発走前三連複オッズがある場合だけ「4・6・8点または見送り」の参考買い目を表示します。オッズ未取得時は見送り。モデルの推定倍率は検証途上で利益を保証しません。</p>
+   <p class="section-note">本命は推定勝率、相手は3着内確率で評価。上位5頭で三連複BOX10点と三連単6〜36点（予想確率の集中度で可変、各100円・最大3,600円）を表示します。別枠で、公式の発走前三連複オッズがある場合だけ「4・6・8点または見送り」の参考買い目を表示します。オッズ未取得時は見送り。モデルの推定倍率は検証途上で利益を保証しません。</p>
    <p class="section-note">確定済みレースはNAR公式CSVに払戻が掲載されると券種別の確定金額（100円あたり）と、保存済み買い目を各100円購入した場合の参考収支を表示します。払戻未取得時は金額を表示しません。</p>
     <p class="section-note">自動予想は毎回のデータ取得とGitHub Actionsの稼働状況によって遅延・欠測する場合があります。実際の発走・確定結果は主催者発表でご確認ください。旧モデルの予想はそのまま保存。新規予想は発走前の単勝オッズを主に使い、確定結果で過去成績モデルの確率を補正します（学習件数が不足すると固定係数）。出馬表取得後は事前予想を表示・更新し、発走15分前を締切として直前の保存済み予想を固定します。GitHub Actionsの実行遅延により確定保存の反映時刻が遅れる場合があります。事前予想は的中率・回収率に含めず、確定済みの買い目は後から変更しません。的中・収益は保証しません。</p>
  </section>
@@ -331,7 +332,7 @@
      <div class="scroll" id="horse-list"><div class="horse-header"><span>馬番</span><span>馬名</span><span>単勝</span><span>近走指数</span><span>距離適性</span><span>馬場適性</span><span>騎手勝率%</span><span>調教評価</span><span>脚質</span><span></span></div><div id="horses"></div></div>
      <div class="hint">目安：近走指数 0〜100／距離・馬場・調教 1〜5（5が高評価）／騎手勝率 0〜100%。指数は<strong>同じ基準</strong>で全頭入力してください。欠損値は自動推測しません。</div>
      <div class="bottom-actions"><div class="controls"><button type="button" class="btn sm" id="add-horse">＋ 馬を追加</button><button type="button" class="btn sm" id="load-sample">サンプル</button><button type="button" class="btn sm" id="clear-horses">全頭クリア</button></div><div class="controls"><button type="button" class="btn sm" id="race-import">出馬表CSV読込</button><button type="button" class="btn sm" id="race-csv-template">CSVひな型</button></div></div>
-     <div class="config-bar"><label class="toggle" title="単勝オッズを参考に推定確率を40%補正"><input type="checkbox" id="use-market"> オッズで40%補正する</label><div class="field"><label for="ticket-limit">表示件数</label><select id="ticket-limit"><option value="10">10件</option><option value="24" selected>全件</option></select></div></div>
+     <div class="config-bar"><label class="toggle" title="単勝オッズを参考に推定確率を40%補正"><input type="checkbox" id="use-market"> オッズで40%補正する</label><div class="field"><label for="ticket-limit">表示件数</label><select id="ticket-limit"><option value="10">10件</option><option value="36" selected>全件</option></select></div></div>
      <p class="feed-source" id="race-data-source">データ出典：架空サンプル（実レースではありません）</p><div class="controls" style="margin-top:17px"><button type="button" id="run-prediction" class="btn primary" style="flex:1;min-height:49px;font-size:15px">勝率と三連単を予想する →</button></div>
    </div>
    <div id="error" class="hint warning" style="display:none" role="alert"></div>
@@ -474,7 +475,17 @@ function predictionTickets(horses,p,rankedIndexes){
   }
  }
  tickets.sort((x,y)=>y.prob-x.prob||horses[x.a].no-horses[y.a].no||horses[x.b].no-horses[y.b].no||horses[x.c].no-horses[y.c].no);
- return {trio,tickets:tickets.slice(0,24)};
+ const mass=tickets.reduce((sum,t)=>sum+t.prob,0);
+ const chosen=[];let covered=0;
+ for(const ticket of tickets.slice(0,36)){
+  chosen.push(ticket);covered+=ticket.prob;
+  if(chosen.length>=6&&covered>=mass*.70-1e-12)break;
+ }
+ const plan={policy:'adaptive_mass_v1',count:chosen.length,stake_yen:chosen.length*100,
+  target_conditional_coverage:.70,candidate_mass:mass,covered_mass:covered,
+  conditional_coverage:mass?covered/mass:0,target_reached:!!mass&&covered>=mass*.70-1e-12,
+  reason:chosen.length<=12?'集中':chosen.length<=24?'拮抗':'混戦'};
+ return {trio,tickets:chosen,plan};
 }
 const pct=x=>`${fmt(100*x)}%`;
 function manualStartAt(){
@@ -490,15 +501,15 @@ function refreshManualDeadline(){
   elem.textContent=closed?'🔒 発走15分前を過ぎました。新しい予想は確定できません。':'⏰ 予想確定の締切：'+forecastCutoffLabel(start)+'。締切までに履歴へ保存してください。';
  }catch(e){elem.className='hint warning';elem.textContent='開催日と発走予定時刻を入力してください。発走15分前が確定締切です。';}
 }
-function analyze(){setError('');try{if(!demo)assertForecastOpen(manualStartAt());const marketMode=oddsOnly(horses);validateRace(horses,marketMode);let p=marketMode?(()=>{let x=horses.map(h=>1/Number(h.odds)),sum=x.reduce((a,b)=>a+b,0);return x.map(v=>v/sum)})():probs(horses,model.weights,$('use-market').checked);const ranks=horses.map((h,i)=>({...h,index:i,p:p[i],ev:p[i]*(+h.odds)-1})).sort((a,b)=>b.p-a.p);const {trio,tickets}=predictionTickets(horses,p,ranks.map(h=>h.index));lastResult={p,ranks,trio,tickets,horseList:clone(horses),race:$('race-name').value||'レース名なし',marketMode};renderResults(lastResult);$('results').classList.add('show');$('results').scrollIntoView({behavior:'smooth',block:'start'});save();}catch(e){invalidate();setError(e.message);}}
+function analyze(){setError('');try{if(!demo)assertForecastOpen(manualStartAt());const marketMode=oddsOnly(horses);validateRace(horses,marketMode);let p=marketMode?(()=>{let x=horses.map(h=>1/Number(h.odds)),sum=x.reduce((a,b)=>a+b,0);return x.map(v=>v/sum)})():probs(horses,model.weights,$('use-market').checked);const ranks=horses.map((h,i)=>({...h,index:i,p:p[i],ev:p[i]*(+h.odds)-1})).sort((a,b)=>b.p-a.p);const {trio,tickets,plan}=predictionTickets(horses,p,ranks.map(h=>h.index));lastResult={p,ranks,trio,tickets,plan,horseList:clone(horses),race:$('race-name').value||'レース名なし',marketMode};renderResults(lastResult);$('results').classList.add('show');$('results').scrollIntoView({behavior:'smooth',block:'start'});save();}catch(e){invalidate();setError(e.message);}}
 $('run-prediction').addEventListener('click',analyze);
 function renderResults(r){const ranks=r.ranks;$('stat-win-label').textContent=r.marketMode?'1位馬の市場支持率':'本命馬の推定勝率';$('rank-prob-label').textContent=r.marketMode?'市場支持率':'推定勝率';$('ranking-disclaimer').textContent=r.marketMode?'単勝オッズの逆数を合計1に正規化した市場支持率。AIの予想ではなく、控除率・払戻変動を考慮した予測値でもありません。':'機械学習モデルによる推定値。校正や検証前は信頼できません。';$('stat-count').textContent=`${horses.length}頭`;$('stat-win').textContent=pct(ranks[0].p);$('stat-combos').textContent=`${r.tickets.length}点`;$('result-race').textContent=`${r.race}${demo?' ・ 架空のデモ':' ・ 未確定プレビュー（履歴への保存が必要）・締切 '+forecastCutoffLabel(manualStartAt())}${r.marketMode?' ・ オッズ参照（AI不使用）':''}`;
 $('manual-race-overview').innerHTML=raceInsightHtml({ranking:ranks.map(h=>({no:h.no,name:h.name,win_probability:h.p,runningStyle:h.runningStyle||''})),market:{horses:r.horseList.map(h=>({no:h.no,odds:Number(h.odds)}))}},'input');
 $('rank-list').innerHTML=ranks.map((h,i)=>`<div class="rank"><span class="pos">${i+1}</span><span class="horse-no">${h.no}</span><div><div class="name" title="${esc(h.name)}">${esc(h.name)}</div><div class="bar-bg"><div class="bar" style="width:${Math.max(1,100*h.p/ranks[0].p)}%"></div></div></div><span class="prob">${pct(h.p)}</span><span class="odd">${fmt(h.odds)}倍</span></div>`).join('');
-let t=r.tickets,visible=Math.min(+$('ticket-limit').value,t.length);$('ticket-caption').textContent=`参考購入金額（三連単）：${t.length}点 × 100円 = ${(t.length*100).toLocaleString('ja-JP')}円 ／ 上位5頭から確率順 ／ 上位${visible}点を表示`;$('ticket-list').innerHTML=t.slice(0,visible).map((x,i)=>{let A=horses[x.a],B=horses[x.b],C=horses[x.c];return `<div class="ticket"><div style="min-width:0"><strong>${A.no} → ${B.no} → ${C.no}</strong><span class="names" title="${esc(A.name+' / '+B.name+' / '+C.name)}">${esc(A.name)} / ${esc(B.name)} / ${esc(C.name)}</span></div><div style="text-align:right"><small>確率 ${fmt(x.prob*100,2)}%</small><div class="amount">100円</div></div></div>`}).join('');
+let t=r.tickets,visible=Math.min(+$('ticket-limit').value,t.length);$('ticket-caption').textContent=`参考購入金額（三連単）：${t.length}点 × 100円 = ${(t.length*100).toLocaleString('ja-JP')}円 ／ ${r.plan?.reason||""}・確率の集中度で可変 ／ 上位${visible}点を表示`;$('ticket-list').innerHTML=t.slice(0,visible).map((x,i)=>{let A=horses[x.a],B=horses[x.b],C=horses[x.c];return `<div class="ticket"><div style="min-width:0"><strong>${A.no} → ${B.no} → ${C.no}</strong><span class="names" title="${esc(A.name+' / '+B.name+' / '+C.name)}">${esc(A.name)} / ${esc(B.name)} / ${esc(C.name)}</span></div><div style="text-align:right"><small>確率 ${fmt(x.prob*100,2)}%</small><div class="amount">100円</div></div></div>`}).join('');
 const manualTrio=r.trio;
 $('manual-trio-count').textContent=manualTrio.length+'点';
-$('manual-trio-list').innerHTML=trioTokens(manualTrio);$('manual-trio-stake').textContent='参考購入金額（各点100円）：三連複 '+amount(manualTrio.length*100)+' ／ 三連単 '+amount(t.length*100)+' ／ 両券種合計 '+amount((manualTrio.length+t.length)*100);
+$('manual-trio-list').innerHTML=trioTokens(manualTrio)+trifectaPlanHtml({trifecta_plan:r.plan});$('manual-trio-stake').textContent='参考購入金額（各点100円）：三連複 '+amount(manualTrio.length*100)+' ／ 三連単 '+amount(t.length*100)+' ／ 両券種合計 '+amount((manualTrio.length+t.length)*100);
 let top=ranks[0],second=ranks[1],third=ranks[2];let value=[...ranks].sort((a,b)=>b.ev-a.ev)[0];let box=`<div class="callout"><small>◎ 本命</small><strong>${top.no}番 ${esc(top.name)}</strong><p>推定勝率 ${pct(top.p)} ・ 単勝 ${fmt(top.odds)}倍</p></div><div class="ev-row"><div><b>◯ 対抗</b><br><span>${second.no}番 ${esc(second.name)}</span></div><b>${pct(second.p)}</b></div><div class="ev-row"><div><b>▲ 3番手</b><br><span>${third.no}番 ${esc(third.name)}</span></div><b>${pct(third.p)}</b></div>`;
 box+=`<div class="ev-row"><div><b>☆ 単勝の割安度が高い候補</b><br><span>${value.no}番 ${esc(value.name)}</span></div><b>${value.ev>=0?'+':''}${fmt(value.ev*100,0)}%</b></div><p class="section-note">割安度＝推定勝率×単勝オッズ−1（理論上の期待回収率から1を引いた試算）。未校正モデルでは大きく誤るため購入根拠に使わないでください。</p>`;if(r.marketMode){box=`<div class="callout"><small>◎ オッズ1位</small><strong>${top.no}番 ${esc(top.name)}</strong><p>市場支持率 ${pct(top.p)} ・ 単勝 ${fmt(top.odds)}倍</p></div><div class="ev-row"><div><b>◯ 2番手</b><br>${second.no}番 ${esc(second.name)}</div><b>${pct(second.p)}</b></div><div class="ev-row"><div><b>▲ 3番手</b><br>${third.no}番 ${esc(third.name)}</div><b>${pct(third.p)}</b></div><p class="section-note">AIの能力評価や期待値ではありません。単勝オッズから作った市場支持率です。三連単も独立したモデルによる近似で、購入推奨ではありません。</p>`;}$('recommendations').innerHTML=box;
 $('result-model-state').textContent=r.marketMode?'市場支持率モード：AIは使用していません。指数を全頭に入力するとAIモデルで推定できます。':model.trained?`過去${model.raceCount}レースを使用して学習済み。保留検証 ${model.testCount}レース、最上位馬の的中率 ${pct(model.testAccuracy)}。小標本・環境変化に注意。`:'初期の手動設定した重みです。過去の実際のレース結果による学習・精度検証は未実施です。';}
@@ -614,9 +625,9 @@ function makeSnapshot(r,origin,meta={}){
  const marketMode=oddsOnly(r.horses),h=r.horses;
  const p=marketMode?(()=>{const inv=h.map(v=>1/Number(v.odds)),total=inv.reduce((a,b)=>a+b,0);return inv.map(x=>x/total)})():probs(h,model.weights,$('use-market').checked);
  const indexes=h.map((x,i)=>({i,p:p[i]})).sort((a,b)=>b.p-a.p).map(x=>x.i);
- const {trio,tickets}=predictionTickets(h,p,indexes);
+ const {trio,tickets,plan}=predictionTickets(h,p,indexes);
  const ts=tickets.map(t=>[h[t.a].no,h[t.b].no,h[t.c].no]);
- return {key,id:r.id,name:r.name||r.id,date:r.date||'',venue:r.venue||'',raceNo:r.race_no||'',origin:origin.slice(0,180),createdAt:new Date().toISOString(),marketMode,trained:!marketMode&&!!model.trained,horseNos:h.map(x=>x.no),horseNames:h.map(x=>x.name),top3:indexes.slice(0,3).map(i=>h[i].no),probTop:p[indexes[0]],runners:h.map((x,i)=>({no:x.no,name:x.name,odds:Number(x.odds),win_probability:Number(p[i].toFixed(5)),runningStyle:x.runningStyle||''})),trio_tickets:trio,tickets:ts,betCount:ts.length,budget:ts.length*100,marketAdjusted:!marketMode&&$('use-market').checked,startAt:r.start_at,cutoffAt:new Date(frozenCutoff).toISOString(),lockedAt:new Date().toISOString(), result:null,payouts:{win:null,quinella:null,exacta:null,trio:null,trifecta:null}};
+ return {key,id:r.id,name:r.name||r.id,date:r.date||'',venue:r.venue||'',raceNo:r.race_no||'',origin:origin.slice(0,180),createdAt:new Date().toISOString(),marketMode,trained:!marketMode&&!!model.trained,horseNos:h.map(x=>x.no),horseNames:h.map(x=>x.name),top3:indexes.slice(0,3).map(i=>h[i].no),probTop:p[indexes[0]],runners:h.map((x,i)=>({no:x.no,name:x.name,odds:Number(x.odds),win_probability:Number(p[i].toFixed(5)),runningStyle:x.runningStyle||''})),trio_tickets:trio,tickets:ts,trifecta_plan:plan,betCount:ts.length,budget:ts.length*100,marketAdjusted:!marketMode&&$('use-market').checked,startAt:r.start_at,cutoffAt:new Date(frozenCutoff).toISOString(),lockedAt:new Date().toISOString(), result:null,payouts:{win:null,quinella:null,exacta:null,trio:null,trifecta:null}};
 }
 function addPredictions(records){
  // Recheck the exact deadline immediately before persistence.
@@ -952,6 +963,29 @@ function resultOrderHtml(r){
  return table(rows.slice(0,3))+extra+label;
 }
 function trioTokens(tickets){return tickets.map((t,i)=>'<span class="nar-trio-item" title="'+(i===0?'本線':'三連複候補')+'">'+esc(t.join(' - '))+'<small class="nar-price">100円</small></span>').join('');}
+function trifectaPlanHtml(r){
+ const p=r.trifecta_plan;if(!p||p.policy!=='adaptive_mass_v1')return '';
+ const percent=x=>(100*Number(x||0)).toFixed(1)+'%';
+ return '<p class="hint"><b>三連単 '+Number(p.count)+'点・'+amount(Number(p.stake_yen))+' ／ '+esc(p.reason)+'</b><br>候補5頭内の推定確率の70%を目標に6〜36点。今回の候補内網羅度 '+percent(p.conditional_coverage)+(p.target_reached?'':'（上限到達・目標未達）')+' ／ 全着順に対する推定網羅度 '+percent(p.covered_mass)+'。'+(p.candidate_mass<.4?'候補5頭の推定網羅度が低く、点数を増やしても候補外の馬は拾えません。':'')+'数値は未校正のモデル推定で、実際の的中率ではありません。</p>';
+}
+function resultReview(r){
+ if(!Array.isArray(r.result)||r.result.length!==3)return null;
+ if((r.tickets||[]).some(t=>t.join('-')===r.result.join('-')))return '的中';
+ const candidates=Array.isArray(r.top5)?r.top5.map(h=>Number(h.no)):null;
+ if(!candidates)return '旧方式・分類対象外';
+ return r.result.some(no=>!candidates.includes(no))?'候補5頭から漏れ':'候補内の着順違い';
+}
+function resultReviewHtml(r){const label=resultReview(r);return label?'<p class="tiny"><b>反省：'+esc(label)+'</b></p>':'';}
+function dailyReviewHtml(records){
+ const rs=records.filter(r=>Array.isArray(r.result)&&r.result.length===3);
+ if(!rs.length)return '<b>選択条件の反省</b>：結果確定後に集計します。';
+ const counts={};for(const r of rs){const k=resultReview(r);counts[k]=(counts[k]||0)+1;}
+ const returns=['trio','trifecta'].map(key=>{
+  const x=roiStatistics(rs.map(r=>narReferenceWager(r,key)).filter(Boolean));
+  return (key==='trio'?'三連複':'三連単')+' '+roiLabel(x)+'（購入 '+amount(x.spent)+'／払戻 '+amount(x.returned)+'）';
+ }).join(' ／ ');
+ return '<b>選択条件の反省：'+rs.length+'R</b><br>三連単 的中 '+(counts['的中']||0)+'R ／ 候補5頭から漏れ '+(counts['候補5頭から漏れ']||0)+'R ／ 候補内の着順違い '+(counts['候補内の着順違い']||0)+'R'+(counts['旧方式・分類対象外']?' ／ 旧方式 '+counts['旧方式・分類対象外']+'R':'')+'<br>参考回収率：'+returns+'<br>候補漏れは点数追加だけでは解消しません。新方式は今後の予想から検証し、確定済み買い目での成績と区別します。';
+}
 function narPct(v){return typeof v==='number'&&Number.isFinite(v)?v.toFixed(1)+'%':'—';}
 function narReferenceWager(r,key){
  if(!Array.isArray(r?.result)||r.result.length!==3)return null;
@@ -1072,12 +1106,14 @@ function narRender(data,localCopy=false){
       feed.status==='unavailable'?' ／ 当日の公式オッズ取得に失敗。保存済みの値がある馬は表示しています':'') : '';
  $('nar-odds-status').textContent='単勝オッズ（選択条件）：取得 '+quoted.length+'/'+shownForOdds.length+'R'+quotedInfo+feedMessage;
  const modelStats=[
-  ['旧方式',r=>!/^form_(market_)?v[234]/.test(r.model||'')],
+  ['旧方式',r=>!/^form_(market_)?v[2345]/.test(r.model||'')],
   ['v2：従来モデル',r=>String(r.model||'').startsWith('form_market_v2')||String(r.model||'').startsWith('form_v2')],
   ['v3：2・3着別評価／単勝あり',r=>String(r.model||'').startsWith('form_market_v3')],
   ['v3：2・3着別評価／単勝なし',r=>String(r.model||'').startsWith('form_v3')],
   ['v4：上位5頭BOX／単勝あり',r=>r.model==='form_market_v4_box'],
-  ['v4：上位5頭BOX／単勝なし',r=>r.model==='form_v4_box_no_odds']
+  ['v4：上位5頭BOX／単勝なし',r=>r.model==='form_v4_box_no_odds'],
+  ['v5：三連単可変／単勝あり',r=>r.model==='form_market_v5_adaptive'],
+  ['v5：三連単可変／単勝なし',r=>r.model==='form_v5_adaptive_no_odds']
  ].map(([label,match])=>{
   const verified=viewed.filter(r=>Array.isArray(r.result)&&r.result.length===3&&match(r));
   if(!verified.length)return label+'：結果待ち';
@@ -1095,6 +1131,7 @@ function narRender(data,localCopy=false){
  };
  const prospective=compared.length?'　｜　凍結済み同条件比較 '+compared.length+'R：従来8点 '+simulate(compared,savedTrioList)+' ／ 着順別の実験8点 '+simulate(compared,r=>r.podium_trio_tickets)+(compared.length<100?'（標本少・参考）':''):'';
  $('nar-model-comparison').textContent='新旧モデルの結果比較（選択した開催日・競馬場）：'+modelStats.join('　｜　')+prospective;
+ $('nar-review').innerHTML=dailyReviewHtml(viewed);
  const scheduled=calendar.filter(r=>(venue==='all'||r.venue===venue)&&dateMatches(r)&&matchesNumber(r));
  const snapshotIds=new Set([...viewed,...viewedPreviews].map(r=>r.id));
  const unavailable=scheduled.filter(r=>!snapshotIds.has(r.id));
@@ -1172,7 +1209,7 @@ function narRender(data,localCopy=false){
    return ' ／ 単勝'+Number(item.odds).toFixed(1)+'倍'+(pos>0?'・'+pos+'人気':'')+(item.observed_at?'（保存値）':'');
   };
   const marketLabel=marketList.length?'単勝オッズ：公式取得 '+marketList.length+'頭（最終確認 '+esc(String(marketAt||'時刻不明').replace('T',' ').slice(0,19))+'）':'単勝オッズは未取得です。取得後に表示します。';
-  const modelTag=String(r.model||'').includes('_v4_box')?'v4｜本命は勝率・相手は3着内確率':String(r.model||'').startsWith('form_market_v3')?'v3｜着順別モデル／単勝あり':String(r.model||'').startsWith('form_v3')?'v3｜着順別モデル／単勝なし':String(r.model||'').startsWith('form_market_v2')?'v2｜単勝あり':String(r.model||'').startsWith('form_v2')?'v2｜単勝なし':'旧モデル';
+  const modelTag=String(r.model||'').includes('_v5_adaptive')?'v5｜三連単の点数を確率の集中度で調整':String(r.model||'').includes('_v4_box')?'v4｜本命は勝率・相手は3着内確率':String(r.model||'').startsWith('form_market_v3')?'v3｜着順別モデル／単勝あり':String(r.model||'').startsWith('form_v3')?'v3｜着順別モデル／単勝なし':String(r.model||'').startsWith('form_market_v2')?'v2｜単勝あり':String(r.model||'').startsWith('form_v2')?'v2｜単勝なし':'旧モデル';
   const gapMinutes=(Date.parse(r.cutoff_at)-Date.parse(r.predicted_at))/60000;
   const staleNote=!draft&&Number.isFinite(gapMinutes)&&gapMinutes>15?' ／ ⚠ 締切より'+Math.round(gapMinutes)+'分前の予想（直前情報不足）':'';
   const value=r.trio_value;
@@ -1181,7 +1218,7 @@ function narRender(data,localCopy=false){
   const podium=Array.isArray(r.podium_trio_tickets)?r.podium_trio_tickets:[];
   const podiumHtml=podium.length?'<details style="margin-top:12px"><summary>2・3着別評価モデルの比較候補8点（未採用）</summary><div class="nar-trio-list">'+trioTokens(podium)+'</div><p class="nar-trio-note">実験方式の候補です。従来8点の参考集計には含めません。</p></details>':'';
   const valueHtml='<div class="nar-trio-title">オッズ条件付き参考買い目 <span class="pill">'+valueTickets.length+'点'+(valueTickets.length?'':' ／ 見送り')+'</span></div><p class="nar-trio-note">'+esc(valueStatus)+' モデル上の倍率は仮説に基づく値で、実際の回収率を保証しません。</p>'+(valueTickets.length?'<div class="nar-trio-list">'+trioTokens(valueTickets)+'</div>':'');
-  return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></div><div class="muted tiny">発走予定 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ '+stampLabel+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+finalizeLabel+' ／ 締切 '+esc(frozenCutoffLabel(r))+' ／ '+esc(modelTag)+esc(staleNote)+'</div><div class="nar-line">'+top.map((p,i)=>'<span class="nar-pick">'+(['◎','○','▲','△','△'][i])+' '+esc(p.no)+'番 '+esc(p.name)+' <b>'+narPct(100*Number(i>0&&p.podium_probability!=null?p.podium_probability:p.win_probability))+'</b><small>'+esc((p.podium_probability==null?'':i===0?'勝率':'3着内')+pickOdds(p.no))+'</small></span>').join('')+'</div><p class="tiny muted">'+marketLabel+'</p>'+raceInsightHtml(r,'NAR')+'<div class="nar-trio-title">三連複の買い目 '+(r.top5?'（BOX）':'（保存時の方式）')+' <span class="pill">'+trio.length+'点</span></div><div class="nar-trio-list">'+trioTokens(trio)+'</div><div class="nar-trio-note">'+(Array.isArray(r.trio_tickets)?'着順に関係なく選んだ3頭が入れば的中。'+(draft?'確定前のため買い目は更新されます。':'予想固定済みで変更しません。')+'':'旧予想の保存済み三連単候補を順不同に換算（新規予想ではありません）。')+'</div>'+podiumHtml+valueHtml+'<div class="nar-result">'+simple+'</div>'+purchaseDetailHtml(r)+'<details><summary>三連単 '+tickets.length+'点の買い目</summary><p>'+tickets.map((t,i)=>esc(Array.isArray(t)?t.join('→'):t)+'（100円）').join(' ／ ')+'</p></details></div>';
+  return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></div><div class="muted tiny">発走予定 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ '+stampLabel+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+finalizeLabel+' ／ 締切 '+esc(frozenCutoffLabel(r))+' ／ '+esc(modelTag)+esc(staleNote)+'</div><div class="nar-line">'+top.map((p,i)=>'<span class="nar-pick">'+(['◎','○','▲','△','△'][i])+' '+esc(p.no)+'番 '+esc(p.name)+' <b>'+narPct(100*Number(i>0&&p.podium_probability!=null?p.podium_probability:p.win_probability))+'</b><small>'+esc((p.podium_probability==null?'':i===0?'勝率':'3着内')+pickOdds(p.no))+'</small></span>').join('')+'</div><p class="tiny muted">'+marketLabel+'</p>'+raceInsightHtml(r,'NAR')+'<div class="nar-trio-title">三連複の買い目 '+(r.top5?'（BOX）':'（保存時の方式）')+' <span class="pill">'+trio.length+'点</span></div><div class="nar-trio-list">'+trioTokens(trio)+'</div><div class="nar-trio-note">'+(Array.isArray(r.trio_tickets)?'着順に関係なく選んだ3頭が入れば的中。'+(draft?'確定前のため買い目は更新されます。':'予想固定済みで変更しません。')+'':'旧予想の保存済み三連単候補を順不同に換算（新規予想ではありません）。')+'</div>'+podiumHtml+valueHtml+resultReviewHtml(r)+'<div class="nar-result">'+simple+'</div>'+purchaseDetailHtml(r)+trifectaPlanHtml(r)+'<details><summary>三連単 '+tickets.length+'点の買い目</summary><p>'+tickets.map((t,i)=>esc(Array.isArray(t)?t.join('→'):t)+'（100円）').join(' ／ ')+'</p></details></div>';
  }).join('');
 }
 let narFetching=false,narLastPollAt=0;
@@ -1258,7 +1295,7 @@ function jraAutoRender(venue,date,raceNumber,mode){
   const picks=top.map((p,i)=>'<span class="nar-pick">'+['◎','○','▲','△','△'][i]+' '+esc(p.no)+'番 '+esc(p.name)+' <b>'+narPct(100*Number(p.win_probability))+'</b> ／ '+esc(p.odds)+'倍・'+esc(p.popularity)+'人気</span>').join('');
   const trio=Array.isArray(r.trio_tickets)?r.trio_tickets:[],tickets=Array.isArray(r.tickets)?r.tickets:[];
   const wagers=hasResult?'<div class="nar-result">'+resultOrderHtml(r)+'<div>単勝 '+(r.hits?.win?'的中':'不的中')+' ／ 三連複 '+(r.hits?.trio?'的中':'不的中')+' ／ 三連単 '+(r.hits?.trifecta?'的中':'不的中')+'</div><div>確定払戻（100円あたり）：'+[['win','単勝'],['trio','三連複'],['trifecta','三連単']].map(([key,name])=>name+' '+(Number.isInteger(r.payouts?.[key])?amount(r.payouts[key]):'未取得')).join(' ／ ')+'</div></div>':'';
-  return '<div class="jra-card"><div class="jra-card-head"><strong>'+label+'</strong><span class="pill '+(draft?'gray':'')+'">'+esc(status)+'</span></div><p class="tiny muted">発走 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ 予想取得 '+esc(String(r.predicted_at||'').replace('T',' ').slice(0,16))+' ／ 予想締切 '+esc(String(r.cutoff_at||'').replace('T',' ').slice(0,16))+' ／ 市場支持率モデル（未学習）</p><div class="nar-line">'+picks+'</div>'+wagers+(mode==='results'?'':'<div class="nar-trio-title">三連複'+(r.top5?'BOX':'候補')+' '+trio.length+'点</div><div class="nar-trio-list">'+trioTokens(trio)+'</div><details style="margin-top:8px"><summary>三連単候補 '+tickets.length+'点</summary><p class="tiny muted">'+tickets.map(t=>esc(t.join('→'))+'（100円）').join(' ／ ')+'</p></details>')+'</div>';
+  return '<div class="jra-card"><div class="jra-card-head"><strong>'+label+'</strong><span class="pill '+(draft?'gray':'')+'">'+esc(status)+'</span></div><p class="tiny muted">発走 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ 予想取得 '+esc(String(r.predicted_at||'').replace('T',' ').slice(0,16))+' ／ 予想締切 '+esc(String(r.cutoff_at||'').replace('T',' ').slice(0,16))+' ／ 市場支持率モデル（未学習）</p><div class="nar-line">'+picks+'</div>'+wagers+trifectaPlanHtml(r)+(mode==='results'?'':'<div class="nar-trio-title">三連複'+(r.top5?'BOX':'候補')+' '+trio.length+'点</div><div class="nar-trio-list">'+trioTokens(trio)+'</div><details style="margin-top:8px"><summary>三連単候補 '+tickets.length+'点</summary><p class="tiny muted">'+tickets.map(t=>esc(t.join('→'))+'（100円）').join(' ／ ')+'</p></details>')+'</div>';
  }).join('');
 }
 async function jraAutoRefresh(silent=false){
@@ -1312,7 +1349,7 @@ function jraForecastCard(r,top,trio){
  const picks=ranks.slice(0,5).map((h,i)=>'<span class="nar-pick">'+['◎','○','▲','△','△'][i]+' '+esc(h.no)+'番 '+esc(h.name)+' <b>'+narPct(Number(h.win_probability)*100)+'</b> ／ '+esc(h.odds)+'倍・'+(pop.get(Number(h.no))||'—')+'人気</span>').join('');
  const table=ranks.map((h,i)=>'<div class="intel-item"><b>'+esc(i+1)+'位</b><span>'+esc(h.no)+'番 '+esc(h.name)+'</span><span>'+esc(h.odds)+'倍 ／ '+(pop.get(Number(h.no))||'—')+'人気</span></div>').join('');
  const tickets=Array.isArray(r.tickets)?r.tickets:[];
- return '<div class="jra-card"><div class="jra-card-head"><strong>'+esc(r.date+' '+r.venue+' '+(r.raceNo||'')+'R')+'</strong><span class="pill gray">予想確定・固定済み</span></div><small>'+esc(r.name)+' ／ 発走 '+esc(String(r.startAt||'').replace('T',' ').slice(0,16))+' ／ 保存 '+esc(new Date(r.lockedAt||r.createdAt).toLocaleString('ja-JP'))+' ／ 締切 '+esc(frozenCutoffLabel(r))+(r.marketMode?' ／ オッズ参考（学習AIではない）':' ／ 指数モデル')+'</small><div class="nar-line">'+picks+'</div>'+raceInsightHtml(r,'JRA')+'<details><summary>全出走馬の予想順位・オッズ・人気順</summary>'+table+'</details><div class="nar-trio-title">三連複 '+trio.length+'点</div><div class="nar-trio-list">'+trioTokens(trio)+'</div>'+purchaseDetailHtml(r)+'<details><summary>三連単 '+tickets.length+'点の買い目</summary><p class="tiny muted">'+tickets.map(x=>esc(x.join('→'))+'（100円）').join(' ／ ')+'</p></details><p class="tiny muted">◎ '+esc(top[0]??'—')+' ／ ○ '+esc(top[1]??'—')+' ／ ▲ '+esc(top[2]??'—')+'。人気・オッズは予想保存時点の入力値。</p></div>';
+ return '<div class="jra-card"><div class="jra-card-head"><strong>'+esc(r.date+' '+r.venue+' '+(r.raceNo||'')+'R')+'</strong><span class="pill gray">予想確定・固定済み</span></div><small>'+esc(r.name)+' ／ 発走 '+esc(String(r.startAt||'').replace('T',' ').slice(0,16))+' ／ 保存 '+esc(new Date(r.lockedAt||r.createdAt).toLocaleString('ja-JP'))+' ／ 締切 '+esc(frozenCutoffLabel(r))+(r.marketMode?' ／ オッズ参考（学習AIではない）':' ／ 指数モデル')+'</small><div class="nar-line">'+picks+'</div>'+raceInsightHtml(r,'JRA')+'<details><summary>全出走馬の予想順位・オッズ・人気順</summary>'+table+'</details><div class="nar-trio-title">三連複 '+trio.length+'点</div><div class="nar-trio-list">'+trioTokens(trio)+'</div>'+purchaseDetailHtml(r)+trifectaPlanHtml(r)+'<details><summary>三連単 '+tickets.length+'点の買い目</summary><p class="tiny muted">'+tickets.map(x=>esc(x.join('→'))+'（100円）').join(' ／ ')+'</p></details><p class="tiny muted">◎ '+esc(top[0]??'—')+' ／ ○ '+esc(top[1]??'—')+' ／ ▲ '+esc(top[2]??'—')+'。人気・オッズは予想保存時点の入力値。</p></div>';
 }
 function jraAutoPredict(races,label){
  jraValidRaces(races);

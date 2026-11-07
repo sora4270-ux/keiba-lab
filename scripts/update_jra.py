@@ -17,7 +17,7 @@ import sys
 import urllib.parse
 import urllib.request
 from zoneinfo import ZoneInfo
-from trio_strategy import top_five_tickets
+from trio_strategy import top_five_tickets, trifecta_plan
 
 JST = ZoneInfo("Asia/Tokyo")
 OUT = Path("data/auto/jra_predictions.json")
@@ -99,6 +99,7 @@ def forecast(r, now):
         "model": "market_only_plackett_luce_untrained",
         "top3": ranking[:3], "top5": ranking[:5], "ranking": ranking,
         "trio_tickets": trio_tickets, "tickets": tickets,
+        "trifecta_plan": {k: v for k, v in trifecta_plan([h["no"] for h in ranking], trifecta).items() if k != "tickets"},
     }
 
 
@@ -282,7 +283,7 @@ def selftest():
                                                    "result": [4, 5, 6]}]}, after, now + dt.timedelta(hours=2))
     assert not unconfirmed["races"][0].get("result")
     assert len(final["races"][0]["trio_tickets"]) == 10
-    assert len(final["races"][0]["tickets"]) == 24
+    assert 6 <= len(final["races"][0]["tickets"]) <= 36
     assert not_configured()["races"] == []
     print("PASS: licensed JRA provider guard, 15-minute freeze, no retroactive prediction, confirmed results only")
 

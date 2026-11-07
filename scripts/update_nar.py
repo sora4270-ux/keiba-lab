@@ -17,7 +17,7 @@ import urllib.request
 import zipfile
 from zoneinfo import ZoneInfo
 from trio_strategy import (trio_odds_index, ticket_ranking, top_five_tickets,
-                           value_selection, calibration_for_podium)
+                           value_selection, calibration_for_podium, trifecta_plan)
 
 JST = ZoneInfo("Asia/Tokyo")
 BASE_URL = "https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=daily"
@@ -356,13 +356,14 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
         "predicted_at": timestamp.isoformat(timespec="seconds"),
         "locked_at": timestamp.isoformat(timespec="seconds"),
         "cutoff_at": deadline.isoformat(timespec="minutes"),
-        "model": "form_market_v4_box" if market_p else "form_v4_box_no_odds",
+        "model": "form_market_v5_adaptive" if market_p else "form_v5_adaptive_no_odds",
         "calibration": {k: cfg.get(k) for k in ("form_alpha", "market_weight",
                   "form_training_races", "market_training_races", "place_market_weight",
                   "show_market_weight", "podium_training_races")},
         "top3": ranking[:3], "top5": ranking[:5], "ranking": ranking,
         "tickets": tickets, "trio_tickets": trio_tickets,
         "trio_value": value,
+        "trifecta_plan": {k: v for k, v in trifecta_plan([row["no"] for row in ranking], ordered).items() if k != "tickets"},
         "result": None, "settled_at": None, "hits": None
     }
     # Display verified official quotes even in preliminary forecasts. These
@@ -646,7 +647,7 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
     predictions = sorted(entries.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)[:5000]
     # Keep draft storage bounded, but not at the expense of upcoming races.
     previews = sorted(drafts.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)[:500]
-    method = "本命は勝率、相手は3着内確率で選び、上位5頭で三連複BOXと三連単最大24点を保存。発走15分前まで更新、確定済みの予想を変更しません。"
+    method = "本命は勝率、相手は3着内確率で選び、上位5頭で三連複BOXと三連単は候補5頭内の確率70%を目標に6〜36点（網羅度と金額を表示）を保存。発走15分前まで更新、確定済みの予想を変更しません。"
     model_changed = previous.get("method") != method or previous.get("learning") != calibration
     drafts_changed = previews != previous.get("drafts", [])
     return {
@@ -723,11 +724,11 @@ def selftest():
     assert pre["top3"] == latest["top3"] and pre["tickets"] == latest["tickets"]
     assert pre["trio_tickets"] == latest["trio_tickets"]
     assert dt.datetime.fromisoformat(pre["finalized_at"]) > dt.datetime.fromisoformat(pre["cutoff_at"])
-    assert len(pre["tickets"]) == 24 and abs(sum(x["win_probability"] for x in pre["top3"])) < 1.001
+    assert 6 <= len(pre["tickets"]) <= 36 and abs(sum(x["win_probability"] for x in pre["top3"])) < 1.001
     assert len(pre["trio_tickets"]) == 10
     selected = {row["no"] for row in pre["top5"]}
     assert len(selected) == 5 and all(set(t) <= selected for t in pre["tickets"])
-    assert len({tuple(t) for t in pre["tickets"]}) == 24
+    assert len({tuple(t) for t in pre["tickets"]}) == len(pre["tickets"])
     assert all(ticket == sorted(ticket) and len(ticket) == len(set(ticket)) == 3 for ticket in pre["trio_tickets"])
     assert len({tuple(ticket) for ticket in pre["trio_tickets"]}) == 10
     # Never backfill if an entire prediction was missed before the cutoff.
@@ -847,7 +848,7 @@ def selftest():
     assert trained["top3"][0]["no"] != forecast(races[0], now)["top3"][0]["no"]
     assert trained["market_at_lock"]["updated_at"] == trained["locked_at"]
     assert trained["cutoff_at"] == "2026-11-02T15:25+09:00"
-    assert forecast(races[0], now)["model"] == "form_v4_box_no_odds"
+    assert forecast(races[0], now)["model"] == "form_v5_adaptive_no_odds"
     past = [dict(pre, result=[1, 2, 3], settled_at="2026-11-02T16:01:00+09:00",
                  market={"horses": list(big_fav.values()),
                          "updated_at": "2026-11-02T16:10:00+09:00"})

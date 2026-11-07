@@ -63,6 +63,10 @@ async function run() {
       market:{horses:[{no:1,odds:2.4,popularity:1},{no:2,odds:4.5,popularity:2},{no:3,odds:7.8,popularity:3}],updated_at:new Date().toISOString()},
       tickets:[[1,2,3]],trio_tickets:[[1,2,3]],result:null
     };
+    const adaptive=await page.evaluate(()=>predictionTickets([{no:1},{no:2},{no:3}],[.5,.3,.2],[0,1,2]));
+    narRace.tickets=adaptive.tickets.map(t=>[t.a+1,t.b+1,t.c+1]);
+    narRace.trifecta_plan=adaptive.plan;
+    narRace.top5=narRace.top3;
     mock.drafts=[narRace];
     await page.locator('#nar-refresh').click();
     await page.waitForFunction(()=>document.querySelector('#nar-odds-status')?.textContent?.includes('取得 1/1R'),null,{timeout:10000});
@@ -70,6 +74,8 @@ async function run() {
     assert.ok(narForecastText.includes('単勝2.4倍・1人気'),'NAR odds and popularity shown with top picks');
     assert.ok(narForecastText.includes('単勝4.5倍・2人気'),'second runner also displays verified odds');
     assert.ok(narForecastText.includes('地方競馬公式の単勝オッズ'),'official source labelled');
+    assert.ok(narForecastText.includes('三連単 6点・600円'),'adaptive count and actual stake shown');
+    assert.ok(narForecastText.includes('候補内網羅度'),'conditional coverage labelled');
     await page.locator('#nar-view-date').selectOption('all');
     assert.ok((await page.locator('#nar-races').innerText()).includes('園田 4R'));
     assert.ok((await page.locator('#nar-races').innerText()).includes('園田 5R'));
@@ -77,6 +83,11 @@ async function run() {
     assert.ok((await page.locator('#nar-races').innerText()).includes('園田 4R'));
     assert.ok(!(await page.locator('#nar-races').innerText()).includes('園田 5R'),'race-number filter');
 
+    mock.drafts=[];
+    mock.races=[{...narRace,status:'final',result:[1,2,3],payouts:{trio:120,trifecta:650}}];
+    await page.locator('#nar-refresh').click();
+    await page.waitForFunction(()=>document.querySelector('#nar-review')?.textContent?.includes('的中 1R'));
+    assert.ok((await page.locator('#nar-review').innerText()).includes('購入 600円'),'review derives spending from frozen count');
     await page.locator('.quick-link[data-jump="nar"][data-display="results"]').click();
     assert.equal(await page.locator('#nar-view-mode').inputValue(),'results','NAR result mode');
     assert.equal(await page.locator('.mobile-dock [data-jump="nar"][data-display="results"]').getAttribute('aria-current'),'page','active menu follows result tab');

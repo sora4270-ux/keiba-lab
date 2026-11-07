@@ -55,8 +55,10 @@ assert.equal(available.tickets.length,6);
 const largerField=[...horses,{no:4,name:'Horse D',odds:11},{no:5,name:'Horse E',odds:14},{no:6,name:'Horse F',odds:22}];
 const larger=api.makeSnapshot({...race(16*60*1000,'larger'),horses:largerField},'licensed feed');
 assert.equal(larger.trio_tickets.length,10);
-assert.equal(larger.tickets.length,24);
-assert.equal(new Set(larger.tickets.map(t=>t.join('-'))).size,24);
+assert.ok(larger.tickets.length>=6&&larger.tickets.length<=36);
+assert.equal(larger.trifecta_plan.count,larger.tickets.length);
+assert.equal(larger.budget,larger.tickets.length*100);
+assert.equal(new Set(larger.tickets.map(t=>t.join('-'))).size,larger.tickets.length);
 assert.ok([...larger.trio_tickets,...larger.tickets].every(t=>!t.includes(6)));
 assert.equal(available.cutoffAt,new Date(Date.parse(available.startAt)-900000).toISOString());
 assert.ok(Date.parse(available.lockedAt)<Date.parse(available.cutoffAt));
@@ -68,3 +70,4 @@ assert.throws(()=>api.addPredictions([{
 }]),/15分前/);
 assert.equal(api.ledger.length,1);
 console.log('PASS: T-15 boundary, JRA validation, manual/feed snapshot and final persistence guard');
+require('./adaptive-trifecta.test.cjs');
