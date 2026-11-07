@@ -12,7 +12,7 @@
     "form_training_races": 220,
     "market_training_races": 135
   },
-  "updated_at": "2026-11-07T20:46:38+09:00",
+  "updated_at": "2026-11-07T20:51:37+09:00",
   "schedule_updated_at": "2026-11-07T06:39:46+09:00",
   "schedule": [
     {
@@ -2487,66 +2487,66 @@
         "horses": [
           {
             "no": 1,
-            "odds": 15.4,
+            "odds": 13.4,
             "popularity": 8
           },
           {
             "no": 2,
-            "odds": 16.3,
+            "odds": 13.7,
             "popularity": 9
           },
           {
             "no": 3,
-            "odds": 27.5,
+            "odds": 35.5,
             "popularity": 11
           },
           {
             "no": 4,
-            "odds": 28.2,
+            "odds": 41.1,
             "popularity": 12
           },
           {
             "no": 5,
-            "odds": 5.4,
-            "popularity": 2
+            "odds": 7.4,
+            "popularity": 3
           },
           {
             "no": 6,
-            "odds": 7.7,
+            "odds": 8.1,
             "popularity": 4
           },
           {
             "no": 7,
-            "odds": 5.4,
-            "popularity": 3
+            "odds": 6.2,
+            "popularity": 2
           },
           {
             "no": 8,
-            "odds": 14.9,
-            "popularity": 7
+            "odds": 16.8,
+            "popularity": 10
           },
           {
             "no": 9,
-            "odds": 10.7,
+            "odds": 10.0,
             "popularity": 5
           },
           {
             "no": 10,
-            "odds": 25.1,
-            "popularity": 10
+            "odds": 10.4,
+            "popularity": 6
           },
           {
             "no": 11,
-            "odds": 3.7,
+            "odds": 3.4,
             "popularity": 1
           },
           {
             "no": 12,
-            "odds": 11.0,
-            "popularity": 6
+            "odds": 11.3,
+            "popularity": 7
           }
         ],
-        "updated_at": "2026-11-07T20:46:38+09:00"
+        "updated_at": "2026-11-07T20:51:37+09:00"
       },
       "market_at_lock": {
         "horses": [
@@ -3275,9 +3275,21 @@
           }
         ]
       },
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        12,
+        11,
+        3
+      ],
+      "settled_at": "2026-11-07T20:51:37+09:00",
+      "hits": {
+        "win": false,
+        "quinella": true,
+        "exacta": false,
+        "trio": true,
+        "trio_multi": true,
+        "trio_value": false,
+        "trifecta": true
+      },
       "market": {
         "horses": [
           {
@@ -3430,7 +3442,31 @@
       },
       "created_at": "2026-11-07T06:39:46+09:00",
       "locked_at": "2026-11-07T20:20:54+09:00",
-      "finalized_at": "2026-11-07T20:25:54+09:00"
+      "finalized_at": "2026-11-07T20:25:54+09:00",
+      "finish_order": [
+        {
+          "no": 12,
+          "name": "チェストー",
+          "rank": 1
+        },
+        {
+          "no": 11,
+          "name": "クボウサマ",
+          "rank": 2
+        },
+        {
+          "no": 3,
+          "name": "レディホークダイヤ",
+          "rank": 3
+        }
+      ],
+      "payouts": {
+        "win": 150,
+        "quinella": 120,
+        "exacta": 190,
+        "trio": 170,
+        "trifecta": 290
+      }
     },
     {
       "id": "nar-20261107-帯広ば-12",
@@ -121645,15 +121681,15 @@
   ],
   "summary": {
     "predicted": 228,
-    "settled": 226,
-    "pending": 2,
-    "win": 32.7,
-    "quinella": 13.3,
+    "settled": 227,
+    "pending": 1,
+    "win": 32.6,
+    "quinella": 13.7,
     "exacta": 9.7,
-    "trio": 7.1,
-    "trio_multi": 31.4,
-    "trio_multi_settled": 226,
-    "trifecta": 16.8,
+    "trio": 7.5,
+    "trio_multi": 31.7,
+    "trio_multi_settled": 227,
+    "trifecta": 17.2,
     "note": "発走前に予想した確定レースのみ。三連複本線1点と三連複候補は別集計。各レースの保存済み買い目を使用し、点数は予想方式により異なります。"
   },
   "odds_feed": {
