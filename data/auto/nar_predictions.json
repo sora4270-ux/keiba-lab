@@ -12,7 +12,7 @@
     "form_training_races": 187,
     "market_training_races": 103
   },
-  "updated_at": "2026-11-07T12:26:32+09:00",
+  "updated_at": "2026-11-07T12:26:46+09:00",
   "schedule_updated_at": "2026-11-07T06:39:46+09:00",
   "schedule": [
     {
@@ -1832,7 +1832,7 @@
       "race_no": 12,
       "name": "高知 12R",
       "start_at": "2026-11-07T20:50+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T20:35+09:00",
       "model": "form_market_v4_box",
       "calibration": {
@@ -2168,7 +2168,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 220,
         "tickets": [
           [
@@ -2610,7 +2610,7 @@
             "popularity": 7
           }
         ],
-        "updated_at": "2026-11-07T12:26:32+09:00"
+        "updated_at": "2026-11-07T12:26:46+09:00"
       },
       "status": "draft",
       "created_at": "2026-11-07T06:39:46+09:00"
@@ -2622,7 +2622,7 @@
       "race_no": 11,
       "name": "佐賀 11R",
       "start_at": "2026-11-07T20:40+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T20:25+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -2972,7 +2972,7 @@
         "status": "below_threshold",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 66,
         "tickets": [],
         "evaluated": [
@@ -3092,7 +3092,7 @@
       "race_no": 12,
       "name": "帯広ば 12R",
       "start_at": "2026-11-07T20:30+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T20:15+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -3414,7 +3414,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 70,
         "tickets": [
           [
@@ -3679,7 +3679,7 @@
       "race_no": 11,
       "name": "高知 11R",
       "start_at": "2026-11-07T20:20+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T20:05+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -4001,7 +4001,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 97,
         "tickets": [
           [
@@ -4353,7 +4353,7 @@
       "race_no": 10,
       "name": "佐賀 10R",
       "start_at": "2026-11-07T20:10+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T19:55+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -4675,7 +4675,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 49,
         "tickets": [
           [
@@ -4951,7 +4951,7 @@
       "race_no": 11,
       "name": "帯広ば 11R",
       "start_at": "2026-11-07T20:00+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T19:45+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -5273,7 +5273,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 72,
         "tickets": [
           [
@@ -5610,7 +5610,7 @@
       "race_no": 10,
       "name": "高知 10R",
       "start_at": "2026-11-07T19:45+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T19:30+09:00",
       "model": "form_market_v4_box",
       "calibration": {
@@ -5932,7 +5932,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 54,
         "tickets": [
           [
@@ -6266,7 +6266,7 @@
             "popularity": 4
           }
         ],
-        "updated_at": "2026-11-07T12:26:32+09:00"
+        "updated_at": "2026-11-07T12:26:46+09:00"
       },
       "status": "draft",
       "created_at": "2026-11-07T06:39:46+09:00"
@@ -6278,7 +6278,7 @@
       "race_no": 9,
       "name": "佐賀 9R",
       "start_at": "2026-11-07T19:35+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T19:20+09:00",
       "model": "form_market_v4_box",
       "calibration": {
@@ -6607,7 +6607,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 39,
         "tickets": [
           [
@@ -6919,7 +6919,7 @@
             "popularity": 6
           }
         ],
-        "updated_at": "2026-11-07T12:26:32+09:00"
+        "updated_at": "2026-11-07T12:26:46+09:00"
       },
       "status": "draft",
       "created_at": "2026-11-07T06:39:46+09:00"
@@ -6931,7 +6931,7 @@
       "race_no": 10,
       "name": "帯広ば 10R",
       "start_at": "2026-11-07T19:25+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T19:10+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -7253,7 +7253,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 65,
         "tickets": [
           [
@@ -7530,7 +7530,7 @@
       "race_no": 9,
       "name": "高知 9R",
       "start_at": "2026-11-07T19:15+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T19:00+09:00",
       "model": "form_market_v4_box",
       "calibration": {
@@ -7838,7 +7838,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 43,
         "tickets": [
           [
@@ -8240,7 +8240,7 @@
             "popularity": 8
           }
         ],
-        "updated_at": "2026-11-07T12:26:32+09:00"
+        "updated_at": "2026-11-07T12:26:46+09:00"
       },
       "status": "draft",
       "created_at": "2026-11-07T06:39:46+09:00"
@@ -8252,7 +8252,7 @@
       "race_no": 8,
       "name": "佐賀 8R",
       "start_at": "2026-11-07T19:05+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T18:50+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -8581,7 +8581,7 @@
         "status": "below_threshold",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 32,
         "tickets": [],
         "evaluated": [
@@ -8828,7 +8828,7 @@
       "race_no": 9,
       "name": "帯広ば 9R",
       "start_at": "2026-11-07T18:55+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T18:40+09:00",
       "model": "form_market_v4_box",
       "calibration": {
@@ -9150,7 +9150,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 49,
         "tickets": [
           [
@@ -9354,7 +9354,7 @@
             "popularity": 4
           }
         ],
-        "updated_at": "2026-11-07T12:26:32+09:00"
+        "updated_at": "2026-11-07T12:26:46+09:00"
       },
       "status": "draft",
       "created_at": "2026-11-07T06:39:46+09:00"
@@ -9366,7 +9366,7 @@
       "race_no": 8,
       "name": "高知 8R",
       "start_at": "2026-11-07T18:45+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T18:30+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -9695,7 +9695,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 60,
         "tickets": [
           [
@@ -9932,7 +9932,7 @@
       "race_no": 7,
       "name": "佐賀 7R",
       "start_at": "2026-11-07T18:35+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T18:20+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -10261,7 +10261,7 @@
         "status": "below_threshold",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 28,
         "tickets": [],
         "evaluated": [
@@ -10416,7 +10416,7 @@
       "race_no": 8,
       "name": "帯広ば 8R",
       "start_at": "2026-11-07T18:25+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T18:10+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -10738,7 +10738,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 48,
         "tickets": [
           [
@@ -10935,7 +10935,7 @@
       "race_no": 7,
       "name": "高知 7R",
       "start_at": "2026-11-07T18:15+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T18:00+09:00",
       "model": "form_market_v4_box",
       "calibration": {
@@ -11250,7 +11250,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 46,
         "tickets": [
           [
@@ -11575,7 +11575,7 @@
             "popularity": 5
           }
         ],
-        "updated_at": "2026-11-07T12:26:32+09:00"
+        "updated_at": "2026-11-07T12:26:46+09:00"
       },
       "status": "draft",
       "created_at": "2026-11-07T06:39:46+09:00"
@@ -11587,7 +11587,7 @@
       "race_no": 6,
       "name": "佐賀 6R",
       "start_at": "2026-11-07T18:05+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T17:50+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -11923,7 +11923,7 @@
         "status": "below_threshold",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 33,
         "tickets": [],
         "evaluated": [
@@ -12077,7 +12077,7 @@
       "race_no": 7,
       "name": "帯広ば 7R",
       "start_at": "2026-11-07T17:55+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T17:40+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -12399,7 +12399,7 @@
         "status": "below_threshold",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 51,
         "tickets": [],
         "evaluated": [
@@ -12563,7 +12563,7 @@
       "race_no": 6,
       "name": "高知 6R",
       "start_at": "2026-11-07T17:45+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T17:30+09:00",
       "model": "form_market_v4_box",
       "calibration": {
@@ -12892,7 +12892,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 66,
         "tickets": [
           [
@@ -13258,7 +13258,7 @@
             "popularity": 10
           }
         ],
-        "updated_at": "2026-11-07T12:26:32+09:00"
+        "updated_at": "2026-11-07T12:26:46+09:00"
       },
       "status": "draft",
       "created_at": "2026-11-07T06:39:46+09:00"
@@ -13270,7 +13270,7 @@
       "race_no": 5,
       "name": "佐賀 5R",
       "start_at": "2026-11-07T17:35+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T17:20+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -13599,7 +13599,7 @@
         "status": "below_threshold",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 25,
         "tickets": [],
         "evaluated": [
@@ -13683,7 +13683,7 @@
       "race_no": 6,
       "name": "帯広ば 6R",
       "start_at": "2026-11-07T17:25+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T17:10+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -13998,7 +13998,7 @@
         "status": "below_threshold",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 39,
         "tickets": [],
         "evaluated": [
@@ -14136,7 +14136,7 @@
       "race_no": 5,
       "name": "高知 5R",
       "start_at": "2026-11-07T17:10+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T16:55+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -14458,7 +14458,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 107,
         "tickets": [
           [
@@ -14832,7 +14832,7 @@
       "race_no": 4,
       "name": "佐賀 4R",
       "start_at": "2026-11-07T17:00+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T16:45+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -15140,7 +15140,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 45,
         "tickets": [
           [
@@ -15494,7 +15494,7 @@
       "race_no": 5,
       "name": "帯広ば 5R",
       "start_at": "2026-11-07T16:50+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T16:35+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -15809,7 +15809,7 @@
         "status": "below_threshold",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 32,
         "tickets": [],
         "evaluated": [
@@ -16012,7 +16012,7 @@
       "race_no": 4,
       "name": "高知 4R",
       "start_at": "2026-11-07T16:40+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T16:25+09:00",
       "model": "form_market_v4_box",
       "calibration": {
@@ -16341,7 +16341,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 118,
         "tickets": [
           [
@@ -16762,7 +16762,7 @@
             "popularity": 9
           }
         ],
-        "updated_at": "2026-11-07T12:26:32+09:00"
+        "updated_at": "2026-11-07T12:26:46+09:00"
       },
       "status": "draft",
       "created_at": "2026-11-07T06:39:46+09:00"
@@ -16774,7 +16774,7 @@
       "race_no": 3,
       "name": "佐賀 3R",
       "start_at": "2026-11-07T16:30+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T16:15+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -17096,7 +17096,7 @@
         "status": "below_threshold",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 60,
         "tickets": [],
         "evaluated": [
@@ -17408,7 +17408,7 @@
       "race_no": 4,
       "name": "帯広ば 4R",
       "start_at": "2026-11-07T16:20+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T16:05+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -17730,7 +17730,7 @@
         "status": "below_threshold",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 43,
         "tickets": [],
         "evaluated": [
@@ -17802,7 +17802,7 @@
       "race_no": 3,
       "name": "高知 3R",
       "start_at": "2026-11-07T16:05+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T15:50+09:00",
       "model": "form_market_v4_box",
       "calibration": {
@@ -18124,7 +18124,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 112,
         "tickets": [
           [
@@ -18546,7 +18546,7 @@
             "popularity": 1
           }
         ],
-        "updated_at": "2026-11-07T12:26:32+09:00"
+        "updated_at": "2026-11-07T12:26:46+09:00"
       },
       "status": "draft",
       "created_at": "2026-11-07T06:39:46+09:00"
@@ -18558,7 +18558,7 @@
       "race_no": 2,
       "name": "佐賀 2R",
       "start_at": "2026-11-07T15:55+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T15:40+09:00",
       "model": "form_market_v4_box",
       "calibration": {
@@ -18859,7 +18859,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 26,
         "tickets": [
           [
@@ -19142,7 +19142,7 @@
             "popularity": 3
           }
         ],
-        "updated_at": "2026-11-07T12:26:32+09:00"
+        "updated_at": "2026-11-07T12:26:46+09:00"
       },
       "status": "draft",
       "created_at": "2026-11-07T06:39:46+09:00"
@@ -19154,7 +19154,7 @@
       "race_no": 3,
       "name": "帯広ば 3R",
       "start_at": "2026-11-07T15:50+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T15:35+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -19469,7 +19469,7 @@
         "status": "below_threshold",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 35,
         "tickets": [],
         "evaluated": [
@@ -19595,7 +19595,7 @@
       "race_no": 2,
       "name": "高知 2R",
       "start_at": "2026-11-07T15:30+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T15:15+09:00",
       "model": "form_market_v4_box",
       "calibration": {
@@ -19903,7 +19903,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 52,
         "tickets": [
           [
@@ -20294,7 +20294,7 @@
             "popularity": 6
           }
         ],
-        "updated_at": "2026-11-07T12:26:32+09:00"
+        "updated_at": "2026-11-07T12:26:46+09:00"
       },
       "status": "draft",
       "created_at": "2026-11-07T06:39:46+09:00"
@@ -20306,7 +20306,7 @@
       "race_no": 1,
       "name": "佐賀 1R",
       "start_at": "2026-11-07T15:25+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T15:10+09:00",
       "model": "form_market_v4_box",
       "calibration": {
@@ -20628,7 +20628,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 89,
         "tickets": [
           [
@@ -21039,7 +21039,7 @@
             "popularity": 4
           }
         ],
-        "updated_at": "2026-11-07T12:26:32+09:00"
+        "updated_at": "2026-11-07T12:26:46+09:00"
       },
       "status": "draft",
       "created_at": "2026-11-07T06:39:46+09:00"
@@ -21051,7 +21051,7 @@
       "race_no": 2,
       "name": "帯広ば 2R",
       "start_at": "2026-11-07T15:15+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T15:00+09:00",
       "model": "form_v4_box_no_odds",
       "calibration": {
@@ -21366,7 +21366,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 71,
         "tickets": [
           [
@@ -21703,7 +21703,7 @@
       "race_no": 1,
       "name": "高知 1R",
       "start_at": "2026-11-07T14:55+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T14:40+09:00",
       "model": "form_market_v4_box",
       "calibration": {
@@ -22032,7 +22032,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 153,
         "tickets": [
           [
@@ -22464,7 +22464,7 @@
             "popularity": 3
           }
         ],
-        "updated_at": "2026-11-07T12:26:32+09:00"
+        "updated_at": "2026-11-07T12:26:46+09:00"
       },
       "status": "draft",
       "created_at": "2026-11-07T06:39:46+09:00"
@@ -22476,7 +22476,7 @@
       "race_no": 1,
       "name": "帯広ば 1R",
       "start_at": "2026-11-07T14:40+09:00",
-      "predicted_at": "2026-11-07T12:26:32+09:00",
+      "predicted_at": "2026-11-07T12:26:46+09:00",
       "cutoff_at": "2026-11-07T14:25+09:00",
       "model": "form_market_v4_box",
       "calibration": {
@@ -22798,7 +22798,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-07T12:26:32+09:00",
+        "observed_at": "2026-11-07T12:26:46+09:00",
         "quote_count": 111,
         "tickets": [
           [
@@ -23220,7 +23220,7 @@
             "popularity": 8
           }
         ],
-        "updated_at": "2026-11-07T12:26:32+09:00"
+        "updated_at": "2026-11-07T12:26:46+09:00"
       },
       "status": "draft",
       "created_at": "2026-11-07T06:39:46+09:00"
