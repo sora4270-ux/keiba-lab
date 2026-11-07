@@ -12,7 +12,7 @@
     "form_training_races": 221,
     "market_training_races": 136
   },
-  "updated_at": "2026-11-07T20:56:37+09:00",
+  "updated_at": "2026-11-07T21:01:37+09:00",
   "schedule_updated_at": "2026-11-07T06:39:46+09:00",
   "schedule": [
     {
@@ -2480,9 +2480,21 @@
           }
         ]
       },
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        4,
+        11,
+        7
+      ],
+      "settled_at": "2026-11-07T21:01:37+09:00",
+      "hits": {
+        "win": false,
+        "quinella": false,
+        "exacta": false,
+        "trio": false,
+        "trio_multi": false,
+        "trio_value": false,
+        "trifecta": false
+      },
       "market": {
         "horses": [
           {
@@ -2615,7 +2627,31 @@
       },
       "created_at": "2026-11-07T06:39:46+09:00",
       "locked_at": "2026-11-07T20:30:52+09:00",
-      "finalized_at": "2026-11-07T20:35:53+09:00"
+      "finalized_at": "2026-11-07T20:35:53+09:00",
+      "finish_order": [
+        {
+          "no": 4,
+          "name": "マサハヤアン",
+          "rank": 1
+        },
+        {
+          "no": 11,
+          "name": "トーアイクタチ",
+          "rank": 2
+        },
+        {
+          "no": 7,
+          "name": "カイトヴァイター",
+          "rank": 3
+        }
+      ],
+      "payouts": {
+        "win": 4110,
+        "quinella": 6990,
+        "exacta": 18310,
+        "trio": 12540,
+        "trifecta": 138560
+      }
     },
     {
       "id": "nar-20261107-佐賀-11",
@@ -121736,15 +121772,15 @@
   ],
   "summary": {
     "predicted": 228,
-    "settled": 227,
-    "pending": 1,
-    "win": 32.6,
-    "quinella": 13.7,
-    "exacta": 9.7,
+    "settled": 228,
+    "pending": 0,
+    "win": 32.5,
+    "quinella": 13.6,
+    "exacta": 9.6,
     "trio": 7.5,
-    "trio_multi": 31.7,
-    "trio_multi_settled": 227,
-    "trifecta": 17.2,
+    "trio_multi": 31.6,
+    "trio_multi_settled": 228,
+    "trifecta": 17.1,
     "note": "発走前に予想した確定レースのみ。三連複本線1点と三連複候補は別集計。各レースの保存済み買い目を使用し、点数は予想方式により異なります。"
   },
   "odds_feed": {
