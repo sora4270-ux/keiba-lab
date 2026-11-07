@@ -63,7 +63,9 @@ async function run() {
       market:{horses:[{no:1,odds:2.4,popularity:1},{no:2,odds:4.5,popularity:2},{no:3,odds:7.8,popularity:3}],updated_at:new Date().toISOString()},
       tickets:[[1,2,3]],trio_tickets:[[1,2,3]],result:null
     };
-    const adaptive=await page.evaluate(()=>predictionTickets([{no:1},{no:2},{no:3}],[.5,.3,.2],[0,1,2]));
+    const source=fs.readFileSync(path.join(root,'index.html'),'utf8');
+    const selectTickets=new Function(source.slice(source.indexOf('function predictionTickets('),source.indexOf('const pct='))+';return predictionTickets;')();
+    const adaptive=selectTickets([{no:1},{no:2},{no:3}],[.5,.3,.2],[0,1,2]);
     narRace.tickets=adaptive.tickets.map(t=>[t.a+1,t.b+1,t.c+1]);
     narRace.trifecta_plan=adaptive.plan;
     narRace.top5=narRace.top3;
