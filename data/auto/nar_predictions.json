@@ -8,11 +8,11 @@
     "market_weight": 0.9,
     "place_market_weight": 0.8,
     "show_market_weight": 0.8,
-    "podium_training_races": 134,
-    "form_training_races": 219,
-    "market_training_races": 134
+    "podium_training_races": 135,
+    "form_training_races": 220,
+    "market_training_races": 135
   },
-  "updated_at": "2026-11-07T20:41:38+09:00",
+  "updated_at": "2026-11-07T20:46:38+09:00",
   "schedule_updated_at": "2026-11-07T06:39:46+09:00",
   "schedule": [
     {
@@ -2487,8 +2487,8 @@
         "horses": [
           {
             "no": 1,
-            "odds": 14.6,
-            "popularity": 7
+            "odds": 15.4,
+            "popularity": 8
           },
           {
             "no": 2,
@@ -2497,56 +2497,56 @@
           },
           {
             "no": 3,
-            "odds": 36.1,
-            "popularity": 12
-          },
-          {
-            "no": 4,
-            "odds": 24.8,
+            "odds": 27.5,
             "popularity": 11
           },
           {
+            "no": 4,
+            "odds": 28.2,
+            "popularity": 12
+          },
+          {
             "no": 5,
-            "odds": 4.7,
+            "odds": 5.4,
             "popularity": 2
           },
           {
             "no": 6,
-            "odds": 7.0,
+            "odds": 7.7,
             "popularity": 4
           },
           {
             "no": 7,
-            "odds": 5.7,
+            "odds": 5.4,
             "popularity": 3
           },
           {
             "no": 8,
-            "odds": 14.8,
-            "popularity": 8
+            "odds": 14.9,
+            "popularity": 7
           },
           {
             "no": 9,
-            "odds": 10.9,
+            "odds": 10.7,
             "popularity": 5
           },
           {
             "no": 10,
-            "odds": 24.2,
+            "odds": 25.1,
             "popularity": 10
           },
           {
             "no": 11,
-            "odds": 4.2,
+            "odds": 3.7,
             "popularity": 1
           },
           {
             "no": 12,
-            "odds": 11.2,
+            "odds": 11.0,
             "popularity": 6
           }
         ],
-        "updated_at": "2026-11-07T20:41:38+09:00"
+        "updated_at": "2026-11-07T20:46:38+09:00"
       },
       "market_at_lock": {
         "horses": [
@@ -4205,6 +4205,41 @@
           "no": 8,
           "name": "サクラタユウ",
           "rank": 3
+        },
+        {
+          "no": 3,
+          "name": "ホクショウラナ",
+          "rank": 4
+        },
+        {
+          "no": 10,
+          "name": "サクセスオーショウ",
+          "rank": 5
+        },
+        {
+          "no": 5,
+          "name": "ホクセイコウヘイ",
+          "rank": 6
+        },
+        {
+          "no": 2,
+          "name": "ラブファンタジー",
+          "rank": 7
+        },
+        {
+          "no": 1,
+          "name": "ジェイパワー",
+          "rank": 8
+        },
+        {
+          "no": 4,
+          "name": "ホンマル",
+          "rank": 9
+        },
+        {
+          "no": 6,
+          "name": "ホクセイシンノスケ",
+          "rank": 10
         }
       ],
       "payouts": {
