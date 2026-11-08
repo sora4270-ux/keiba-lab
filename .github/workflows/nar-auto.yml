@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/update_nar.py'
+      - 'scripts/odds_encoding.py'
       - 'scripts/trio_strategy.py'
       - 'scripts/value_strategy_v5.py'
       - '.github/workflows/nar-auto.yml'
@@ -13,6 +14,7 @@ on:
       - 'tests/forecast-lock.test.cjs'
       - 'tests/view-switch.test.cjs'
       - 'tests/value_strategy_v5_test.py'
+      - 'tests/odds_encoding_test.py'
       - 'race-intel.js'
   schedule:
     # Start away from the top of the hour. Each scheduled runner polls repeatedly
@@ -48,7 +50,7 @@ jobs:
           PY
           node --check /tmp/keiba-lab-inline.js
           node --check race-intel.js
-          python -m py_compile scripts/update_nar.py scripts/value_strategy_v5.py
+          python -m py_compile scripts/update_nar.py scripts/odds_encoding.py scripts/value_strategy_v5.py
           node - <<'NODE'
           const assert=require('node:assert/strict');
           const fs=require('node:fs');
@@ -77,6 +79,7 @@ jobs:
       - name: Self-test (no external services)
         run: |
           python scripts/update_nar.py --selftest
+          python -m unittest discover -s tests -p 'odds_encoding_test.py'
           python scripts/trio_strategy.py --selftest
           python -m unittest discover -s tests -p 'value_strategy_v5_test.py'
       - name: ROI and race insight regression tests

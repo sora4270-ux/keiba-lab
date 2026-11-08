@@ -16,6 +16,7 @@ import sys
 import urllib.request
 import zipfile
 from zoneinfo import ZoneInfo
+from odds_encoding import detect_odds_csv_encoding
 from value_strategy_v5 import build_shadow_plan
 from trio_strategy import (trio_odds_index, ticket_ranking, top_five_tickets,
                            value_selection, calibration_for_podium, trifecta_plan)
@@ -188,11 +189,7 @@ def odds_market_index(zip_data):
         for member in members:
             with z.open(member) as handle:
                 sample = handle.read(4096)
-            try:
-                sample.decode("utf-8-sig")
-                encoding = "utf-8-sig"
-            except UnicodeDecodeError:
-                encoding = "cp932"
+            encoding = detect_odds_csv_encoding(sample)
             with z.open(member) as handle:
                 reader = csv.reader(io.TextIOWrapper(handle, encoding=encoding, errors="replace", newline=""))
                 first = next(reader, None)
