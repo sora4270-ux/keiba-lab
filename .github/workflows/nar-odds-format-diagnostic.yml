@@ -16,7 +16,8 @@ jobs:
       - name: Inspect public odds CSV format
         run: |
           python - <<'PY'
-          import collections, csv, io, zipfile, unicodedata
+          import collections, csv, io, zipfile, unicodedata, sys
+          sys.path.insert(0,'scripts')
           from scripts.update_nar import fetch_daily_zip, ODDS_URL, MAX_ODDS_DOWNLOAD, odds_market_index
           archive=fetch_daily_zip(ODDS_URL, MAX_ODDS_DOWNLOAD)
           print('archive_size_bytes',len(archive))
