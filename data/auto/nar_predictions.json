@@ -12,7 +12,7 @@
     "form_training_races": 266,
     "market_training_races": 176
   },
-  "updated_at": "2026-11-08T20:44:36+09:00",
+  "updated_at": "2026-11-08T20:49:35+09:00",
   "schedule_updated_at": "2026-11-08T16:24:38+09:00",
   "schedule": [
     {
@@ -2927,66 +2927,66 @@
         "horses": [
           {
             "no": 1,
-            "odds": 26.6,
+            "odds": 31.4,
             "popularity": 12
           },
           {
             "no": 2,
-            "odds": 14.1,
+            "odds": 15.4,
             "popularity": 7
           },
           {
             "no": 3,
-            "odds": 6.3,
+            "odds": 6.0,
             "popularity": 3
           },
           {
             "no": 4,
-            "odds": 8.9,
-            "popularity": 5
-          },
-          {
-            "no": 5,
             "odds": 7.4,
             "popularity": 4
           },
           {
+            "no": 5,
+            "odds": 7.9,
+            "popularity": 5
+          },
+          {
             "no": 6,
-            "odds": 9.3,
+            "odds": 8.8,
             "popularity": 6
           },
           {
             "no": 7,
-            "odds": 5.4,
+            "odds": 5.7,
             "popularity": 2
           },
           {
             "no": 8,
-            "odds": 21.0,
-            "popularity": 9
+            "odds": 18.0,
+            "popularity": 10
           },
           {
             "no": 9,
-            "odds": 21.7,
+            "odds": 23.8,
             "popularity": 11
           },
           {
             "no": 10,
+            "odds": 17.2,
+            "popularity": 9
+          },
+          {
+            "no": 11,
             "odds": 16.9,
             "popularity": 8
           },
           {
-            "no": 11,
-            "odds": 21.4,
-            "popularity": 10
-          },
-          {
             "no": 12,
-            "odds": 4.0,
+            "odds": 4.3,
             "popularity": 1
           }
         ],
-        "updated_at": "2026-11-08T20:44:36+09:00"
+        "updated_at": "2026-11-08T20:49:35+09:00"
       },
       "market_at_lock": {
         "horses": [
@@ -4442,9 +4442,21 @@
         "target_reached": true,
         "reason": "拮抗"
       },
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        8,
+        14,
+        6
+      ],
+      "settled_at": "2026-11-08T20:49:35+09:00",
+      "hits": {
+        "win": true,
+        "quinella": true,
+        "exacta": true,
+        "trio": false,
+        "trio_multi": true,
+        "trio_value": false,
+        "trifecta": true
+      },
       "market": {
         "horses": [
           {
@@ -4597,7 +4609,31 @@
       },
       "created_at": "2026-11-08T06:36:25+09:00",
       "locked_at": "2026-11-08T20:24:22+09:00",
-      "finalized_at": "2026-11-08T20:29:23+09:00"
+      "finalized_at": "2026-11-08T20:29:23+09:00",
+      "finish_order": [
+        {
+          "no": 8,
+          "name": "ディアーモルタル",
+          "rank": 1
+        },
+        {
+          "no": 14,
+          "name": "マイネルアイフェル",
+          "rank": 2
+        },
+        {
+          "no": 6,
+          "name": "メイショウシュハリ",
+          "rank": 3
+        }
+      ],
+      "payouts": {
+        "win": 110,
+        "quinella": 190,
+        "exacta": 210,
+        "trio": 290,
+        "trifecta": 470
+      }
     },
     {
       "id": "nar-20261108-高知-11",
@@ -161660,15 +161696,15 @@
   ],
   "summary": {
     "predicted": 275,
-    "settled": 272,
-    "pending": 3,
-    "win": 33.1,
-    "quinella": 14.3,
-    "exacta": 9.2,
-    "trio": 9.6,
-    "trio_multi": 35.7,
-    "trio_multi_settled": 272,
-    "trifecta": 22.1,
+    "settled": 273,
+    "pending": 2,
+    "win": 33.3,
+    "quinella": 14.7,
+    "exacta": 9.5,
+    "trio": 9.5,
+    "trio_multi": 35.9,
+    "trio_multi_settled": 273,
+    "trifecta": 22.3,
     "note": "発走前に予想した確定レースのみ。三連複本線1点と三連複候補は別集計。各レースの保存済み買い目を使用し、点数は予想方式により異なります。"
   },
   "odds_feed": {
