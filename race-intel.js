@@ -39,7 +39,14 @@ function raceInsightHtml(record, source = 'NAR') {
   // Prefer the latest published quote, then a labelled saved pre-lock snapshot.
   const observedMarket = source === 'NAR' ? narDisplayMarket(record) :
     record?.market?.horses?.length ? record.market : record?.market_at_lock;
-  const marketRows = observedMarket?.horses || (source === 'input' || source === 'JRA' ? runners : []);
+  // A partial manual JRA refresh must preserve visibly labelled pre-race
+  // odds for horses that were not updated, without inventing a live quote.
+  const manualJraQuotes = new Map((source === 'JRA' ? record?.market?.horses : [] || [])
+    .map(h => [Number(h.no), h]));
+  const marketRows = source === 'JRA' ? runners.map(h => {
+    const updated = manualJraQuotes.get(Number(h.no));
+    return updated ? {...h, ...updated} : {...h, ...(manualJraQuotes.size ? {observed_at: record.lockedAt || record.createdAt || '予想時'} : {})};
+  }) : observedMarket?.horses || (source === 'input' ? runners : []);
   const market = new Map(marketRows.filter(x => Number.isInteger(Number(x.no)))
     .map(x => [Number(x.no), x]));
   const entries = runners.map((horse, i) => {
