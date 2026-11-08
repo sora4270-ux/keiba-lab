@@ -1,0 +1,36 @@
+name: Forecast quality and review regression
+on:
+  push:
+    paths:
+      - 'index.html'
+      - 'scripts/**'
+      - 'tests/**'
+      - '.github/workflows/review-regression.yml'
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'scripts/**'
+      - 'tests/**'
+      - '.github/workflows/review-regression.yml'
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Python quality and forecast checks
+        run: |
+          python -m unittest discover -s tests -p '*_test.py' -v
+          python scripts/update_nar.py --selftest
+          python scripts/update_jra.py --selftest
+          python scripts/trio_strategy.py --selftest
+      - name: Browser logic and ledger checks
+        run: node --test tests/adaptive-trifecta.test.cjs tests/daily-review.test.cjs tests/forecast-lock.test.cjs tests/jra-auto.test.cjs tests/race-intel.test.cjs tests/roi.test.cjs tests/view-switch.test.cjs

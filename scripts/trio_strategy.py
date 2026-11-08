@@ -201,7 +201,9 @@ def calibration_for_podium(records, now):
             snap = r.get("market_at_lock") or {}
             if dt.datetime.fromisoformat(snap["updated_at"]) >= dt.datetime.fromisoformat(r["cutoff_at"]):
                 continue
-            if dt.datetime.fromisoformat(snap["updated_at"]) > dt.datetime.fromisoformat(r["locked_at"]):
+            observed = dt.datetime.fromisoformat(snap["updated_at"])
+            locked = dt.datetime.fromisoformat(r["locked_at"])
+            if observed > locked or locked - observed > dt.timedelta(minutes=15):
                 continue
             rows = r["ranking"]
             ids = [x["no"] for x in rows]
@@ -352,3 +354,4 @@ if __name__ == "__main__":
         print(json.dumps(backtest(races, day), ensure_ascii=False, indent=2))
     else:
         print("usage: python scripts/trio_strategy.py --selftest | --backtest [--date=YYYY-MM-DD]")
+

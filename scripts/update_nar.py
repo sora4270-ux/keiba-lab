@@ -300,7 +300,7 @@ def learn_parameters(records, now):
             observed = dt.datetime.fromisoformat(snap["updated_at"])
             locked = dt.datetime.fromisoformat(record.get("locked_at") or record["predicted_at"])
             deadline = dt.datetime.fromisoformat(record["cutoff_at"])
-            if observed > locked or observed >= deadline:
+            if observed > locked or observed >= deadline or locked - observed > dt.timedelta(minutes=15):
                 continue
             odds = {h["no"]: h for h in snap["horses"]}
             market = market_probabilities([{"no": n} for n in ids], odds)
@@ -901,3 +901,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
