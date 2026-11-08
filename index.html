@@ -257,7 +257,16 @@
 <div id="jra-import-list" class="race-preview"></div>
 <div class="controls"><button type="button" class="btn primary sm" id="jra-predict-imported" disabled>JRA全レースを予想</button><button type="button" class="btn sm" id="jra-import-sync">配信データを更新</button></div>
 <p class="tiny muted">取り込んでいない出馬表や最新オッズは自動生成しません。入力した出典の正確性をご確認ください。</p></div>
-<div class="hrow" style="margin-top:18px"><h3 style="margin:0">② かんたん入力</h3><span class="muted tiny">発走15分前まで・3頭以上</span></div>
+<div class="jra-card" id="jra-odds-update" aria-label="JRA保存済み予想の表示用単勝オッズ更新">
+   <h3 style="margin-top:0">📈 保存済みJRA予想の単勝オッズを反映</h3>
+   <p class="tiny muted">JRA公式画面などで確認した倍率を、<b>馬番と単勝オッズ</b>の2列で貼り付けます（例：1 2.6）。変更するのは表示用オッズのみです。発走15分前に固定した予想順位・勝率・買い目は変更しません。自動取得ではありません。</p>
+   <div class="field"><label for="jra-odds-race">対象の保存済みレース</label><select id="jra-odds-race"><option value="">保存済みJRA予想なし</option></select></div>
+   <label for="jra-odds-paste" class="tiny muted" style="display:block;margin-top:9px">馬番 単勝オッズ（1行1頭、例：1 2.6）</label>
+   <textarea id="jra-odds-paste" class="jra-textarea" spellcheck="false" placeholder="1 2.6&#10;2 38.6&#10;3 61.7"></textarea>
+   <div class="controls"><button type="button" class="btn primary sm" id="jra-odds-apply">表示用オッズを保存・反映</button></div>
+   <p id="jra-odds-message" class="hint" role="status" aria-live="polite">倍率は入力時点の参考値です。最新値はJRA公式で確認してください。</p>
+  </div>
+  <div class="hrow" style="margin-top:18px"><h3 style="margin:0">② かんたん入力</h3><span class="muted tiny">発走15分前まで・3頭以上</span></div>
   <div class="jra-input-grid">
     <div class="field"><label for="jra-venue">競馬場</label><select id="jra-venue"><option>東京</option><option>中山</option><option>京都</option><option>阪神</option><option>中京</option><option>新潟</option><option>福島</option><option>小倉</option><option>札幌</option><option>函館</option></select></div>
     <div class="field"><label for="jra-race-no">レース</label><select id="jra-race-no"><option value="1">1R</option><option value="2">2R</option><option value="3">3R</option><option value="4">4R</option><option value="5">5R</option><option value="6">6R</option><option value="7">7R</option><option value="8">8R</option><option value="9">9R</option><option value="10">10R</option><option value="11" selected>11R</option><option value="12">12R</option></select></div>
@@ -415,7 +424,7 @@
 </nav>
 <div class="toast" id="toast" role="status"></div>
 <input type="file" id="result-file" accept=".csv,.json,text/csv,application/json" hidden><input type="file" id="ledger-file" accept=".json,application/json" hidden><input type="file" id="feed-file" accept=".json,.csv,application/json,text/csv" hidden><input type="file" id="race-file" accept=".csv,text/csv" hidden><input type="file" id="history-file" accept=".csv,text/csv" hidden><input type="file" id="model-file" accept=".json,application/json" hidden>
-<script src="./race-intel.js?v=4.0.1"></script>
+<script src="./race-intel.js?v=5.0.1"></script>
 <script>
 (()=>{'use strict';
 const DEFAULT_W=[0.85,0.45,0.32,0.37,0.26];
@@ -1361,10 +1370,16 @@ $('jra-import-list').addEventListener('click',e=>{const b=e.target.closest('[dat
 $('jra-import-sync').addEventListener('click',()=>{if(!$('feed-url').value.trim()){switchTab('sync');$('feed-url').focus();jraMessage('許諾済みJSONのURLを設定してください。');return;}syncFeeds().then(()=>{jraImportedRender();jraRender()});});
 function jraForecastCard(r,top,trio){
  const ranks=Array.isArray(r.runners)?[...r.runners].sort((a,b)=>Number(b.win_probability)-Number(a.win_probability)):[];
- const oddsOrder=Array.isArray(r.runners)?[...r.runners].sort((a,b)=>Number(a.odds)-Number(b.odds)):[];
- const pop=new Map(oddsOrder.map((h,i)=>[Number(h.no),i+1]));
- const picks=ranks.slice(0,5).map((h,i)=>'<span class="nar-pick">'+['◎','○','▲','△','△'][i]+' '+esc(h.no)+'番 '+esc(h.name)+' <b>'+narPct(Number(h.win_probability)*100)+'</b> ／ '+esc(h.odds)+'倍・'+(pop.get(Number(h.no))||'—')+'人気</span>').join('');
- const table=ranks.map((h,i)=>'<div class="intel-item"><b>'+esc(i+1)+'位</b><span>'+esc(h.no)+'番 '+esc(h.name)+'</span><span>'+esc(h.odds)+'倍 ／ '+(pop.get(Number(h.no))||'—')+'人気</span></div>').join('');
+ const manual=new Map((r.market?.horses||[]).map(h=>[Number(h.no),h]));
+ const validOdd=x=>x!==null&&x!==undefined&&x!==''&&Number.isFinite(Number(x))&&Number(x)>=1&&Number(x)<10000;
+ const displayedOdd=h=>{const update=manual.get(Number(h.no));return validOdd(update?.odds)?Number(update.odds):Number(h.odds);};
+ const mixed=manual.size>0&&manual.size<ranks.length;
+ const oddsOrder=[...ranks].sort((a,b)=>displayedOdd(a)-displayedOdd(b)||Number(a.no)-Number(b.no));
+ const pop=mixed?new Map():new Map(oddsOrder.map((h,i)=>[Number(h.no),i+1]));
+ const oddsLabel=h=>displayedOdd(h).toFixed(1)+'倍'+(manual.has(Number(h.no))?'（手動更新）':mixed?'（予想時）':'');
+ const popLabel=h=>pop.has(Number(h.no))?pop.get(Number(h.no))+'人気':'人気未確定';
+ const picks=ranks.slice(0,5).map((h,i)=>'<span class="nar-pick">'+['◎','○','▲','△','△'][i]+' '+esc(h.no)+'番 '+esc(h.name)+' <b>'+narPct(Number(h.win_probability)*100)+'</b> ／ '+esc(oddsLabel(h))+'・'+esc(popLabel(h))+'</span>').join('');
+ const table=ranks.map((h,i)=>'<div class="intel-item"><b>'+esc(i+1)+'位</b><span>'+esc(h.no)+'番 '+esc(h.name)+'</span><span>'+esc(oddsLabel(h))+' ／ '+esc(popLabel(h))+'</span></div>').join('');
  const tickets=Array.isArray(r.tickets)?r.tickets:[];
  return '<div class="jra-card"><div class="jra-card-head"><strong>'+esc(r.date+' '+r.venue+' '+(r.raceNo||'')+'R')+'</strong><span class="pill gray">予想確定・固定済み</span></div><small>'+esc(r.name)+' ／ 発走 '+esc(String(r.startAt||'').replace('T',' ').slice(0,16))+' ／ 保存 '+esc(new Date(r.lockedAt||r.createdAt).toLocaleString('ja-JP'))+' ／ 締切 '+esc(frozenCutoffLabel(r))+(r.marketMode?' ／ オッズ参考（学習AIではない）':' ／ 指数モデル')+'</small><div class="nar-line">'+picks+'</div>'+raceInsightHtml(r,'JRA')+'<details><summary>全出走馬の予想順位・オッズ・人気順</summary>'+table+'</details><div class="nar-trio-title">三連複 '+trio.length+'点</div><div class="nar-trio-list">'+trioTokens(trio)+'</div>'+purchaseDetailHtml(r)+trifectaPlanHtml(r)+'<details><summary>三連単 '+tickets.length+'点の買い目</summary><p class="tiny muted">'+tickets.map(x=>esc(x.join('→'))+'（100円）').join(' ／ ')+'</p></details><p class="tiny muted">◎ '+esc(top[0]??'—')+' ／ ○ '+esc(top[1]??'—')+' ／ ▲ '+esc(top[2]??'—')+'。人気・オッズは予想保存時点の入力値。</p></div>';
 }
@@ -1383,6 +1398,7 @@ function jraAutoPredict(races,label){
 }
 function jraRender(){
  jraImportedRender();
+ renderJraOddsOptions();
  const allRecords=ledger.filter(r=>JRA_VENUES.has(String(r.venue||''))).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
  const remote=[...(jraAutoData?.races||[]),...(jraAutoData?.drafts||[]),...(jraAutoData?.schedule||[])];
  const selectionRecords=[...allRecords,...remote];
@@ -1427,6 +1443,52 @@ $('jra-view-venue').addEventListener('change',jraRender);
 $('jra-view-date').addEventListener('change',jraRender);
 $('jra-view-number').addEventListener('change',jraRender);
 $('jra-view-mode').addEventListener('change',jraRender);
+function parseJraOddsPaste(input, knownNumbers){
+ const lines=String(input||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+ if(!lines.length||lines.length>24)throw Error('1〜24頭の馬番と単勝オッズを入力してください');
+ const parsed=new Map();
+ for(const [index,raw] of lines.entries()){
+  const line=raw.normalize('NFKC').replace(/\u3000/g,' ');
+  const match=line.match(/^(\d{1,2})(?:番)?[\s,，]+(\d+(?:\.\d+)?)(?:倍)?$/);
+  if(!match)throw Error((index+1)+'行目：馬番とオッズを「1 2.6」の形式で入力してください');
+  const no=Number(match[1]),odds=Number(match[2]);
+  if(!knownNumbers.has(no))throw Error((index+1)+'行目：'+no+'番は保存済み出走馬にいません');
+  if(!Number.isFinite(odds)||odds<1||odds>=10000)throw Error((index+1)+'行目：単勝オッズは1.0〜9999.9倍の範囲にしてください');
+  if(parsed.has(no))throw Error((index+1)+'行目：'+no+'番のオッズが重複しています');
+  parsed.set(no,Math.round(odds*10)/10);
+ }
+ return parsed;
+}
+function renderJraOddsOptions(){
+ const select=$('jra-odds-race'),selected=select.value;
+ const records=ledger.filter(r=>JRA_VENUES.has(String(r.venue||''))).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
+ select.innerHTML=records.length?records.map(r=>'<option value="'+esc(r.key)+'">'+esc((r.date||'日付不明')+' '+r.venue+' '+(r.raceNo||r.race_no||'?')+'R')+'</option>').join(''):'<option value="">保存済みJRA予想なし</option>';
+ if(records.some(r=>r.key===selected))select.value=selected;
+ select.disabled=!records.length;$('jra-odds-apply').disabled=!records.length;
+}
+$('jra-odds-apply').addEventListener('click',()=>{
+ const notice=$('jra-odds-message');
+ try{
+  const record=ledger.find(r=>r.key===$('jra-odds-race').value&&JRA_VENUES.has(String(r.venue||'')));
+  if(!record)throw Error('更新対象のJRA予想を選択してください');
+  const runners=Array.isArray(record.runners)?record.runners:[];
+  if(!runners.length)throw Error('この予想には出走馬の番号が保存されていません');
+  const parsed=parseJraOddsPaste($('jra-odds-paste').value,new Set(runners.map(h=>Number(h.no))));
+  const previous=record.market?JSON.parse(JSON.stringify(record.market)):undefined;
+  const oldTime=record.market?.updated_at;
+  const quotes=new Map((record.market?.horses||[]).map(h=>[Number(h.no),{...h}]));
+  for(const [no,row] of quotes){if(!parsed.has(no)&&!row.observed_at&&oldTime)row.observed_at=oldTime;}
+  for(const [no,odds] of parsed)quotes.set(no,{no,odds});
+  record.market={horses:[...quotes.values()].sort((a,b)=>a.no-b.no),updated_at:new Date().toISOString(),source:'manual_display_only'};
+  if(!persistLedger()){
+   if(previous)record.market=previous;else delete record.market;
+   throw Error('端末に保存できません。空き容量やSafariの設定を確認してください');
+  }
+  jraRender();
+  notice.textContent=parsed.size+'頭の単勝オッズを表示用として反映しました。予想順位・買い目は変更していません。';
+  $('jra-odds-paste').value='';
+ }catch(e){notice.textContent='更新できません：'+e.message;}
+});
 $('jra-date').value=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Tokyo'});
 $('jra-predict').addEventListener('click',()=>{
  try{
