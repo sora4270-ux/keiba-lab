@@ -738,6 +738,8 @@ def selftest():
     assert len({tuple(t) for t in pre["tickets"]}) == len(pre["tickets"])
     assert all(ticket == sorted(ticket) and len(ticket) == len(set(ticket)) == 3 for ticket in pre["trio_tickets"])
     assert len({tuple(ticket) for ticket in pre["trio_tickets"]}) == 10
+    assert pre["strategy_v5"]["policy"] == "value_coverage_shadow_v1"
+    assert pre["strategy_v5"]["tickets"] == []  # no invented official trio odds
     # Never backfill if an entire prediction was missed before the cutoff.
     missed, missed_added, _, _ = update_data(races, cutoff + dt.timedelta(minutes=1), {})
     assert missed_added == 0 and missed["races"] == [] and missed["drafts"] == []
@@ -848,6 +850,7 @@ def selftest():
     assert after["market"]["horses"][1]["observed_at"] == mixed["updated_at"]
     assert after["market_at_lock"] == before["market_at_lock"]
     assert after["tickets"] == before["tickets"]
+    assert after["strategy_v5"] == before["strategy_v5"]  # settled results never change pre-race shadow
     trained = forecast(races[0], dt.datetime(2026, 11, 2, 15, 23, tzinfo=JST),
                        big_fav, {"form_alpha": 1., "market_weight": .8,
                                  "form_training_races": 33, "market_training_races": 0})
