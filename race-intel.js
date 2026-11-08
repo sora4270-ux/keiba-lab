@@ -41,7 +41,7 @@ function raceInsightHtml(record, source = 'NAR') {
     record?.market?.horses?.length ? record.market : record?.market_at_lock;
   // A partial manual JRA refresh must preserve visibly labelled pre-race
   // odds for horses that were not updated, without inventing a live quote.
-  const manualJraQuotes = new Map((source === 'JRA' ? record?.market?.horses : [] || [])
+  const manualJraQuotes = new Map(((source === 'JRA' ? record?.market?.horses : []) || [])
     .map(h => [Number(h.no), h]));
   const marketRows = source === 'JRA' ? runners.map(h => {
     const updated = manualJraQuotes.get(Number(h.no));
