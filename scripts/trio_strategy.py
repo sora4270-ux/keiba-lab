@@ -15,6 +15,7 @@ import sys
 import unicodedata
 import zipfile
 from pathlib import Path
+from odds_encoding import detect_odds_csv_encoding
 
 
 def normalize(values):
@@ -50,11 +51,7 @@ def trio_odds_index(archive):
                 continue
             with zipped.open(info) as stream:
                 sample = stream.read(4096)
-            try:
-                sample.decode("utf-8-sig")
-                encoding = "utf-8-sig"
-            except UnicodeDecodeError:
-                encoding = "cp932"
+            encoding = detect_odds_csv_encoding(sample)
             with zipped.open(info) as stream:
                 rows = csv.reader(io.TextIOWrapper(stream, encoding=encoding, errors="replace", newline=""))
                 first = next(rows, None)
