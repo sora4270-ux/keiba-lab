@@ -16,6 +16,7 @@ import sys
 import urllib.request
 import zipfile
 from zoneinfo import ZoneInfo
+from value_strategy_v5 import build_shadow_plan
 from trio_strategy import (trio_odds_index, ticket_ranking, top_five_tickets,
                            value_selection, calibration_for_podium, trifecta_plan)
 
@@ -349,6 +350,11 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
                 "form_probability": round(original_form[i], 6)} for i in ranked]
     trio_tickets, tickets = top_five_tickets([row["no"] for row in ranking], ordered)
     value = value_selection(podium_trios, trio_market, timestamp.isoformat(timespec="seconds"))
+    shadow = build_shadow_plan(
+        ranking, ordered, podium_trios, trio_market,
+        timestamp.isoformat(timespec="seconds"), market_p is not None,
+        market_observed_at or timestamp.isoformat(timespec="seconds")
+    )
     output = {
         "id": race["id"], "date": race["date"], "venue": race["venue"],
         "race_no": race["race_no"], "name": race["name"],
@@ -363,6 +369,7 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
         "top3": ranking[:3], "top5": ranking[:5], "ranking": ranking,
         "tickets": tickets, "trio_tickets": trio_tickets,
         "trio_value": value,
+        "strategy_v5": shadow,
         "trifecta_plan": {k: v for k, v in trifecta_plan([row["no"] for row in ranking], ordered).items() if k != "tickets"},
         "result": None, "settled_at": None, "hits": None
     }
@@ -647,7 +654,7 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
     predictions = sorted(entries.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)[:5000]
     # Keep draft storage bounded, but not at the expense of upcoming races.
     previews = sorted(drafts.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)[:500]
-    method = "本命は勝率、相手は3着内確率で選び、上位5頭で三連複BOXと三連単は候補5頭内の確率70%を目標に6〜36点（網羅度と金額を表示）を保存。発走15分前まで更新、確定済みの予想を変更しません。"
+    method = "本命は勝率、相手は3着内確率で選び、上位5頭で三連複BOXと三連単は候補5頭内の確率70%を目標に6〜36点を保存。v5検証用に5〜7頭と公式3連複オッズを比較し見送りを含む別枠の参考買い目を保存。発走15分前まで更新、既存の予想・買い目を変更しません。"
     model_changed = previous.get("method") != method or previous.get("learning") != calibration
     drafts_changed = previews != previous.get("drafts", [])
     return {
@@ -731,6 +738,8 @@ def selftest():
     assert len({tuple(t) for t in pre["tickets"]}) == len(pre["tickets"])
     assert all(ticket == sorted(ticket) and len(ticket) == len(set(ticket)) == 3 for ticket in pre["trio_tickets"])
     assert len({tuple(ticket) for ticket in pre["trio_tickets"]}) == 10
+    assert pre["strategy_v5"]["policy"] == "value_coverage_shadow_v1"
+    assert pre["strategy_v5"]["tickets"] == []  # no invented official trio odds
     # Never backfill if an entire prediction was missed before the cutoff.
     missed, missed_added, _, _ = update_data(races, cutoff + dt.timedelta(minutes=1), {})
     assert missed_added == 0 and missed["races"] == [] and missed["drafts"] == []
@@ -841,6 +850,7 @@ def selftest():
     assert after["market"]["horses"][1]["observed_at"] == mixed["updated_at"]
     assert after["market_at_lock"] == before["market_at_lock"]
     assert after["tickets"] == before["tickets"]
+    assert after["strategy_v5"] == before["strategy_v5"]  # settled results never change pre-race shadow
     trained = forecast(races[0], dt.datetime(2026, 11, 2, 15, 23, tzinfo=JST),
                        big_fav, {"form_alpha": 1., "market_weight": .8,
                                  "form_training_races": 33, "market_training_races": 0})
