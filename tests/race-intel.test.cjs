@@ -73,4 +73,33 @@ assert.match(legacy,/4番<\/b> D/);
 const unsafe = render({ranking:[{no:1,name:'<img src=x onerror=evil()>',win_probability:.8}]},'NAR');
 assert.match(unsafe,/&lt;img/);
 assert.doesNotMatch(unsafe,/<img/);
+
+// Refreshing a subset of JRA quotes must not erase original saved odds or
+// silently calculate a popularity ranking from mixed observation times.
+const jraPartial = render({
+  runners: [
+    {no:1,name:'保存本命',odds:3.5,win_probability:.5},
+    {no:2,name:'更新対象',odds:9.0,win_probability:.3},
+    {no:3,name:'保存穴馬',odds:18.0,win_probability:.2}
+  ],
+  market:{horses:[{no:2,odds:6.2}],updated_at:'2026-11-08T11:25:00+09:00'},
+  createdAt:'2026-11-08T10:55:00+09:00'
+},'JRA');
+assert.match(jraPartial,/6\.2倍/);
+assert.match(jraPartial,/3\.5倍（保存値）/);
+assert.match(jraPartial,/18\.0倍（保存値）/);
+assert.doesNotMatch(jraPartial,/1番人気/);
+
+// The odds-only paste parser accepts JRA-style full-width number text,
+// rejects unknown horses and duplicated entries without writing data.
+const html=fs.readFileSync('index.html','utf8');
+const parseStart=html.indexOf('function parseJraOddsPaste(');
+const parseEnd=html.indexOf('function renderJraOddsOptions(',parseStart);
+assert.ok(parseStart>0&&parseEnd>parseStart);
+const parseJraOddsPaste=new Function(html.slice(parseStart,parseEnd)+';return parseJraOddsPaste;')();
+const knownNumbers=new Set([1,2,3]);
+assert.deepEqual([...parseJraOddsPaste('１番　２．６倍\\n2,38.6',knownNumbers)],[[1,2.6],[2,38.6]]);
+assert.throws(()=>parseJraOddsPaste('4 2.6',knownNumbers),/保存済み出走馬/);
+assert.throws(()=>parseJraOddsPaste('1 2.6\\n1 3.4',knownNumbers),/重複/);
+assert.throws(()=>parseJraOddsPaste('1 0.5',knownNumbers),/1\.0/);
 console.log('PASS: race pace, predictions, win odds, market popularity and XSS');
