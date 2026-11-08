@@ -1,0 +1,49 @@
+name: NAR odds format diagnostic
+on:
+  push:
+    branches: ['fix/nar-odds-diagnostic-20261108']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Inspect public odds CSV format
+        run: |
+          python - <<'PY'
+          import collections, csv, io, zipfile, unicodedata
+          from scripts.update_nar import fetch_daily_zip, ODDS_URL, MAX_ODDS_DOWNLOAD, odds_market_index
+          archive=fetch_daily_zip(ODDS_URL, MAX_ODDS_DOWNLOAD)
+          print('archive_size_bytes',len(archive))
+          with zipfile.ZipFile(io.BytesIO(archive)) as z:
+            for m in z.infolist():
+              print('member',m.filename,'uncompressed',m.file_size)
+              if not m.filename.lower().endswith('_odds.csv'): continue
+              with z.open(m) as fp: head=fp.read(8192)
+              enc='utf-8-sig'
+              try: head.decode(enc)
+              except UnicodeError: enc='cp932'
+              print('encoding',enc)
+              bets=collections.Counter(); dates=collections.Counter(); venues=collections.Counter(); examples=[]; total=0; win_names=[]
+              with z.open(m) as fp:
+                rows=csv.reader(io.TextIOWrapper(fp,encoding=enc,errors='replace',newline=''))
+                header=next(rows,None)
+                print('header',repr(header[:13] if header else []))
+                for r in rows:
+                  total+=1
+                  if len(r)>3:
+                    bet=unicodedata.normalize('NFKC',r[3].strip())
+                    bets[bet]+=1
+                    if '単' in bet and len(win_names)<3:win_names.append((r[:5],r[7:10]))
+                  if len(r)>2:dates[r[1]]+=1;venues[r[0]]+=1
+                  if len(examples)<2:examples.append((r[:5],r[7:10]))
+              print('total',total,'bets',bets.most_common(15),'dates',dates.most_common(3),'venues',venues.most_common(6))
+              print('first_rows',examples,'first_single_win_rows',win_names)
+          quotes=odds_market_index(archive)
+          print('parsed_markets',len(quotes),'sample_keys',list(quotes)[:5])
+          PY
