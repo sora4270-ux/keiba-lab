@@ -2,7 +2,7 @@
   "schema_version": 1,
   "scope": "NAR地方競馬のみ（中央JRAは対象外）",
   "source": "NAR公式CSVデータ（分析結果のみ表示）",
-  "method": "本命は勝率、相手は3着内確率で選び、上位5頭で三連複BOXと三連単は候補5頭内の確率70%を目標に6〜36点（網羅度と金額を表示）を保存。発走15分前まで更新、確定済みの予想を変更しません。",
+  "method": "本命は勝率、相手は3着内確率で選び、上位5頭で三連複BOXと三連単は候補5頭内の確率70%を目標に6〜36点を保存。v5検証用に5〜7頭と公式3連複オッズを比較し見送りを含む別枠の参考買い目を保存。発走15分前まで更新、既存の予想・買い目を変更しません。",
   "learning": {
     "form_alpha": 1.5,
     "market_weight": 0.9,
@@ -12,7 +12,7 @@
     "form_training_races": 222,
     "market_training_races": 137
   },
-  "updated_at": "2026-11-08T10:47:17+09:00",
+  "updated_at": "2026-11-08T10:52:18+09:00",
   "schedule_updated_at": "2026-11-08T06:36:25+09:00",
   "schedule": [
     {
@@ -2208,7 +2208,7 @@
       "race_no": 12,
       "name": "高知 12R",
       "start_at": "2026-11-08T20:50+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T20:35+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -2584,6 +2584,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.084907,
+          "6": 0.149514,
+          "7": 0.231089
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 31,
@@ -2608,7 +2631,7 @@
       "race_no": 12,
       "name": "帯広ば 12R",
       "start_at": "2026-11-08T20:45+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T20:30+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -2988,6 +3011,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.173451,
+          "6": 0.305624,
+          "7": 0.487668
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -3012,7 +3058,7 @@
       "race_no": 11,
       "name": "佐賀 11R",
       "start_at": "2026-11-08T20:40+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T20:25+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -3417,6 +3463,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.052808,
+          "6": 0.093416,
+          "7": 0.148883
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 34,
@@ -3441,7 +3510,7 @@
       "race_no": 11,
       "name": "高知 11R",
       "start_at": "2026-11-08T20:20+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T20:05+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -3807,6 +3876,36 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "no_win_market",
+        "reason": "単勝の全頭オッズがそろっていないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.631204,
+          "6": 0.86685,
+          "7": 1.0
+        },
+        "candidate_count": 6,
+        "candidate_horses": [
+          7,
+          1,
+          5,
+          6,
+          2,
+          3
+        ],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -3831,7 +3930,7 @@
       "race_no": 10,
       "name": "佐賀 10R",
       "start_at": "2026-11-08T20:10+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T19:55+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -4188,6 +4287,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.211813,
+          "6": 0.344952,
+          "7": 0.480671
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 30,
@@ -4212,7 +4334,7 @@
       "race_no": 11,
       "name": "帯広ば 11R",
       "start_at": "2026-11-08T20:00+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T19:45+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -4579,6 +4701,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.161835,
+          "6": 0.271852,
+          "7": 0.417103
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 32,
@@ -4603,7 +4748,7 @@
       "race_no": 10,
       "name": "高知 10R",
       "start_at": "2026-11-08T19:50+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T19:35+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -4886,6 +5031,37 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "no_win_market",
+        "reason": "単勝の全頭オッズがそろっていないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.60087,
+          "6": 0.742217,
+          "7": 0.875793
+        },
+        "candidate_count": 7,
+        "candidate_horses": [
+          1,
+          5,
+          4,
+          2,
+          7,
+          8,
+          3
+        ],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 18,
@@ -4910,7 +5086,7 @@
       "race_no": 9,
       "name": "佐賀 9R",
       "start_at": "2026-11-08T19:40+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T19:25+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -5217,6 +5393,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.377279,
+          "6": 0.510382,
+          "7": 0.623165
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 20,
@@ -5241,7 +5440,7 @@
       "race_no": 10,
       "name": "帯広ば 10R",
       "start_at": "2026-11-08T19:30+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T19:15+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -5618,6 +5817,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.16534,
+          "6": 0.275703,
+          "7": 0.419719
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 34,
@@ -5642,7 +5864,7 @@
       "race_no": 9,
       "name": "高知 9R",
       "start_at": "2026-11-08T19:20+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T19:05+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -5942,6 +6164,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.383352,
+          "6": 0.534463,
+          "7": 0.703689
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 20,
@@ -5966,7 +6211,7 @@
       "race_no": 8,
       "name": "佐賀 8R",
       "start_at": "2026-11-08T19:10+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T18:55+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -6240,6 +6485,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.42468,
+          "6": 0.536186,
+          "7": 0.634804
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 12,
@@ -6264,7 +6532,7 @@
       "race_no": 9,
       "name": "帯広ば 9R",
       "start_at": "2026-11-08T19:00+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T18:45+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -6637,6 +6905,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.287229,
+          "6": 0.486842,
+          "7": 0.723852
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -6661,7 +6952,7 @@
       "race_no": 8,
       "name": "高知 8R",
       "start_at": "2026-11-08T18:45+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T18:30+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -7048,6 +7339,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.105689,
+          "6": 0.203537,
+          "7": 0.339718
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -7072,7 +7386,7 @@
       "race_no": 7,
       "name": "佐賀 7R",
       "start_at": "2026-11-08T18:40+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T18:25+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -7473,6 +7787,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.059712,
+          "6": 0.114435,
+          "7": 0.191828
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -7497,7 +7834,7 @@
       "race_no": 8,
       "name": "帯広ば 8R",
       "start_at": "2026-11-08T18:30+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T18:15+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -7879,6 +8216,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.225379,
+          "6": 0.346229,
+          "7": 0.477979
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 35,
@@ -7903,7 +8263,7 @@
       "race_no": 7,
       "name": "高知 7R",
       "start_at": "2026-11-08T18:15+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T18:00+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -8267,6 +8627,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.311925,
+          "6": 0.427235,
+          "7": 0.56058
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 30,
@@ -8291,7 +8674,7 @@
       "race_no": 12,
       "name": "盛岡 12R",
       "start_at": "2026-11-08T18:10+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T17:55+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -8673,6 +9056,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.246135,
+          "6": 0.39548,
+          "7": 0.548787
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 35,
@@ -8697,7 +9103,7 @@
       "race_no": 6,
       "name": "佐賀 6R",
       "start_at": "2026-11-08T18:05+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T17:50+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -9056,6 +9462,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.182625,
+          "6": 0.290357,
+          "7": 0.401342
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 29,
@@ -9095,7 +9524,7 @@
       "race_no": 7,
       "name": "帯広ば 7R",
       "start_at": "2026-11-08T17:55+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T17:40+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -9482,6 +9911,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.271023,
+          "6": 0.396761,
+          "7": 0.522122
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -9506,7 +9958,7 @@
       "race_no": 6,
       "name": "高知 6R",
       "start_at": "2026-11-08T17:40+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T17:25+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -9890,6 +10342,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.144469,
+          "6": 0.233022,
+          "7": 0.347494
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 34,
@@ -9914,7 +10389,7 @@
       "race_no": 11,
       "name": "盛岡 11R",
       "start_at": "2026-11-08T17:35+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T17:20+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -10269,6 +10744,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.354481,
+          "6": 0.50098,
+          "7": 0.671717
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 31,
@@ -10293,7 +10791,7 @@
       "race_no": 5,
       "name": "佐賀 5R",
       "start_at": "2026-11-08T17:30+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T17:15+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -10664,6 +11162,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.186971,
+          "6": 0.299443,
+          "7": 0.403218
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 30,
@@ -10688,7 +11209,7 @@
       "race_no": 6,
       "name": "帯広ば 6R",
       "start_at": "2026-11-08T17:20+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T17:05+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -11075,6 +11596,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.250104,
+          "6": 0.370378,
+          "7": 0.516473
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -11099,7 +11643,7 @@
       "race_no": 5,
       "name": "高知 5R",
       "start_at": "2026-11-08T17:05+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T16:50+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -11486,6 +12030,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.205785,
+          "6": 0.336183,
+          "7": 0.479412
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -11510,7 +12077,7 @@
       "race_no": 10,
       "name": "盛岡 10R",
       "start_at": "2026-11-08T17:00+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T16:45+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -11862,6 +12429,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.254453,
+          "6": 0.371835,
+          "7": 0.509986
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 29,
@@ -11886,7 +12476,7 @@
       "race_no": 4,
       "name": "佐賀 4R",
       "start_at": "2026-11-08T16:55+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T16:40+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -12273,6 +12863,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.157091,
+          "6": 0.28197,
+          "7": 0.455448
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -12297,7 +12910,7 @@
       "race_no": 5,
       "name": "帯広ば 5R",
       "start_at": "2026-11-08T16:45+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T16:30+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -12684,6 +13297,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.171803,
+          "6": 0.29357,
+          "7": 0.453247
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -12708,7 +13344,7 @@
       "race_no": 4,
       "name": "高知 4R",
       "start_at": "2026-11-08T16:35+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T16:20+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -13058,6 +13694,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.221362,
+          "6": 0.376724,
+          "7": 0.571106
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 30,
@@ -13082,7 +13741,7 @@
       "race_no": 9,
       "name": "盛岡 9R",
       "start_at": "2026-11-08T16:30+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T16:15+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -13483,6 +14142,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.187486,
+          "6": 0.320634,
+          "7": 0.425258
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -13507,7 +14189,7 @@
       "race_no": 3,
       "name": "佐賀 3R",
       "start_at": "2026-11-08T16:25+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T16:10+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -13901,6 +14583,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.152405,
+          "6": 0.265822,
+          "7": 0.382081
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -13925,7 +14630,7 @@
       "race_no": 4,
       "name": "帯広ば 4R",
       "start_at": "2026-11-08T16:15+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T16:00+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -14312,6 +15017,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.121106,
+          "6": 0.227338,
+          "7": 0.379433
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -14336,7 +15064,7 @@
       "race_no": 3,
       "name": "高知 3R",
       "start_at": "2026-11-08T16:05+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T15:50+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -14709,6 +15437,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.302972,
+          "6": 0.521777,
+          "7": 0.738187
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -14733,7 +15484,7 @@
       "race_no": 8,
       "name": "盛岡 8R",
       "start_at": "2026-11-08T15:55+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T15:40+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -15119,6 +15870,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.097432,
+          "6": 0.172294,
+          "7": 0.258952
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 33,
@@ -15143,7 +15917,7 @@
       "race_no": 2,
       "name": "佐賀 2R",
       "start_at": "2026-11-08T15:50+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T15:35+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -15537,6 +16311,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.118966,
+          "6": 0.204847,
+          "7": 0.31944
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -15561,7 +16358,7 @@
       "race_no": 3,
       "name": "帯広ば 3R",
       "start_at": "2026-11-08T15:40+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T15:25+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -15948,6 +16745,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.15492,
+          "6": 0.275536,
+          "7": 0.428413
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -15972,7 +16792,7 @@
       "race_no": 2,
       "name": "高知 2R",
       "start_at": "2026-11-08T15:35+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T15:20+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -16347,6 +17167,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.202264,
+          "6": 0.33962,
+          "7": 0.519521
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 35,
@@ -16371,7 +17214,7 @@
       "race_no": 1,
       "name": "佐賀 1R",
       "start_at": "2026-11-08T15:15+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T15:00+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -16758,6 +17601,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.114074,
+          "6": 0.218229,
+          "7": 0.364441
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -16782,7 +17648,7 @@
       "race_no": 7,
       "name": "盛岡 7R",
       "start_at": "2026-11-08T15:15+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T15:00+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -17183,6 +18049,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.085033,
+          "6": 0.162831,
+          "7": 0.25861
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -17207,7 +18096,7 @@
       "race_no": 2,
       "name": "帯広ば 2R",
       "start_at": "2026-11-08T15:10+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T14:55+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -17594,6 +18483,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.196431,
+          "6": 0.35476,
+          "7": 0.486954
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -17618,7 +18530,7 @@
       "race_no": 1,
       "name": "高知 1R",
       "start_at": "2026-11-08T15:00+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T14:45+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -18005,6 +18917,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.108145,
+          "6": 0.21,
+          "7": 0.353806
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -18029,7 +18964,7 @@
       "race_no": 6,
       "name": "盛岡 6R",
       "start_at": "2026-11-08T14:40+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T14:25+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -18409,6 +19344,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.154815,
+          "6": 0.288491,
+          "7": 0.473302
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -18433,7 +19391,7 @@
       "race_no": 1,
       "name": "帯広ば 1R",
       "start_at": "2026-11-08T14:35+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T14:20+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -18820,6 +19778,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.164795,
+          "6": 0.296837,
+          "7": 0.468826
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -18844,7 +19825,7 @@
       "race_no": 5,
       "name": "盛岡 5R",
       "start_at": "2026-11-08T14:05+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T13:50+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -19238,6 +20219,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.119749,
+          "6": 0.209306,
+          "7": 0.323912
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -19262,7 +20266,7 @@
       "race_no": 4,
       "name": "盛岡 4R",
       "start_at": "2026-11-08T13:30+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T13:15+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -19649,6 +20653,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.130518,
+          "6": 0.236344,
+          "7": 0.378206
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -19673,7 +20700,7 @@
       "race_no": 3,
       "name": "盛岡 3R",
       "start_at": "2026-11-08T12:55+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T12:40+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -20050,6 +21077,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.128965,
+          "6": 0.231732,
+          "7": 0.368508
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 34,
@@ -20074,7 +21124,7 @@
       "race_no": 2,
       "name": "盛岡 2R",
       "start_at": "2026-11-08T12:20+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T12:05+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -20461,6 +21511,29 @@
         "tickets": [],
         "evaluated": []
       },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.139653,
+          "6": 0.251733,
+          "7": 0.40742
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
+      },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
         "count": 36,
@@ -20485,7 +21558,7 @@
       "race_no": 1,
       "name": "盛岡 1R",
       "start_at": "2026-11-08T11:45+09:00",
-      "predicted_at": "2026-11-08T10:47:17+09:00",
+      "predicted_at": "2026-11-08T10:52:18+09:00",
       "cutoff_at": "2026-11-08T11:30+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -20885,6 +21958,29 @@
         "quote_count": 0,
         "tickets": [],
         "evaluated": []
+      },
+      "strategy_v5": {
+        "policy": "value_coverage_shadow_v1",
+        "status": "below_coverage",
+        "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
+        "target_mass": 0.75,
+        "coverage_by_count": {
+          "5": 0.068386,
+          "6": 0.132181,
+          "7": 0.224646
+        },
+        "candidate_count": null,
+        "candidate_horses": [],
+        "win_market_required": true,
+        "minimum_multiple": 1.15,
+        "stress_factor": 0.85,
+        "observed_at": "2026-11-08T10:52:18+09:00",
+        "quote_count": 0,
+        "tickets": [],
+        "count": 0,
+        "stake_yen": 0,
+        "estimated_hit_probability": 0.0,
+        "stress_expected_return_multiple": null
       },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
