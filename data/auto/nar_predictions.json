@@ -8,11 +8,11 @@
     "market_weight": 0.9,
     "place_market_weight": 1.0,
     "show_market_weight": 1.0,
-    "podium_training_races": 176,
-    "form_training_races": 266,
-    "market_training_races": 176
+    "podium_training_races": 177,
+    "form_training_races": 267,
+    "market_training_races": 177
   },
-  "updated_at": "2026-11-08T20:49:35+09:00",
+  "updated_at": "2026-11-08T20:54:37+09:00",
   "schedule_updated_at": "2026-11-08T16:24:38+09:00",
   "schedule": [
     {
@@ -2927,66 +2927,66 @@
         "horses": [
           {
             "no": 1,
-            "odds": 31.4,
+            "odds": 42.9,
             "popularity": 12
           },
           {
             "no": 2,
-            "odds": 15.4,
-            "popularity": 7
+            "odds": 17.4,
+            "popularity": 10
           },
           {
             "no": 3,
-            "odds": 6.0,
-            "popularity": 3
-          },
-          {
-            "no": 4,
             "odds": 7.4,
             "popularity": 4
           },
           {
-            "no": 5,
-            "odds": 7.9,
+            "no": 4,
+            "odds": 8.3,
             "popularity": 5
           },
           {
-            "no": 6,
-            "odds": 8.8,
+            "no": 5,
+            "odds": 9.5,
             "popularity": 6
           },
           {
+            "no": 6,
+            "odds": 11.3,
+            "popularity": 8
+          },
+          {
             "no": 7,
-            "odds": 5.7,
+            "odds": 6.2,
             "popularity": 2
           },
           {
             "no": 8,
-            "odds": 18.0,
-            "popularity": 10
+            "odds": 15.7,
+            "popularity": 9
           },
           {
             "no": 9,
-            "odds": 23.8,
+            "odds": 30.1,
             "popularity": 11
           },
           {
             "no": 10,
-            "odds": 17.2,
-            "popularity": 9
+            "odds": 10.0,
+            "popularity": 7
           },
           {
             "no": 11,
-            "odds": 16.9,
-            "popularity": 8
+            "odds": 7.0,
+            "popularity": 3
           },
           {
             "no": 12,
-            "odds": 4.3,
+            "odds": 4.4,
             "popularity": 1
           }
         ],
-        "updated_at": "2026-11-08T20:49:35+09:00"
+        "updated_at": "2026-11-08T20:54:37+09:00"
       },
       "market_at_lock": {
         "horses": [
@@ -3678,9 +3678,21 @@
         "target_reached": true,
         "reason": "拮抗"
       },
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        7,
+        3,
+        4
+      ],
+      "settled_at": "2026-11-08T20:54:37+09:00",
+      "hits": {
+        "win": false,
+        "quinella": true,
+        "exacta": false,
+        "trio": false,
+        "trio_multi": false,
+        "trio_value": false,
+        "trifecta": false
+      },
       "market": {
         "horses": [
           {
@@ -3783,7 +3795,31 @@
       },
       "created_at": "2026-11-08T06:36:25+09:00",
       "locked_at": "2026-11-08T20:29:23+09:00",
-      "finalized_at": "2026-11-08T20:34:23+09:00"
+      "finalized_at": "2026-11-08T20:34:23+09:00",
+      "finish_order": [
+        {
+          "no": 7,
+          "name": "パワーハンター",
+          "rank": 1
+        },
+        {
+          "no": 3,
+          "name": "ヤマノドラゴン",
+          "rank": 2
+        },
+        {
+          "no": 4,
+          "name": "ショコラペガサス",
+          "rank": 3
+        }
+      ],
+      "payouts": {
+        "win": 540,
+        "quinella": 640,
+        "exacta": 1250,
+        "trio": 4290,
+        "trifecta": 17990
+      }
     },
     {
       "id": "nar-20261108-佐賀-11",
@@ -4625,6 +4661,61 @@
           "no": 6,
           "name": "メイショウシュハリ",
           "rank": 3
+        },
+        {
+          "no": 9,
+          "name": "ユイノササヤキ",
+          "rank": 4
+        },
+        {
+          "no": 11,
+          "name": "カコウガン",
+          "rank": 5
+        },
+        {
+          "no": 10,
+          "name": "シエルルビー",
+          "rank": 6
+        },
+        {
+          "no": 1,
+          "name": "レッドファイブ",
+          "rank": 7
+        },
+        {
+          "no": 4,
+          "name": "トレンドラド",
+          "rank": 8
+        },
+        {
+          "no": 12,
+          "name": "イサゴールド",
+          "rank": 9
+        },
+        {
+          "no": 13,
+          "name": "コンチアフタヌーン",
+          "rank": 10
+        },
+        {
+          "no": 2,
+          "name": "ソルプレーザ",
+          "rank": 11
+        },
+        {
+          "no": 7,
+          "name": "ケイツースクード",
+          "rank": 12
+        },
+        {
+          "no": 3,
+          "name": "ペイシャブギー",
+          "rank": 13
+        },
+        {
+          "no": 5,
+          "name": "リュウノシャモニー",
+          "rank": 14
         }
       ],
       "payouts": {
@@ -161696,14 +161787,14 @@
   ],
   "summary": {
     "predicted": 275,
-    "settled": 273,
-    "pending": 2,
-    "win": 33.3,
-    "quinella": 14.7,
+    "settled": 274,
+    "pending": 1,
+    "win": 33.2,
+    "quinella": 15.0,
     "exacta": 9.5,
     "trio": 9.5,
-    "trio_multi": 35.9,
-    "trio_multi_settled": 273,
+    "trio_multi": 35.8,
+    "trio_multi_settled": 274,
     "trifecta": 22.3,
     "note": "発走前に予想した確定レースのみ。三連複本線1点と三連複候補は別集計。各レースの保存済み買い目を使用し、点数は予想方式により異なります。"
   },
