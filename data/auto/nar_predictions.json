@@ -12,7 +12,7 @@
     "form_training_races": 315,
     "market_training_races": 220
   },
-  "updated_at": "2026-11-09T20:49:26+09:00",
+  "updated_at": "2026-11-09T20:54:26+09:00",
   "schedule_updated_at": "2026-11-09T19:49:13+09:00",
   "schedule": [
     {
@@ -3326,66 +3326,66 @@
         "horses": [
           {
             "no": 2,
-            "odds": 3.6,
-            "popularity": 2
+            "odds": 4.6,
+            "popularity": 3
           },
           {
             "no": 3,
-            "odds": 5.6,
+            "odds": 6.5,
             "popularity": 4
           },
           {
             "no": 4,
-            "odds": 4.2,
-            "popularity": 3
+            "odds": 3.6,
+            "popularity": 2
           },
           {
             "no": 5,
-            "odds": 40.4,
+            "odds": 66.7,
             "popularity": 8
           },
           {
             "no": 6,
-            "odds": 69.9,
-            "popularity": 11
+            "odds": 93.1,
+            "popularity": 10
           },
           {
             "no": 7,
-            "odds": 8.5,
+            "odds": 11.4,
             "popularity": 5
           },
           {
             "no": 8,
-            "odds": 67.1,
-            "popularity": 10
+            "odds": 107.5,
+            "popularity": 11
           },
           {
             "no": 9,
-            "odds": 27.3,
+            "odds": 41.0,
             "popularity": 7
           },
           {
             "no": 10,
-            "odds": 26.3,
+            "odds": 36.8,
             "popularity": 6
           },
           {
             "no": 11,
-            "odds": 3.4,
+            "odds": 2.3,
             "popularity": 1
           },
           {
             "no": 12,
-            "odds": 165.5,
+            "odds": 302.4,
             "popularity": 12
           },
           {
             "no": 13,
-            "odds": 47.8,
+            "odds": 75.5,
             "popularity": 9
           }
         ],
-        "updated_at": "2026-11-09T20:49:26+09:00"
+        "updated_at": "2026-11-09T20:54:26+09:00"
       },
       "created_at": "2026-11-09T06:36:05+09:00",
       "locked_at": "2026-11-09T20:34:26+09:00",
@@ -4038,9 +4038,21 @@
         "target_reached": true,
         "reason": "拮抗"
       },
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        13,
+        11,
+        4
+      ],
+      "settled_at": "2026-11-09T20:54:26+09:00",
+      "hits": {
+        "win": true,
+        "quinella": true,
+        "exacta": true,
+        "trio": false,
+        "trio_multi": false,
+        "trio_value": false,
+        "trifecta": false
+      },
       "market": {
         "horses": [
           {
@@ -4193,7 +4205,86 @@
       },
       "created_at": "2026-11-09T06:36:05+09:00",
       "locked_at": "2026-11-09T20:24:26+09:00",
-      "finalized_at": "2026-11-09T20:29:25+09:00"
+      "finalized_at": "2026-11-09T20:29:25+09:00",
+      "finish_order": [
+        {
+          "no": 13,
+          "name": "モズナツノジン",
+          "rank": 1
+        },
+        {
+          "no": 11,
+          "name": "レネガード",
+          "rank": 2
+        },
+        {
+          "no": 4,
+          "name": "ネオディヤマンテ",
+          "rank": 3
+        },
+        {
+          "no": 12,
+          "name": "ユクサキタ",
+          "rank": 4
+        },
+        {
+          "no": 3,
+          "name": "ビレッジティエーラ",
+          "rank": 5
+        },
+        {
+          "no": 8,
+          "name": "クインズヒマワリ",
+          "rank": 6
+        },
+        {
+          "no": 5,
+          "name": "ルージュパラディ",
+          "rank": 7
+        },
+        {
+          "no": 6,
+          "name": "クーレスト",
+          "rank": 8
+        },
+        {
+          "no": 10,
+          "name": "アラウズ",
+          "rank": 9
+        },
+        {
+          "no": 7,
+          "name": "ダッテウマダモノ",
+          "rank": 10
+        },
+        {
+          "no": 9,
+          "name": "ウインマグノリア",
+          "rank": 11
+        },
+        {
+          "no": 14,
+          "name": "アーバンキング",
+          "rank": 12
+        },
+        {
+          "no": 2,
+          "name": "ベラジオソノダヒメ",
+          "rank": 13
+        },
+        {
+          "no": 1,
+          "name": "エメラルドシティー",
+          "rank": 14
+        }
+      ],
+      "payouts": {
+        "win": 100,
+        "quinella": 290,
+        "exacta": 310,
+        "trio": 1970,
+        "trifecta": 3360
+      }
     },
     {
       "id": "nar-20261109-川崎-11",
@@ -203528,15 +203619,15 @@
   ],
   "summary": {
     "predicted": 323,
-    "settled": 321,
-    "pending": 2,
-    "win": 35.2,
-    "quinella": 15.9,
-    "exacta": 10.0,
-    "trio": 9.7,
-    "trio_multi": 35.2,
-    "trio_multi_settled": 321,
-    "trifecta": 22.1,
+    "settled": 322,
+    "pending": 1,
+    "win": 35.4,
+    "quinella": 16.1,
+    "exacta": 10.2,
+    "trio": 9.6,
+    "trio_multi": 35.1,
+    "trio_multi_settled": 322,
+    "trifecta": 22.0,
     "note": "発走前に予想した確定レースのみ。三連複本線1点と三連複候補は別集計。各レースの保存済み買い目を使用し、点数は予想方式により異なります。"
   },
   "odds_feed": {
