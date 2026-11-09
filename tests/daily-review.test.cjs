@@ -21,4 +21,11 @@ assert.equal(JSON.stringify(r),before,'review must not mutate historical forecas
 const data=JSON.parse(fs.readFileSync('data/auto/nar_predictions.json','utf8'));
 const today=data.races.filter(r=>r.date==='2026-11-08');
 if(today.length===47){const t=api.reviewMetrics(today,'trifecta');assert.equal(t.hits,22);assert.equal(t.stats.spent,107100);assert.equal(t.stats.returned,60630);assert.equal(t.losingHits,12);}
+const nov9=data.races.filter(r=>r.date==='2026-11-09');
+if(nov9.length===48){
+ const review=api.dailyReviewHtml(nov9);
+ assert.match(review,/候補5頭から漏れ 33R/);
+ assert.match(review,/6位までで全頭 7R ／ 7位までで全頭 14R/);
+ assert.match(review,/単勝オッズ不足 6R：三連複 0\/6R ／ 三連単 0\/6R/);
+}
 console.log('PASS: pre-race quality, stale/future odds, missing payouts, losing hits and immutable daily ledger');

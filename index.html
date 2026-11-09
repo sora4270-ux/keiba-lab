@@ -1038,10 +1038,24 @@ function dailyReviewHtml(records){
   return (key==='trio'?'三連複':'三連単')+' 的中 '+x.hits+'/'+x.settled+'R ／ '+roiLabel(s)+'（購入 '+amount(s.spent)+'／払戻 '+amount(s.returned)+'／収支 '+roiSigned(s.profit)+'）／ 的中でも赤字 '+x.losingHits+'R ／ 払戻確認 '+x.priced+'/'+x.settled+'R';
  }).join('<br>');
  const quality=rs.map(forecastQuality),missing=quality.filter(q=>q.missingMarket).length,stale=quality.filter(q=>q.staleMarket).length,low=quality.filter(q=>q.lowCoverage).length;
- const cohorts=[['単勝オッズなし',r=>forecastQuality(r).missingMarket],['候補網羅度40%未満',r=>forecastQuality(r).lowCoverage]];
- const cohortHtml=cohorts.map(([label,test])=>{const a=rs.filter(test);if(!a.length)return '';const x=reviewMetrics(a,'trifecta');return esc(label)+' '+a.length+'R：三連単 '+roiLabel(x.stats)+'（払戻確認 '+x.priced+'R）';}).filter(Boolean).join('<br>');
+ const cohorts=[
+  ['予想時の全頭単勝オッズあり（15分以内）',q=>!q.missingMarket&&!q.staleMarket],
+  ['予想時の単勝オッズ不足',q=>q.missingMarket],
+  ['予想時オッズが古い・時刻不明',q=>q.staleMarket],
+  ['候補網羅度40%未満',q=>q.lowCoverage]
+ ];
+ const cohortHtml=cohorts.map(([label,test])=>{
+  const group=rs.filter((_,i)=>test(quality[i]));
+  if(!group.length)return '';
+  const trio=reviewMetrics(group,'trio'),trifecta=reviewMetrics(group,'trifecta');
+  return esc(label)+' '+group.length+'R：三連複 '+trio.hits+'/'+trio.settled+'R ／ 三連単 '+trifecta.hits+'/'+trifecta.settled+'R・'+roiLabel(trifecta.stats)+'（払戻確認 '+trifecta.priced+'R）';
+ }).filter(Boolean).join('<br>');
+ const missedRanks=rs.filter(r=>resultReview(r)==='候補5頭から漏れ'&&Array.isArray(r.ranking))
+  .map(r=>r.result.map(no=>r.ranking.findIndex(h=>Number(h.no)===no)+1))
+  .filter(ranks=>ranks.every(rank=>rank>0));
+ const coverageHtml=missedRanks.length?'<br>候補漏れの内訳（3着以内の予想順位を確認できた '+missedRanks.length+'R）：6位までで全頭 '+missedRanks.filter(ranks=>Math.max(...ranks)<=6).length+'R ／ 7位までで全頭 '+missedRanks.filter(ranks=>Math.max(...ranks)<=7).length+'R。候補範囲の比較で、買い目の的中数とは別です。':'';
  const modelCounts={};for(const r of rs){const model=String(r.model||'旧モデル');modelCounts[model]=(modelCounts[model]||0)+1;}
- return '<b>選択条件の反省：'+rs.length+'R</b><br>三連単 的中 '+(counts['的中']||0)+'R ／ 候補5頭から漏れ '+(counts['候補5頭から漏れ']||0)+'R ／ 候補内の着順違い '+(counts['候補内の着順違い']||0)+'R'+(counts['旧方式・分類対象外']?' ／ 旧方式 '+counts['旧方式・分類対象外']+'R':'')+'<br>参考成績（1点100円の仮想購入）：<br>'+returns+'<br>予想時の全頭単勝オッズ不足 '+missing+'R ／ 時刻不明・古いオッズ '+stale+'R ／ 候補網羅度40%未満 '+low+'R'+(cohortHtml?'<br>'+cohortHtml:'')+'<br><span class="tiny">モデル別件数：'+Object.entries(modelCounts).map(([m,n])=>esc(m)+' '+n+'R').join(' ／ ')+'</span><br>候補漏れは点数追加だけでは解消しません。的中率と回収率を分けて評価し、払戻未取得は収支計算から除外します。注意判定は従来からの40%基準と予想時のオッズのみを使用し、結果から買い目を選び直しません。';
+ return '<b>選択条件の反省：'+rs.length+'R</b><br>三連単 的中 '+(counts['的中']||0)+'R ／ 候補5頭から漏れ '+(counts['候補5頭から漏れ']||0)+'R ／ 候補内の着順違い '+(counts['候補内の着順違い']||0)+'R'+(counts['旧方式・分類対象外']?' ／ 旧方式 '+counts['旧方式・分類対象外']+'R':'')+coverageHtml+'<br>参考成績（1点100円の仮想購入）：<br>'+returns+'<br>予想時の全頭単勝オッズ不足 '+missing+'R ／ 時刻不明・古いオッズ '+stale+'R ／ 候補網羅度40%未満 '+low+'R'+(cohortHtml?'<br>'+cohortHtml:'')+'<br><span class="tiny">モデル別件数：'+Object.entries(modelCounts).map(([m,n])=>esc(m)+' '+n+'R').join(' ／ ')+'</span><br>候補漏れは点数追加だけでは解消しません。的中率と回収率を分けて評価し、払戻未取得は収支計算から除外します。注意判定は従来からの40%基準と予想時のオッズのみを使用し、結果から買い目を選び直しません。';
 }
 function narPct(v){return typeof v==='number'&&Number.isFinite(v)?v.toFixed(1)+'%':'—';}
 function narReferenceWager(r,key){

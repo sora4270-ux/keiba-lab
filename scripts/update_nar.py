@@ -32,6 +32,7 @@ MAX_FILE = 20 * 1024 * 1024
 TRACK_FIELDS = ("競馬場", "日付", "レース番号")
 BET_TYPES = ("win", "quinella", "exacta", "trio", "trifecta")
 FORECAST_LOCK_BEFORE_START = dt.timedelta(minutes=15)
+MAX_FORECAST_ODDS_AGE = dt.timedelta(minutes=15)
 # Publish provisional forecasts as soon as the official entries arrive.
 # A later scheduled run seals the most recent pre-cutoff snapshot; if GitHub
 # Actions is delayed, no data observed after T-15 is used to change its picks.
@@ -300,7 +301,7 @@ def learn_parameters(records, now):
             observed = dt.datetime.fromisoformat(snap["updated_at"])
             locked = dt.datetime.fromisoformat(record.get("locked_at") or record["predicted_at"])
             deadline = dt.datetime.fromisoformat(record["cutoff_at"])
-            if observed > locked or observed >= deadline or locked - observed > dt.timedelta(minutes=15):
+            if observed > locked or observed >= deadline or locked - observed > MAX_FORECAST_ODDS_AGE:
                 continue
             odds = {h["no"]: h for h in snap["horses"]}
             market = market_probabilities([{"no": n} for n in ids], odds)
@@ -606,7 +607,7 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
                 prior_quotes = {row["no"]: row for row in prior_market.get("horses", [])}
                 observed = prior_market.get("updated_at")
                 use_prior = (observed and not market_probabilities(race["horses"], market)
-                             and dt.timedelta(0) <= now - dt.datetime.fromisoformat(observed) <= dt.timedelta(minutes=30)
+                             and dt.timedelta(0) <= now - dt.datetime.fromisoformat(observed) <= MAX_FORECAST_ODDS_AGE
                              and market_probabilities(race["horses"], prior_quotes))
                 proposal = forecast(race, now, prior_quotes if use_prior else market, calibration,
                                     official_trios, observed if use_prior else None)
@@ -835,6 +836,15 @@ def selftest():
     assert fallback["drafts"][0]["market_at_lock"] == quoted["drafts"][0]["market_at_lock"]
     assert fallback["drafts"][0]["market"]["updated_at"] == fallback["drafts"][0]["predicted_at"]
     assert fallback["drafts"][0]["top3"][0]["no"] == 1
+    # An expired forecast quote stays visible but no longer drives ranking.
+    older_run = now - MAX_FORECAST_ODDS_AGE - dt.timedelta(seconds=1)
+    older, _, _, _ = update_data(
+        [upcoming], older_run, {}, odds_index={("門別", "20261102", 1): big_fav})
+    expired, _, _, _ = update_data([upcoming], now, older, odds_index=market)
+    expired_draft = expired["drafts"][0]
+    assert expired_draft["model"] == "form_v5_adaptive_no_odds"
+    assert "market_at_lock" not in expired_draft
+    assert len(expired_draft["market"]["horses"]) == 8
     mixed = fallback["drafts"][0]["market"]
     assert len(mixed["horses"]) == 8
     assert mixed["horses"][0] == market[("門別", "20261102", 1)][1]
