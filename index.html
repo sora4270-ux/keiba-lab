@@ -1290,7 +1290,7 @@ async function narRefresh(silent=false){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);
   let res;try{res=await fetch(NAR_AUTO_URL+'?v='+Date.now(),{cache:'no-store',credentials:'omit',signal:controller.signal});}finally{clearTimeout(timer);}
   if(!res.ok)throw Error(res.status===404?'自動予想ファイルがまだ作成されていません':'HTTP '+res.status);
-  const text=await res.text();if(text.length>4*1024*1024)throw Error('自動予想データが大きすぎます');
+  const text=await res.text();if(text.length>32*1024*1024)throw Error('自動予想データが32MiBを超えています。データ配信を確認してください');
   const data=JSON.parse(text);if(data?.schema_version!==1||!Array.isArray(data.races)||!data.summary)throw Error('データの形式が不正です');
   narRender(data);
   $('nar-last-check').textContent='最終確認：'+new Date().toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})+' ／ 画面表示中は約2分ごとに新規レースを確認';
