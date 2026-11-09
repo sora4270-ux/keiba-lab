@@ -12,7 +12,7 @@
     "form_training_races": 316,
     "market_training_races": 221
   },
-  "updated_at": "2026-11-09T20:55:28+09:00",
+  "updated_at": "2026-11-09T21:00:26+09:00",
   "schedule_updated_at": "2026-11-09T19:49:13+09:00",
   "schedule": [
     {
@@ -3319,9 +3319,21 @@
         "target_reached": true,
         "reason": "混戦"
       },
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        7,
+        11,
+        3
+      ],
+      "settled_at": "2026-11-09T21:00:26+09:00",
+      "hits": {
+        "win": false,
+        "quinella": false,
+        "exacta": false,
+        "trio": false,
+        "trio_multi": false,
+        "trio_value": false,
+        "trifecta": false
+      },
       "market": {
         "horses": [
           {
@@ -3389,7 +3401,31 @@
       },
       "created_at": "2026-11-09T06:36:05+09:00",
       "locked_at": "2026-11-09T20:34:26+09:00",
-      "finalized_at": "2026-11-09T20:39:26+09:00"
+      "finalized_at": "2026-11-09T20:39:26+09:00",
+      "finish_order": [
+        {
+          "no": 7,
+          "name": "ブルーオーシャン",
+          "rank": 1
+        },
+        {
+          "no": 11,
+          "name": "フルミネビアンコ",
+          "rank": 2
+        },
+        {
+          "no": 3,
+          "name": "イトシサ",
+          "rank": 3
+        }
+      ],
+      "payouts": {
+        "win": 1140,
+        "quinella": 1560,
+        "exacta": 4060,
+        "trio": 2660,
+        "trifecta": 29790
+      }
     },
     {
       "id": "nar-20261109-佐賀-12",
@@ -203619,14 +203655,14 @@
   ],
   "summary": {
     "predicted": 323,
-    "settled": 322,
-    "pending": 1,
-    "win": 35.4,
+    "settled": 323,
+    "pending": 0,
+    "win": 35.3,
     "quinella": 16.1,
     "exacta": 10.2,
     "trio": 9.6,
-    "trio_multi": 35.1,
-    "trio_multi_settled": 322,
+    "trio_multi": 35.0,
+    "trio_multi_settled": 323,
     "trifecta": 22.0,
     "note": "発走前に予想した確定レースのみ。三連複本線1点と三連複候補は別集計。各レースの保存済み買い目を使用し、点数は予想方式により異なります。"
   },
