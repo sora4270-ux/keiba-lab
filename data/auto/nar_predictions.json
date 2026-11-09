@@ -12,7 +12,7 @@
     "form_training_races": 314,
     "market_training_races": 219
   },
-  "updated_at": "2026-11-09T20:19:26+09:00",
+  "updated_at": "2026-11-09T20:24:26+09:00",
   "schedule_updated_at": "2026-11-09T19:49:13+09:00",
   "schedule": [
     {
@@ -2592,7 +2592,7 @@
       "race_no": 12,
       "name": "川崎 12R",
       "start_at": "2026-11-09T20:50+09:00",
-      "predicted_at": "2026-11-09T20:19:26+09:00",
+      "predicted_at": "2026-11-09T20:24:26+09:00",
       "cutoff_at": "2026-11-09T20:35+09:00",
       "model": "form_v5_adaptive_no_odds",
       "calibration": {
@@ -2995,7 +2995,7 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-09T20:19:26+09:00",
+        "observed_at": "2026-11-09T20:24:26+09:00",
         "quote_count": 220,
         "tickets": [
           [
@@ -3047,8 +3047,8 @@
               11
             ],
             "model_probability": 0.01768,
-            "official_trio_odds": 14.0,
-            "model_return_multiple": 0.248,
+            "official_trio_odds": 13.7,
+            "model_return_multiple": 0.242,
             "passes_threshold": false
           },
           {
@@ -3058,8 +3058,8 @@
               11
             ],
             "model_probability": 0.014448,
-            "official_trio_odds": 48.7,
-            "model_return_multiple": 0.704,
+            "official_trio_odds": 51.2,
+            "model_return_multiple": 0.74,
             "passes_threshold": false
           },
           {
@@ -3069,8 +3069,8 @@
               11
             ],
             "model_probability": 0.01427,
-            "official_trio_odds": 8.4,
-            "model_return_multiple": 0.12,
+            "official_trio_odds": 8.0,
+            "model_return_multiple": 0.114,
             "passes_threshold": false
           },
           {
@@ -3080,8 +3080,8 @@
               11
             ],
             "model_probability": 0.012233,
-            "official_trio_odds": 93.6,
-            "model_return_multiple": 1.145,
+            "official_trio_odds": 92.8,
+            "model_return_multiple": 1.135,
             "passes_threshold": false
           },
           {
@@ -3091,8 +3091,8 @@
               11
             ],
             "model_probability": 0.012083,
-            "official_trio_odds": 17.7,
-            "model_return_multiple": 0.214,
+            "official_trio_odds": 17.6,
+            "model_return_multiple": 0.213,
             "passes_threshold": false
           },
           {
@@ -3102,8 +3102,8 @@
               11
             ],
             "model_probability": 0.01119,
-            "official_trio_odds": 95.1,
-            "model_return_multiple": 1.064,
+            "official_trio_odds": 99.5,
+            "model_return_multiple": 1.113,
             "passes_threshold": false
           },
           {
@@ -3113,8 +3113,8 @@
               12
             ],
             "model_probability": 0.010949,
-            "official_trio_odds": 256.5,
-            "model_return_multiple": 2.808,
+            "official_trio_odds": 271.9,
+            "model_return_multiple": 2.977,
             "passes_threshold": true
           },
           {
@@ -3124,8 +3124,8 @@
               9
             ],
             "model_probability": 0.009961,
-            "official_trio_odds": 127.8,
-            "model_return_multiple": 1.273,
+            "official_trio_odds": 133.7,
+            "model_return_multiple": 1.332,
             "passes_threshold": true
           },
           {
@@ -3135,8 +3135,8 @@
               11
             ],
             "model_probability": 0.009874,
-            "official_trio_odds": 53.2,
-            "model_return_multiple": 0.525,
+            "official_trio_odds": 52.5,
+            "model_return_multiple": 0.518,
             "passes_threshold": false
           },
           {
@@ -3146,8 +3146,8 @@
               7
             ],
             "model_probability": 0.009839,
-            "official_trio_odds": 16.9,
-            "model_return_multiple": 0.166,
+            "official_trio_odds": 17.2,
+            "model_return_multiple": 0.169,
             "passes_threshold": false
           },
           {
@@ -3157,8 +3157,8 @@
               11
             ],
             "model_probability": 0.009474,
-            "official_trio_odds": 161.1,
-            "model_return_multiple": 1.526,
+            "official_trio_odds": 165.9,
+            "model_return_multiple": 1.572,
             "passes_threshold": true
           },
           {
@@ -3168,8 +3168,8 @@
               12
             ],
             "model_probability": 0.009271,
-            "official_trio_odds": 427.6,
-            "model_return_multiple": 3.964,
+            "official_trio_odds": 475.1,
+            "model_return_multiple": 4.405,
             "passes_threshold": true
           },
           {
@@ -3179,8 +3179,8 @@
               11
             ],
             "model_probability": 0.009022,
-            "official_trio_odds": 77.8,
-            "model_return_multiple": 0.702,
+            "official_trio_odds": 82.1,
+            "model_return_multiple": 0.741,
             "passes_threshold": false
           },
           {
@@ -3190,8 +3190,8 @@
               11
             ],
             "model_probability": 0.008371,
-            "official_trio_odds": 36.7,
-            "model_return_multiple": 0.307,
+            "official_trio_odds": 36.4,
+            "model_return_multiple": 0.305,
             "passes_threshold": false
           },
           {
@@ -3201,8 +3201,8 @@
               9
             ],
             "model_probability": 0.00804,
-            "official_trio_odds": 67.2,
-            "model_return_multiple": 0.54,
+            "official_trio_odds": 65.9,
+            "model_return_multiple": 0.53,
             "passes_threshold": false
           },
           {
@@ -3212,8 +3212,8 @@
               11
             ],
             "model_probability": 0.007742,
-            "official_trio_odds": 212.5,
-            "model_return_multiple": 1.645,
+            "official_trio_odds": 223.4,
+            "model_return_multiple": 1.73,
             "passes_threshold": true
           },
           {
@@ -3223,8 +3223,8 @@
               8
             ],
             "model_probability": 0.007715,
-            "official_trio_odds": 249.2,
-            "model_return_multiple": 1.923,
+            "official_trio_odds": 256.7,
+            "model_return_multiple": 1.98,
             "passes_threshold": true
           },
           {
@@ -3234,8 +3234,8 @@
               11
             ],
             "model_probability": 0.007647,
-            "official_trio_odds": 114.3,
-            "model_return_multiple": 0.874,
+            "official_trio_odds": 118.4,
+            "model_return_multiple": 0.905,
             "passes_threshold": false
           },
           {
@@ -3245,8 +3245,8 @@
               11
             ],
             "model_probability": 0.007639,
-            "official_trio_odds": 135.3,
-            "model_return_multiple": 1.034,
+            "official_trio_odds": 144.0,
+            "model_return_multiple": 1.1,
             "passes_threshold": false
           },
           {
@@ -3256,8 +3256,8 @@
               12
             ],
             "model_probability": 0.007576,
-            "official_trio_odds": 787.2,
-            "model_return_multiple": 5.964,
+            "official_trio_odds": 879.4,
+            "model_return_multiple": 6.662,
             "passes_threshold": true
           },
           {
@@ -3267,8 +3267,8 @@
               12
             ],
             "model_probability": 0.007549,
-            "official_trio_odds": 494.8,
-            "model_return_multiple": 3.735,
+            "official_trio_odds": 497.9,
+            "model_return_multiple": 3.759,
             "passes_threshold": true
           },
           {
@@ -3278,8 +3278,8 @@
               12
             ],
             "model_probability": 0.007483,
-            "official_trio_odds": 260.4,
-            "model_return_multiple": 1.948,
+            "official_trio_odds": 281.1,
+            "model_return_multiple": 2.103,
             "passes_threshold": true
           }
         ]
@@ -3299,7 +3299,7 @@
         "win_market_required": true,
         "minimum_multiple": 1.15,
         "stress_factor": 0.85,
-        "observed_at": "2026-11-09T20:19:26+09:00",
+        "observed_at": "2026-11-09T20:24:26+09:00",
         "quote_count": 220,
         "tickets": [],
         "count": 0,
@@ -3325,66 +3325,66 @@
         "horses": [
           {
             "no": 2,
-            "odds": 3.7,
+            "odds": 3.1,
             "popularity": 1
           },
           {
             "no": 3,
-            "odds": 4.2,
-            "popularity": 3
-          },
-          {
-            "no": 4,
-            "odds": 5.1,
+            "odds": 5.0,
             "popularity": 4
           },
           {
+            "no": 4,
+            "odds": 4.6,
+            "popularity": 3
+          },
+          {
             "no": 5,
-            "odds": 26.0,
-            "popularity": 7
+            "odds": 29.0,
+            "popularity": 8
           },
           {
             "no": 6,
-            "odds": 65.2,
+            "odds": 77.6,
             "popularity": 11
           },
           {
             "no": 7,
-            "odds": 9.4,
+            "odds": 10.6,
             "popularity": 5
           },
           {
             "no": 8,
-            "odds": 30.8,
+            "odds": 39.9,
             "popularity": 10
           },
           {
             "no": 9,
-            "odds": 26.2,
-            "popularity": 8
-          },
-          {
-            "no": 10,
-            "odds": 27.1,
+            "odds": 29.7,
             "popularity": 9
           },
           {
+            "no": 10,
+            "odds": 24.6,
+            "popularity": 6
+          },
+          {
             "no": 11,
-            "odds": 4.2,
+            "odds": 4.1,
             "popularity": 2
           },
           {
             "no": 12,
-            "odds": 118.7,
+            "odds": 131.5,
             "popularity": 12
           },
           {
             "no": 13,
-            "odds": 25.1,
-            "popularity": 6
+            "odds": 27.2,
+            "popularity": 7
           }
         ],
-        "updated_at": "2026-11-09T20:19:26+09:00"
+        "updated_at": "2026-11-09T20:24:26+09:00"
       },
       "status": "draft",
       "created_at": "2026-11-09T06:36:05+09:00"
@@ -3396,7 +3396,7 @@
       "race_no": 12,
       "name": "佐賀 12R",
       "start_at": "2026-11-09T20:40+09:00",
-      "predicted_at": "2026-11-09T20:19:26+09:00",
+      "predicted_at": "2026-11-09T20:24:26+09:00",
       "cutoff_at": "2026-11-09T20:25+09:00",
       "model": "form_market_v5_adaptive",
       "calibration": {
@@ -3412,22 +3412,22 @@
         {
           "no": 13,
           "name": "モズナツノジン",
-          "win_probability": 0.608058,
-          "podium_probability": 0.95202,
+          "win_probability": 0.643802,
+          "podium_probability": 0.964985,
           "form_probability": 0.116022
         },
         {
           "no": 11,
           "name": "レネガード",
-          "win_probability": 0.059998,
-          "podium_probability": 0.302317,
+          "win_probability": 0.062469,
+          "podium_probability": 0.340788,
           "form_probability": 0.055521
         },
         {
           "no": 8,
           "name": "クインズヒマワリ",
-          "win_probability": 0.059251,
-          "podium_probability": 0.299178,
+          "win_probability": 0.058535,
+          "podium_probability": 0.321473,
           "form_probability": 0.087405
         }
       ],
@@ -3435,137 +3435,137 @@
         {
           "no": 13,
           "name": "モズナツノジン",
-          "win_probability": 0.608058,
-          "podium_probability": 0.95202,
+          "win_probability": 0.643802,
+          "podium_probability": 0.964985,
           "form_probability": 0.116022
         },
         {
           "no": 11,
           "name": "レネガード",
-          "win_probability": 0.059998,
-          "podium_probability": 0.302317,
+          "win_probability": 0.062469,
+          "podium_probability": 0.340788,
           "form_probability": 0.055521
         },
         {
           "no": 8,
           "name": "クインズヒマワリ",
-          "win_probability": 0.059251,
-          "podium_probability": 0.299178,
+          "win_probability": 0.058535,
+          "podium_probability": 0.321473,
           "form_probability": 0.087405
-        },
-        {
-          "no": 14,
-          "name": "アーバンキング",
-          "win_probability": 0.05072,
-          "podium_probability": 0.260311,
-          "form_probability": 0.088071
         },
         {
           "no": 10,
           "name": "アラウズ",
-          "win_probability": 0.043654,
-          "podium_probability": 0.226628,
+          "win_probability": 0.04482,
+          "podium_probability": 0.253027,
           "form_probability": 0.06718
+        },
+        {
+          "no": 14,
+          "name": "アーバンキング",
+          "win_probability": 0.035185,
+          "podium_probability": 0.202366,
+          "form_probability": 0.088071
         }
       ],
       "ranking": [
         {
           "no": 13,
           "name": "モズナツノジン",
-          "win_probability": 0.608058,
-          "podium_probability": 0.95202,
+          "win_probability": 0.643802,
+          "podium_probability": 0.964985,
           "form_probability": 0.116022
         },
         {
           "no": 11,
           "name": "レネガード",
-          "win_probability": 0.059998,
-          "podium_probability": 0.302317,
+          "win_probability": 0.062469,
+          "podium_probability": 0.340788,
           "form_probability": 0.055521
         },
         {
           "no": 8,
           "name": "クインズヒマワリ",
-          "win_probability": 0.059251,
-          "podium_probability": 0.299178,
+          "win_probability": 0.058535,
+          "podium_probability": 0.321473,
           "form_probability": 0.087405
-        },
-        {
-          "no": 14,
-          "name": "アーバンキング",
-          "win_probability": 0.05072,
-          "podium_probability": 0.260311,
-          "form_probability": 0.088071
         },
         {
           "no": 10,
           "name": "アラウズ",
-          "win_probability": 0.043654,
-          "podium_probability": 0.226628,
+          "win_probability": 0.04482,
+          "podium_probability": 0.253027,
           "form_probability": 0.06718
         },
         {
-          "no": 4,
-          "name": "ネオディヤマンテ",
-          "win_probability": 0.039165,
-          "podium_probability": 0.205072,
-          "form_probability": 0.074085
+          "no": 14,
+          "name": "アーバンキング",
+          "win_probability": 0.035185,
+          "podium_probability": 0.202366,
+          "form_probability": 0.088071
         },
         {
           "no": 5,
           "name": "ルージュパラディ",
-          "win_probability": 0.035235,
-          "podium_probability": 0.186402,
+          "win_probability": 0.031082,
+          "podium_probability": 0.18031,
           "form_probability": 0.095872
+        },
+        {
+          "no": 4,
+          "name": "ネオディヤマンテ",
+          "win_probability": 0.027257,
+          "podium_probability": 0.158964,
+          "form_probability": 0.074085
+        },
+        {
+          "no": 1,
+          "name": "エメラルドシティー",
+          "win_probability": 0.016913,
+          "podium_probability": 0.100425,
+          "form_probability": 0.062803
         },
         {
           "no": 3,
           "name": "ビレッジティエーラ",
-          "win_probability": 0.016843,
-          "podium_probability": 0.092083,
+          "win_probability": 0.015038,
+          "podium_probability": 0.089783,
           "form_probability": 0.073795
-        },
-        {
-          "no": 7,
-          "name": "ダッテウマダモノ",
-          "win_probability": 0.015995,
-          "podium_probability": 0.08709,
-          "form_probability": 0.053835
         },
         {
           "no": 6,
           "name": "クーレスト",
-          "win_probability": 0.015698,
-          "podium_probability": 0.085642,
+          "win_probability": 0.014052,
+          "podium_probability": 0.08385,
           "form_probability": 0.058916
+        },
+        {
+          "no": 7,
+          "name": "ダッテウマダモノ",
+          "win_probability": 0.013804,
+          "podium_probability": 0.08235,
+          "form_probability": 0.053835
         },
         {
           "no": 12,
           "name": "ユクサキタ",
-          "win_probability": 0.015466,
-          "podium_probability": 0.084176,
+          "win_probability": 0.012478,
+          "podium_probability": 0.074568,
           "form_probability": 0.048048
         },
         {
           "no": 2,
           "name": "ベラジオソノダヒメ",
-          "win_probability": 0.014654,
-          "podium_probability": 0.080009,
+          "win_probability": 0.012378,
+          "podium_probability": 0.074042,
           "form_probability": 0.053857
         },
         {
           "no": 9,
           "name": "ウインマグノリア",
-          "win_probability": 0.01304,
-          "podium_probability": 0.071733,
+          "win_probability": 0.012187,
+          "podium_probability": 0.07307,
           "form_probability": 0.064592
-        },
-        {
-          "no": 1,
-          "name": "エメラルドシティー",
-          "win_probability": 0.012223,
-          "podium_probability": 0.067337,
-          "form_probability": 0.062803
         }
       ],
       "tickets": [
@@ -3576,23 +3576,8 @@
         ],
         [
           13,
-          11,
-          14
-        ],
-        [
-          13,
           8,
           11
-        ],
-        [
-          13,
-          8,
-          14
-        ],
-        [
-          13,
-          14,
-          8
         ],
         [
           13,
@@ -3601,8 +3586,8 @@
         ],
         [
           13,
-          14,
-          11
+          11,
+          14
         ],
         [
           13,
@@ -3621,13 +3606,23 @@
         ],
         [
           13,
+          8,
+          14
+        ],
+        [
+          13,
           10,
           14
         ],
         [
           13,
           14,
-          10
+          8
+        ],
+        [
+          13,
+          14,
+          11
         ],
         [
           11,
@@ -3635,14 +3630,9 @@
           8
         ],
         [
-          8,
           13,
-          11
-        ],
-        [
-          11,
-          13,
-          14
+          14,
+          10
         ]
       ],
       "trio_tickets": [
@@ -3701,8 +3691,8 @@
         "status": "candidate",
         "model": "experimental_v1",
         "threshold": 1.15,
-        "observed_at": "2026-11-09T20:19:26+09:00",
-        "quote_count": 352,
+        "observed_at": "2026-11-09T20:24:26+09:00",
+        "quote_count": 354,
         "tickets": [
           [
             8,
@@ -3715,9 +3705,9 @@
             13
           ],
           [
-            4,
-            13,
-            14
+            1,
+            11,
+            13
           ],
           [
             5,
@@ -3725,8 +3715,8 @@
             14
           ],
           [
-            4,
-            5,
+            1,
+            8,
             13
           ],
           [
@@ -3740,8 +3730,8 @@
             13
           ],
           [
-            2,
-            11,
+            7,
+            8,
             13
           ]
         ],
@@ -3752,32 +3742,10 @@
               11,
               13
             ],
-            "model_probability": 0.051207,
-            "official_trio_odds": 13.5,
-            "model_return_multiple": 0.691,
+            "model_probability": 0.065771,
+            "official_trio_odds": 13.6,
+            "model_return_multiple": 0.894,
             "passes_threshold": false
-          },
-          {
-            "ticket": [
-              11,
-              13,
-              14
-            ],
-            "model_probability": 0.043507,
-            "official_trio_odds": 23.3,
-            "model_return_multiple": 1.014,
-            "passes_threshold": false
-          },
-          {
-            "ticket": [
-              8,
-              13,
-              14
-            ],
-            "model_probability": 0.043223,
-            "official_trio_odds": 38.2,
-            "model_return_multiple": 1.651,
-            "passes_threshold": true
           },
           {
             "ticket": [
@@ -3785,9 +3753,9 @@
               11,
               13
             ],
-            "model_probability": 0.036818,
+            "model_probability": 0.049166,
             "official_trio_odds": 5.1,
-            "model_return_multiple": 0.188,
+            "model_return_multiple": 0.251,
             "passes_threshold": false
           },
           {
@@ -3796,43 +3764,32 @@
               10,
               13
             ],
-            "model_probability": 0.036639,
-            "official_trio_odds": 14.0,
-            "model_return_multiple": 0.513,
+            "model_probability": 0.046232,
+            "official_trio_odds": 15.0,
+            "model_return_multiple": 0.693,
             "passes_threshold": false
           },
           {
             "ticket": [
-              4,
               11,
-              13
-            ],
-            "model_probability": 0.03306,
-            "official_trio_odds": 16.7,
-            "model_return_multiple": 0.552,
-            "passes_threshold": false
-          },
-          {
-            "ticket": [
-              4,
-              8,
-              13
-            ],
-            "model_probability": 0.032808,
-            "official_trio_odds": 33.5,
-            "model_return_multiple": 1.099,
-            "passes_threshold": false
-          },
-          {
-            "ticket": [
-              10,
               13,
               14
             ],
-            "model_probability": 0.031043,
-            "official_trio_odds": 25.0,
-            "model_return_multiple": 0.776,
+            "model_probability": 0.038923,
+            "official_trio_odds": 20.3,
+            "model_return_multiple": 0.79,
             "passes_threshold": false
+          },
+          {
+            "ticket": [
+              8,
+              13,
+              14
+            ],
+            "model_probability": 0.036251,
+            "official_trio_odds": 38.6,
+            "model_return_multiple": 1.399,
+            "passes_threshold": true
           },
           {
             "ticket": [
@@ -3840,9 +3797,9 @@
               11,
               13
             ],
-            "model_probability": 0.030149,
-            "official_trio_odds": 26.7,
-            "model_return_multiple": 0.805,
+            "model_probability": 0.034622,
+            "official_trio_odds": 25.7,
+            "model_return_multiple": 0.89,
             "passes_threshold": false
           },
           {
@@ -3851,42 +3808,42 @@
               8,
               13
             ],
-            "model_probability": 0.02971,
-            "official_trio_odds": 50.4,
-            "model_return_multiple": 1.497,
+            "model_probability": 0.032068,
+            "official_trio_odds": 48.8,
+            "model_return_multiple": 1.565,
             "passes_threshold": true
           },
           {
             "ticket": [
               4,
-              13,
-              14
-            ],
-            "model_probability": 0.027755,
-            "official_trio_odds": 49.0,
-            "model_return_multiple": 1.36,
-            "passes_threshold": true
-          },
-          {
-            "ticket": [
-              5,
-              13,
-              14
-            ],
-            "model_probability": 0.025036,
-            "official_trio_odds": 71.3,
-            "model_return_multiple": 1.785,
-            "passes_threshold": true
-          },
-          {
-            "ticket": [
-              4,
-              10,
+              11,
               13
             ],
-            "model_probability": 0.023559,
-            "official_trio_odds": 19.6,
-            "model_return_multiple": 0.462,
+            "model_probability": 0.029823,
+            "official_trio_odds": 17.0,
+            "model_return_multiple": 0.507,
+            "passes_threshold": false
+          },
+          {
+            "ticket": [
+              4,
+              8,
+              13
+            ],
+            "model_probability": 0.027751,
+            "official_trio_odds": 34.1,
+            "model_return_multiple": 0.946,
+            "passes_threshold": false
+          },
+          {
+            "ticket": [
+              10,
+              13,
+              14
+            ],
+            "model_probability": 0.027072,
+            "official_trio_odds": 25.6,
+            "model_return_multiple": 0.693,
             "passes_threshold": false
           },
           {
@@ -3895,20 +3852,53 @@
               10,
               13
             ],
-            "model_probability": 0.02131,
-            "official_trio_odds": 39.7,
-            "model_return_multiple": 0.846,
+            "model_probability": 0.02394,
+            "official_trio_odds": 41.2,
+            "model_return_multiple": 0.986,
             "passes_threshold": false
           },
           {
             "ticket": [
               4,
-              5,
+              10,
               13
             ],
-            "model_probability": 0.018954,
-            "official_trio_odds": 74.0,
-            "model_return_multiple": 1.403,
+            "model_probability": 0.020723,
+            "official_trio_odds": 20.6,
+            "model_return_multiple": 0.427,
+            "passes_threshold": false
+          },
+          {
+            "ticket": [
+              1,
+              11,
+              13
+            ],
+            "model_probability": 0.01847,
+            "official_trio_odds": 173.1,
+            "model_return_multiple": 3.197,
+            "passes_threshold": true
+          },
+          {
+            "ticket": [
+              5,
+              13,
+              14
+            ],
+            "model_probability": 0.018287,
+            "official_trio_odds": 68.5,
+            "model_return_multiple": 1.253,
+            "passes_threshold": true
+          },
+          {
+            "ticket": [
+              1,
+              8,
+              13
+            ],
+            "model_probability": 0.017087,
+            "official_trio_odds": 289.9,
+            "model_return_multiple": 4.954,
             "passes_threshold": true
           },
           {
@@ -3917,9 +3907,31 @@
               11,
               13
             ],
-            "model_probability": 0.014358,
-            "official_trio_odds": 64.0,
-            "model_return_multiple": 0.919,
+            "model_probability": 0.016777,
+            "official_trio_odds": 56.0,
+            "model_return_multiple": 0.94,
+            "passes_threshold": false
+          },
+          {
+            "ticket": [
+              4,
+              13,
+              14
+            ],
+            "model_probability": 0.015956,
+            "official_trio_odds": 48.9,
+            "model_return_multiple": 0.78,
+            "passes_threshold": false
+          },
+          {
+            "ticket": [
+              6,
+              11,
+              13
+            ],
+            "model_probability": 0.015372,
+            "official_trio_odds": 74.2,
+            "model_return_multiple": 1.141,
             "passes_threshold": false
           },
           {
@@ -3928,9 +3940,9 @@
               8,
               13
             ],
-            "model_probability": 0.014024,
-            "official_trio_odds": 102.6,
-            "model_return_multiple": 1.439,
+            "model_probability": 0.015371,
+            "official_trio_odds": 106.5,
+            "model_return_multiple": 1.637,
             "passes_threshold": true
           },
           {
@@ -3939,20 +3951,31 @@
               11,
               13
             ],
-            "model_probability": 0.01331,
-            "official_trio_odds": 43.5,
-            "model_return_multiple": 0.579,
+            "model_probability": 0.014993,
+            "official_trio_odds": 43.6,
+            "model_return_multiple": 0.654,
             "passes_threshold": false
           },
           {
             "ticket": [
               6,
-              11,
+              8,
               13
             ],
-            "model_probability": 0.013155,
-            "official_trio_odds": 77.3,
-            "model_return_multiple": 1.017,
+            "model_probability": 0.014187,
+            "official_trio_odds": 134.7,
+            "model_return_multiple": 1.911,
+            "passes_threshold": true
+          },
+          {
+            "ticket": [
+              4,
+              5,
+              13
+            ],
+            "model_probability": 0.013964,
+            "official_trio_odds": 73.3,
+            "model_return_multiple": 1.024,
             "passes_threshold": false
           },
           {
@@ -3961,53 +3984,20 @@
               8,
               13
             ],
-            "model_probability": 0.013108,
-            "official_trio_odds": 79.0,
-            "model_return_multiple": 1.036,
-            "passes_threshold": false
-          },
-          {
-            "ticket": [
-              6,
-              8,
-              13
-            ],
-            "model_probability": 0.012921,
-            "official_trio_odds": 141.5,
-            "model_return_multiple": 1.828,
+            "model_probability": 0.013874,
+            "official_trio_odds": 87.8,
+            "model_return_multiple": 1.218,
             "passes_threshold": true
           },
           {
             "ticket": [
-              11,
-              12,
-              13
-            ],
-            "model_probability": 0.012787,
-            "official_trio_odds": 24.3,
-            "model_return_multiple": 0.311,
-            "passes_threshold": false
-          },
-          {
-            "ticket": [
-              8,
-              12,
-              13
-            ],
-            "model_probability": 0.012618,
-            "official_trio_odds": 86.4,
-            "model_return_multiple": 1.09,
-            "passes_threshold": false
-          },
-          {
-            "ticket": [
-              2,
+              9,
               11,
               13
             ],
-            "model_probability": 0.012225,
-            "official_trio_odds": 129.0,
-            "model_return_multiple": 1.577,
+            "model_probability": 0.013563,
+            "official_trio_odds": 166.2,
+            "model_return_multiple": 2.254,
             "passes_threshold": true
           }
         ]
@@ -4018,17 +4008,17 @@
         "reason": "上位7頭までの3着独占確率が暫定目標に届かないため見送り",
         "target_mass": 0.75,
         "coverage_by_count": {
-          "5": 0.246703,
-          "6": 0.368551,
-          "7": 0.49989
+          "5": 0.266825,
+          "6": 0.378927,
+          "7": 0.491057
         },
         "candidate_count": null,
         "candidate_horses": [],
         "win_market_required": true,
         "minimum_multiple": 1.15,
         "stress_factor": 0.85,
-        "observed_at": "2026-11-09T20:19:26+09:00",
-        "quote_count": 352,
+        "observed_at": "2026-11-09T20:24:26+09:00",
+        "quote_count": 354,
         "tickets": [],
         "count": 0,
         "stake_yen": 0,
@@ -4037,12 +4027,12 @@
       },
       "trifecta_plan": {
         "policy": "adaptive_mass_v1",
-        "count": 15,
-        "stake_yen": 1500,
+        "count": 13,
+        "stake_yen": 1300,
         "target_conditional_coverage": 0.7,
-        "candidate_mass": 0.246703,
-        "covered_mass": 0.176326,
-        "conditional_coverage": 0.714728,
+        "candidate_mass": 0.266825,
+        "covered_mass": 0.187074,
+        "conditional_coverage": 0.701111,
         "target_reached": true,
         "reason": "拮抗"
       },
@@ -4053,151 +4043,151 @@
         "horses": [
           {
             "no": 1,
-            "odds": 110.0,
-            "popularity": 14
+            "odds": 62.0,
+            "popularity": 8
           },
           {
             "no": 2,
-            "odds": 70.6,
-            "popularity": 11
-          },
-          {
-            "no": 3,
-            "odds": 74.8,
+            "odds": 88.6,
             "popularity": 12
           },
           {
-            "no": 4,
-            "odds": 22.4,
-            "popularity": 6
+            "no": 3,
+            "odds": 89.7,
+            "popularity": 13
           },
           {
-            "no": 5,
-            "odds": 29.2,
+            "no": 4,
+            "odds": 34.8,
             "popularity": 7
           },
           {
+            "no": 5,
+            "odds": 34.2,
+            "popularity": 6
+          },
+          {
             "no": 6,
-            "odds": 68.0,
+            "odds": 78.4,
             "popularity": 10
           },
           {
             "no": 7,
-            "odds": 62.3,
+            "odds": 74.9,
             "popularity": 9
           },
           {
             "no": 8,
-            "odds": 14.3,
+            "odds": 14.1,
             "popularity": 3
           },
           {
             "no": 9,
-            "odds": 101.1,
-            "popularity": 13
+            "odds": 111.8,
+            "popularity": 14
           },
           {
             "no": 10,
-            "odds": 19.1,
-            "popularity": 5
+            "odds": 18.0,
+            "popularity": 4
           },
           {
             "no": 11,
-            "odds": 12.9,
+            "odds": 12.0,
             "popularity": 2
           },
           {
             "no": 12,
-            "odds": 61.3,
-            "popularity": 8
+            "odds": 80.2,
+            "popularity": 11
           },
           {
             "no": 13,
-            "odds": 1.2,
+            "odds": 1.1,
             "popularity": 1
           },
           {
             "no": 14,
-            "odds": 17.3,
-            "popularity": 4
+            "odds": 27.0,
+            "popularity": 5
           }
         ],
-        "updated_at": "2026-11-09T20:19:26+09:00"
+        "updated_at": "2026-11-09T20:24:26+09:00"
       },
       "market_at_lock": {
         "horses": [
           {
             "no": 1,
-            "odds": 110.0,
-            "popularity": 14
+            "odds": 62.0,
+            "popularity": 8
           },
           {
             "no": 2,
-            "odds": 70.6,
-            "popularity": 11
-          },
-          {
-            "no": 3,
-            "odds": 74.8,
+            "odds": 88.6,
             "popularity": 12
           },
           {
-            "no": 4,
-            "odds": 22.4,
-            "popularity": 6
+            "no": 3,
+            "odds": 89.7,
+            "popularity": 13
           },
           {
-            "no": 5,
-            "odds": 29.2,
+            "no": 4,
+            "odds": 34.8,
             "popularity": 7
           },
           {
+            "no": 5,
+            "odds": 34.2,
+            "popularity": 6
+          },
+          {
             "no": 6,
-            "odds": 68.0,
+            "odds": 78.4,
             "popularity": 10
           },
           {
             "no": 7,
-            "odds": 62.3,
+            "odds": 74.9,
             "popularity": 9
           },
           {
             "no": 8,
-            "odds": 14.3,
+            "odds": 14.1,
             "popularity": 3
           },
           {
             "no": 9,
-            "odds": 101.1,
-            "popularity": 13
+            "odds": 111.8,
+            "popularity": 14
           },
           {
             "no": 10,
-            "odds": 19.1,
-            "popularity": 5
+            "odds": 18.0,
+            "popularity": 4
           },
           {
             "no": 11,
-            "odds": 12.9,
+            "odds": 12.0,
             "popularity": 2
           },
           {
             "no": 12,
-            "odds": 61.3,
-            "popularity": 8
+            "odds": 80.2,
+            "popularity": 11
           },
           {
             "no": 13,
-            "odds": 1.2,
+            "odds": 1.1,
             "popularity": 1
           },
           {
             "no": 14,
-            "odds": 17.3,
-            "popularity": 4
+            "odds": 27.0,
+            "popularity": 5
           }
         ],
-        "updated_at": "2026-11-09T20:19:26+09:00"
+        "updated_at": "2026-11-09T20:24:26+09:00"
       },
       "status": "draft",
       "created_at": "2026-11-09T06:36:05+09:00"
@@ -4826,9 +4816,21 @@
         "target_reached": true,
         "reason": "拮抗"
       },
-      "result": null,
-      "settled_at": null,
-      "hits": null,
+      "result": [
+        10,
+        9,
+        6
+      ],
+      "settled_at": "2026-11-09T20:24:26+09:00",
+      "hits": {
+        "win": false,
+        "quinella": false,
+        "exacta": false,
+        "trio": false,
+        "trio_multi": true,
+        "trio_value": false,
+        "trifecta": false
+      },
       "market": {
         "horses": [
           {
@@ -4961,7 +4963,31 @@
       },
       "created_at": "2026-11-09T06:36:05+09:00",
       "locked_at": "2026-11-09T19:59:28+09:00",
-      "finalized_at": "2026-11-09T20:04:25+09:00"
+      "finalized_at": "2026-11-09T20:04:25+09:00",
+      "finish_order": [
+        {
+          "no": 10,
+          "name": "タイセイミッション",
+          "rank": 1
+        },
+        {
+          "no": 9,
+          "name": "マイケルマキシマス",
+          "rank": 2
+        },
+        {
+          "no": 6,
+          "name": "ミラクルヴォイス",
+          "rank": 3
+        }
+      ],
+      "payouts": {
+        "win": 620,
+        "quinella": 410,
+        "exacta": 1060,
+        "trio": 1010,
+        "trifecta": 5720
+      }
     },
     {
       "id": "nar-20261109-佐賀-11",
@@ -203456,15 +203482,15 @@
   ],
   "summary": {
     "predicted": 321,
-    "settled": 320,
-    "pending": 1,
-    "win": 35.3,
+    "settled": 321,
+    "pending": 0,
+    "win": 35.2,
     "quinella": 15.9,
     "exacta": 10.0,
     "trio": 9.7,
-    "trio_multi": 35.0,
-    "trio_multi_settled": 320,
-    "trifecta": 22.2,
+    "trio_multi": 35.2,
+    "trio_multi_settled": 321,
+    "trifecta": 22.1,
     "note": "発走前に予想した確定レースのみ。三連複本線1点と三連複候補は別集計。各レースの保存済み買い目を使用し、点数は予想方式により異なります。"
   },
   "odds_feed": {
