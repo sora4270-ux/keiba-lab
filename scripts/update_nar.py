@@ -895,7 +895,7 @@ def main():
     print(f"NAR single-win feed: {odds_status}; {len(odds_index)} races with quotes")
     if out != previous:
         DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-        DATA_PATH.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        DATA_PATH.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     print(f"NAR calendar entries: {len(out['schedule'])}; NAR races: {len(races)}, preliminary: {len(out['drafts'])}, newly frozen: {added}, newly settled: {settled_count}, market/payout updates: {payout_count}; total frozen: {out['summary']['predicted']}, settled: {out['summary']['settled']}")
 
 
