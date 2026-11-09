@@ -893,9 +893,10 @@ def main():
     out, added, settled_count, payout_count = update_data(races, now, previous, payback_index(tables), odds_index, trio_index)
     out["odds_feed"] = {"date": now.date().isoformat(), "status": odds_status}
     print(f"NAR single-win feed: {odds_status}; {len(odds_index)} races with quotes")
-    if out != previous:
+    serialized = json.dumps(out, ensure_ascii=False, separators=(",", ":")) + "\n"
+    if not DATA_PATH.exists() or DATA_PATH.read_text(encoding="utf-8") != serialized:
         DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-        DATA_PATH.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+        DATA_PATH.write_text(serialized, encoding="utf-8")
     print(f"NAR calendar entries: {len(out['schedule'])}; NAR races: {len(races)}, preliminary: {len(out['drafts'])}, newly frozen: {added}, newly settled: {settled_count}, market/payout updates: {payout_count}; total frozen: {out['summary']['predicted']}, settled: {out['summary']['settled']}")
 
 
