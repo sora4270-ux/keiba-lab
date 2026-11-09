@@ -12,7 +12,7 @@
     "form_training_races": 315,
     "market_training_races": 220
   },
-  "updated_at": "2026-11-09T20:34:26+09:00",
+  "updated_at": "2026-11-09T20:39:26+09:00",
   "schedule_updated_at": "2026-11-09T19:49:13+09:00",
   "schedule": [
     {
@@ -2584,7 +2584,8 @@
       "start_at": "2026-11-09T18:15+09:00"
     }
   ],
-  "drafts": [
+  "drafts": [],
+  "races": [
     {
       "id": "nar-20261109-川崎-12",
       "date": "2026-11-09",
@@ -3325,47 +3326,47 @@
         "horses": [
           {
             "no": 2,
-            "odds": 4.0,
+            "odds": 3.7,
             "popularity": 3
           },
           {
             "no": 3,
-            "odds": 6.2,
+            "odds": 6.3,
             "popularity": 4
           },
           {
             "no": 4,
-            "odds": 2.9,
+            "odds": 3.2,
             "popularity": 1
           },
           {
             "no": 5,
-            "odds": 41.9,
+            "odds": 35.3,
             "popularity": 7
           },
           {
             "no": 6,
-            "odds": 95.0,
+            "odds": 92.8,
             "popularity": 11
           },
           {
             "no": 7,
-            "odds": 10.1,
+            "odds": 10.9,
             "popularity": 5
           },
           {
             "no": 8,
-            "odds": 62.3,
+            "odds": 67.3,
             "popularity": 10
           },
           {
             "no": 9,
-            "odds": 44.9,
-            "popularity": 9
+            "odds": 37.4,
+            "popularity": 8
           },
           {
             "no": 10,
-            "odds": 31.6,
+            "odds": 26.7,
             "popularity": 6
           },
           {
@@ -3375,22 +3376,21 @@
           },
           {
             "no": 12,
-            "odds": 173.4,
+            "odds": 180.2,
             "popularity": 12
           },
           {
             "no": 13,
-            "odds": 43.2,
-            "popularity": 8
+            "odds": 44.2,
+            "popularity": 9
           }
         ],
-        "updated_at": "2026-11-09T20:34:26+09:00"
+        "updated_at": "2026-11-09T20:39:26+09:00"
       },
-      "status": "draft",
-      "created_at": "2026-11-09T06:36:05+09:00"
-    }
-  ],
-  "races": [
+      "created_at": "2026-11-09T06:36:05+09:00",
+      "locked_at": "2026-11-09T20:34:26+09:00",
+      "finalized_at": "2026-11-09T20:39:26+09:00"
+    },
     {
       "id": "nar-20261109-佐賀-12",
       "date": "2026-11-09",
@@ -4045,62 +4045,62 @@
         "horses": [
           {
             "no": 1,
-            "odds": 82.8,
-            "popularity": 10
+            "odds": 116.3,
+            "popularity": 12
           },
           {
             "no": 2,
-            "odds": 121.8,
+            "odds": 149.9,
             "popularity": 13
           },
           {
             "no": 3,
-            "odds": 96.3,
-            "popularity": 12
+            "odds": 114.4,
+            "popularity": 11
           },
           {
             "no": 4,
-            "odds": 44.7,
+            "odds": 54.8,
             "popularity": 7
           },
           {
             "no": 5,
-            "odds": 35.1,
-            "popularity": 6
+            "odds": 34.9,
+            "popularity": 5
           },
           {
             "no": 6,
-            "odds": 68.1,
+            "odds": 84.9,
             "popularity": 9
           },
           {
             "no": 7,
-            "odds": 85.8,
-            "popularity": 11
+            "odds": 88.1,
+            "popularity": 10
           },
           {
             "no": 8,
-            "odds": 11.0,
+            "odds": 15.1,
             "popularity": 3
           },
           {
             "no": 9,
-            "odds": 144.0,
+            "odds": 171.9,
             "popularity": 14
           },
           {
             "no": 10,
-            "odds": 22.5,
+            "odds": 21.4,
             "popularity": 4
           },
           {
             "no": 11,
-            "odds": 10.5,
+            "odds": 10.7,
             "popularity": 2
           },
           {
             "no": 12,
-            "odds": 61.5,
+            "odds": 78.0,
             "popularity": 8
           },
           {
@@ -4110,11 +4110,11 @@
           },
           {
             "no": 14,
-            "odds": 34.1,
-            "popularity": 5
+            "odds": 37.1,
+            "popularity": 6
           }
         ],
-        "updated_at": "2026-11-09T20:34:26+09:00"
+        "updated_at": "2026-11-09T20:39:26+09:00"
       },
       "market_at_lock": {
         "horses": [
@@ -203527,9 +203527,9 @@
     }
   ],
   "summary": {
-    "predicted": 322,
+    "predicted": 323,
     "settled": 321,
-    "pending": 1,
+    "pending": 2,
     "win": 35.2,
     "quinella": 15.9,
     "exacta": 10.0,
