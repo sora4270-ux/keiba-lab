@@ -973,8 +973,10 @@ function resultOrderHtml(r){
 }
 function trioTokens(tickets){return tickets.map((t,i)=>'<span class="nar-trio-item" title="'+(i===0?'本線':'三連複候補')+'">'+esc(t.join(' - '))+'<small class="nar-price">100円</small></span>').join('');}
 function trifectaPlanHtml(r){
- const p=r.trifecta_plan;if(!p||p.policy!=='adaptive_mass_v1')return '';
+ const p=r.trifecta_plan;if(!p)return '';
  const percent=x=>(100*Number(x||0)).toFixed(1)+'%';
+ if(p.policy==='adaptive_full_field_v1')return '<p class="hint"><b>三連単 '+Number(p.count)+'点・'+amount(Number(p.stake_yen))+'</b><br>全出走馬の着順を推定確率順に選択。推定網羅度 '+percent(p.covered_mass)+'。実際の的中率とは異なります。</p>';
+ if(p.policy!=='adaptive_mass_v1')return '';
  return '<p class="hint"><b>三連単 '+Number(p.count)+'点・'+amount(Number(p.stake_yen))+' ／ '+esc(p.reason)+'</b><br>候補5頭内の推定確率の70%を目標に6〜36点。今回の候補内網羅度 '+percent(p.conditional_coverage)+(p.target_reached?'':'（上限到達・目標未達）')+' ／ 全着順に対する推定網羅度 '+percent(p.covered_mass)+'。'+(p.candidate_mass<.4?'候補5頭の推定網羅度が低く、点数を増やしても候補外の馬は拾えません。':'')+'数値は未校正のモデル推定で、実際の的中率ではありません。</p>';
 }
 function v5ShadowHtml(r){
@@ -995,6 +997,10 @@ function v5ShadowHtml(r){
 function resultReview(r){
  if(!Array.isArray(r.result)||r.result.length!==3)return null;
  if((r.tickets||[]).some(t=>t.join('-')===r.result.join('-')))return '的中';
+ if(r.trifecta_plan?.policy==='adaptive_full_field_v1'){
+  const candidates=new Set((r.tickets||[]).flat());
+  return r.result.some(no=>!candidates.has(no))?'三連単の買い目にいない馬あり':'馬は買い目にいるが着順の組合せなし';
+ }
  const candidates=Array.isArray(r.top5)?r.top5.map(h=>Number(h.no)):null;
  if(!candidates)return '旧方式・分類対象外';
  return r.result.some(no=>!candidates.includes(no))?'候補5頭から漏れ':'候補内の着順違い';
@@ -1055,7 +1061,7 @@ function dailyReviewHtml(records){
   .filter(ranks=>ranks.every(rank=>rank>0));
  const coverageHtml=missedRanks.length?'<br>候補漏れの内訳（3着以内の予想順位を確認できた '+missedRanks.length+'R）：6位までで全頭 '+missedRanks.filter(ranks=>Math.max(...ranks)<=6).length+'R ／ 7位までで全頭 '+missedRanks.filter(ranks=>Math.max(...ranks)<=7).length+'R。候補範囲の比較で、買い目の的中数とは別です。':'';
  const modelCounts={};for(const r of rs){const model=String(r.model||'旧モデル');modelCounts[model]=(modelCounts[model]||0)+1;}
- return '<b>選択条件の反省：'+rs.length+'R</b><br>三連単 的中 '+(counts['的中']||0)+'R ／ 候補5頭から漏れ '+(counts['候補5頭から漏れ']||0)+'R ／ 候補内の着順違い '+(counts['候補内の着順違い']||0)+'R'+(counts['旧方式・分類対象外']?' ／ 旧方式 '+counts['旧方式・分類対象外']+'R':'')+coverageHtml+'<br>参考成績（1点100円の仮想購入）：<br>'+returns+'<br>予想時の全頭単勝オッズ不足 '+missing+'R ／ 時刻不明・古いオッズ '+stale+'R ／ 候補網羅度40%未満 '+low+'R'+(cohortHtml?'<br>'+cohortHtml:'')+'<br><span class="tiny">モデル別件数：'+Object.entries(modelCounts).map(([m,n])=>esc(m)+' '+n+'R').join(' ／ ')+'</span><br>候補漏れは点数追加だけでは解消しません。的中率と回収率を分けて評価し、払戻未取得は収支計算から除外します。注意判定は従来からの40%基準と予想時のオッズのみを使用し、結果から買い目を選び直しません。';
+ return '<b>選択条件の反省：'+rs.length+'R</b><br>三連単 的中 '+(counts['的中']||0)+'R ／ 候補5頭から漏れ '+(counts['候補5頭から漏れ']||0)+'R ／ 候補内の着順違い '+(counts['候補内の着順違い']||0)+'R'+(counts['旧方式・分類対象外']?' ／ 旧方式 '+counts['旧方式・分類対象外']+'R':'')+['三連単の買い目にいない馬あり','馬は買い目にいるが着順の組合せなし'].filter(k=>counts[k]).map(k=>' ／ '+k+' '+counts[k]+'R').join('')+coverageHtml+'<br>参考成績（1点100円の仮想購入）：<br>'+returns+'<br>予想時の全頭単勝オッズ不足 '+missing+'R ／ 時刻不明・古いオッズ '+stale+'R ／ 候補網羅度40%未満 '+low+'R'+(cohortHtml?'<br>'+cohortHtml:'')+'<br><span class="tiny">モデル別件数：'+Object.entries(modelCounts).map(([m,n])=>esc(m)+' '+n+'R').join(' ／ ')+'</span><br>候補漏れは点数追加だけでは解消しません。的中率と回収率を分けて評価し、払戻未取得は収支計算から除外します。注意判定は従来からの40%基準と予想時のオッズのみを使用し、結果から買い目を選び直しません。';
 }
 function narPct(v){return typeof v==='number'&&Number.isFinite(v)?v.toFixed(1)+'%':'—';}
 function narReferenceWager(r,key){

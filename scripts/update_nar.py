@@ -6,6 +6,7 @@ Initial model is an explicitly untrained, shrinkage-based form heuristic.
 import csv
 import datetime as dt
 import io
+import itertools
 import unicodedata
 import json
 import math
@@ -18,7 +19,7 @@ import zipfile
 from zoneinfo import ZoneInfo
 from odds_encoding import detect_odds_csv_encoding
 from value_strategy_v5 import build_shadow_plan
-from trio_strategy import (trio_odds_index, ticket_ranking, top_five_tickets,
+from trio_strategy import (trio_odds_index, ticket_ranking,
                            value_selection, calibration_for_podium, trifecta_plan)
 
 JST = ZoneInfo("Asia/Tokyo")
@@ -346,7 +347,20 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
                 "win_probability": round(probs[i], 6),
                 "podium_probability": round(podium[horses[i]["no"]], 6),
                 "form_probability": round(original_form[i], 6)} for i in ranked]
-    trio_tickets, tickets = top_five_tickets([row["no"] for row in ranking], ordered)
+    five = sorted(row["no"] for row in ranking[:5])
+    trio_tickets = [list(combo) for combo in itertools.combinations(five, 3)]
+    plan = trifecta_plan(five, ordered)
+    tickets = plan.pop("tickets")
+    if market_p:
+        # Preserve the adaptive budget. Rank exact orders across the field.
+        chosen = ordered[:len(tickets)]
+        tickets = [ticket for _, ticket in chosen]
+        plan = {
+            "policy": "adaptive_full_field_v1",
+            "count": len(tickets), "stake_yen": len(tickets) * 100,
+            "candidate_mass": plan["candidate_mass"],
+            "covered_mass": round(sum(probability for probability, _ in chosen), 6),
+        }
     value = value_selection(podium_trios, trio_market, timestamp.isoformat(timespec="seconds"))
     shadow = build_shadow_plan(
         ranking, ordered, podium_trios, trio_market,
@@ -368,7 +382,7 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
         "tickets": tickets, "trio_tickets": trio_tickets,
         "trio_value": value,
         "strategy_v5": shadow,
-        "trifecta_plan": {k: v for k, v in trifecta_plan([row["no"] for row in ranking], ordered).items() if k != "tickets"},
+        "trifecta_plan": plan,
         "result": None, "settled_at": None, "hits": None
     }
     # Display verified official quotes even in preliminary forecasts. These
@@ -652,7 +666,7 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
     predictions = sorted(entries.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)[:5000]
     # Keep draft storage bounded, but not at the expense of upcoming races.
     previews = sorted(drafts.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)[:500]
-    method = "本命は勝率、相手は3着内確率で選び、上位5頭で三連複BOXと三連単は候補5頭内の確率70%を目標に6〜36点を保存。v5検証用に5〜7頭と公式3連複オッズを比較し見送りを含む別枠の参考買い目を保存。発走15分前まで更新、既存の予想・買い目を変更しません。"
+    method = "本命は勝率、相手は3着内確率で選び、三連複は上位5頭BOX。三連単は従来の可変点数で、全頭の単勝オッズがある場合は全出走馬から着順の推定確率順に選びます。v5検証用に5〜7頭と公式3連複オッズを比較し見送りを含む別枠の参考買い目を保存。発走15分前まで更新、既存の予想・買い目を変更しません。"
     model_changed = previous.get("method") != method or previous.get("learning") != calibration
     drafts_changed = previews != previous.get("drafts", [])
     return {
@@ -862,6 +876,8 @@ def selftest():
                        big_fav, {"form_alpha": 1., "market_weight": .8,
                                  "form_training_races": 33, "market_training_races": 0})
     assert trained["top3"][0]["no"] == 1
+    assert trained["trifecta_plan"]["policy"] == "adaptive_full_field_v1"
+    assert len(trained["tickets"]) == trained["trifecta_plan"]["count"]
     assert trained["top3"][0]["no"] != forecast(races[0], now)["top3"][0]["no"]
     assert trained["market_at_lock"]["updated_at"] == trained["locked_at"]
     assert trained["cutoff_at"] == "2026-11-02T15:25+09:00"
