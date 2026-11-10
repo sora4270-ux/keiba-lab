@@ -37,3 +37,14 @@ assert.match(detail, /1着<\/td><td>3番 C<\/td><td>7\.5倍<\/td><td>2位/);
 assert.match(detail, /2着<\/td><td>1番 A<\/td><td>2\.8倍.*予想時.*<\/td><td>1位/);
 assert.match(detail, /3着<\/td><td>2番 <\/td><td>未取得<\/td><td>未記録/);
 assert.ok(detail.includes('全着順を見る')&&detail.includes('4着'));
+
+const dateStart=html.indexOf('function jstRaceToday(');
+const dateOptions=new Function('esc',html.slice(dateStart,start)+';return updateRaceDateOptions;')(String);
+const select={value:'latest',innerHTML:''};
+const calendar=[{date:'2026-11-10'},{date:'2026-11-11'}];
+assert.equal(dateOptions(select,calendar,'2026-11-10'),'2026-11-10');
+assert.match(select.innerHTML,/直近の確定日（2026-11-10）/);
+assert.equal(select.value,'latest');
+dateOptions(select,calendar);
+assert.equal(select.value,'today');
+assert.doesNotMatch(select.innerHTML,/直近の確定日/);
