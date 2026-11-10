@@ -770,13 +770,13 @@ function venueBreakdownHtml(records,isHit,wager){
 function narHitRecord(r,key){
  if(!Array.isArray(r.result)||r.result.length!==3)return false;
  const top=Array.isArray(r.top3)?r.top3.map(p=>Number(p.no)):[],actual=r.result,sorted=a=>[...a].sort((x,y)=>x-y).join('-');
- if(key==='trio_multi')return savedTrioList(r).some(t=>sorted(t)===sorted(actual));
+ if(key==='trio_multi')return narTicketHit(r,savedTrioList(r),true);
  if(typeof r.hits?.[key]==='boolean')return r.hits[key];
  if(key==='win')return top[0]===actual[0];
  if(key==='quinella')return top.length>=2&&sorted(top.slice(0,2))===sorted(actual.slice(0,2));
  if(key==='exacta')return top[0]===actual[0]&&top[1]===actual[1];
- if(key==='trio')return top.length>=3&&sorted(top)===sorted(actual);
- if(key==='trifecta')return (r.tickets||[]).some(t=>Array.isArray(t)&&t.join('-')===actual.join('-'));
+ if(key==='trio')return narTicketHit(r,[top],true);
+ if(key==='trifecta')return narTicketHit(r,r.tickets||[],false);
  return false;
 }
 function jraHitRecord(r,key){return key==='trio_multi'?ticketHit(r,'trio'):resultMatches(r)?.[key]===true;}
@@ -971,6 +971,12 @@ function resultOrderHtml(r){
  const label='<p class="tiny muted">単勝は取得済みの値を表示します。「保存値」は以前の取得値、「予想時」は予想時の保存値です。</p>';
  return table(rows.slice(0,3))+extra+label;
 }
+function narResultOrders(r){return r.result_alternatives||[r.result];}
+function narTicketKey(ticket,unordered){return (unordered?[...ticket].sort((a,b)=>a-b):ticket).join('-');}
+function narTicketHit(r,tickets,unordered){
+ const winners=new Set(narResultOrders(r).map(t=>narTicketKey(t,unordered)));
+ return tickets.some(t=>Array.isArray(t)&&winners.has(narTicketKey(t,unordered)));
+}
 function trioTokens(tickets){return tickets.map((t,i)=>'<span class="nar-trio-item" title="'+(i===0?'本線':'三連複候補')+'">'+esc(t.join(' - '))+'<small class="nar-price">100円</small></span>').join('');}
 function trifectaPlanHtml(r){
  const p=r.trifecta_plan;if(!p)return '';
@@ -996,14 +1002,14 @@ function v5ShadowHtml(r){
 }
 function resultReview(r){
  if(!Array.isArray(r.result)||r.result.length!==3)return null;
- if((r.tickets||[]).some(t=>t.join('-')===r.result.join('-')))return '的中';
+ if(narTicketHit(r,r.tickets||[],false))return '的中';
  if(r.trifecta_plan?.policy==='adaptive_full_field_v1'){
   const candidates=new Set((r.tickets||[]).flat());
-  return r.result.some(no=>!candidates.has(no))?'三連単の買い目にいない馬あり':'馬は買い目にいるが着順の組合せなし';
+  return narResultOrders(r).every(order=>order.some(no=>!candidates.has(no)))?'三連単の買い目にいない馬あり':'馬は買い目にいるが着順の組合せなし';
  }
  const candidates=Array.isArray(r.top5)?r.top5.map(h=>Number(h.no)):null;
  if(!candidates)return '旧方式・分類対象外';
- return r.result.some(no=>!candidates.includes(no))?'候補5頭から漏れ':'候補内の着順違い';
+ return narResultOrders(r).every(order=>order.some(no=>!candidates.includes(no)))?'候補5頭から漏れ':'候補内の着順違い';
 }
 function resultReviewHtml(r){const label=resultReview(r);return label?'<p class="tiny"><b>反省：'+esc(label)+'</b></p>':'';}
 function forecastQuality(r){
@@ -1031,7 +1037,7 @@ function reviewMetrics(records,key){
  const wagers=settled.map(r=>narReferenceWager(r,key)).filter(Boolean);
  const stats=roiStatistics(wagers);
  // Counts are derived from saved tickets, never a mutable hits flag.
- const hit=(r)=>key==='trio'?savedTrioList(r).some(t=>t.join('-')===[...r.result].sort((a,b)=>a-b).join('-')):(r.tickets||[]).some(t=>t.join('-')===r.result.join('-'));
+ const hit=(r)=>key==='trio'?narTicketHit(r,savedTrioList(r),true):narTicketHit(r,r.tickets||[],false);
  return {stats,settled:settled.length,priced:wagers.length,hits:settled.filter(hit).length,
   losingHits:settled.filter(r=>hit(r)&&narReferenceWager(r,key)?.profit<0).length};
 }
@@ -1056,35 +1062,37 @@ function dailyReviewHtml(records){
   const trio=reviewMetrics(group,'trio'),trifecta=reviewMetrics(group,'trifecta');
   return esc(label)+' '+group.length+'R：三連複 '+trio.hits+'/'+trio.settled+'R ／ 三連単 '+trifecta.hits+'/'+trifecta.settled+'R・'+roiLabel(trifecta.stats)+'（払戻確認 '+trifecta.priced+'R）';
  }).filter(Boolean).join('<br>');
- const missedRanks=rs.filter(r=>resultReview(r)==='候補5頭から漏れ'&&Array.isArray(r.ranking))
-  .map(r=>r.result.map(no=>r.ranking.findIndex(h=>Number(h.no)===no)+1))
-  .filter(ranks=>ranks.every(rank=>rank>0));
- const coverageHtml=missedRanks.length?'<br>候補漏れの内訳（3着以内の予想順位を確認できた '+missedRanks.length+'R）：6位までで全頭 '+missedRanks.filter(ranks=>Math.max(...ranks)<=6).length+'R ／ 7位までで全頭 '+missedRanks.filter(ranks=>Math.max(...ranks)<=7).length+'R。候補範囲の比較で、買い目の的中数とは別です。':'';
+ const rankedFinish=r=>Math.min(...narResultOrders(r)
+  .map(order=>order.map(no=>(r.ranking||[]).findIndex(h=>Number(h.no)===no)+1))
+  .filter(ranks=>ranks.every(rank=>rank>0)).map(ranks=>Math.max(...ranks)));
+ const boxMisses=rs.filter(r=>r.top5?.length===5&&savedTrioList(r).length===10&&!narTicketHit(r,savedTrioList(r),true));
+ const boxRanks=boxMisses.map(rankedFinish).filter(Number.isFinite);
+ const boxHtml=boxMisses.length?'<br>三連複5頭BOXの候補漏れ '+boxMisses.length+'R（予想順位確認 '+boxRanks.length+'R）：6位までで全頭 '+boxRanks.filter(rank=>rank<=6).length+'R ／ 7位までで全頭 '+boxRanks.filter(rank=>rank<=7).length+'R。':'';
+ const missedRanks=rs.filter(r=>resultReview(r)==='候補5頭から漏れ').map(rankedFinish).filter(Number.isFinite);
+ const coverageHtml=missedRanks.length?'<br>候補漏れの内訳（3着以内の予想順位を確認できた '+missedRanks.length+'R）：6位までで全頭 '+missedRanks.filter(rank=>rank<=6).length+'R ／ 7位までで全頭 '+missedRanks.filter(rank=>rank<=7).length+'R。候補範囲の比較で、買い目の的中数とは別です。':'';
  const modelCounts={};for(const r of rs){const model=String(r.model||'旧モデル');modelCounts[model]=(modelCounts[model]||0)+1;}
- return '<b>選択条件の反省：'+rs.length+'R</b><br>三連単 的中 '+(counts['的中']||0)+'R ／ 候補5頭から漏れ '+(counts['候補5頭から漏れ']||0)+'R ／ 候補内の着順違い '+(counts['候補内の着順違い']||0)+'R'+(counts['旧方式・分類対象外']?' ／ 旧方式 '+counts['旧方式・分類対象外']+'R':'')+['三連単の買い目にいない馬あり','馬は買い目にいるが着順の組合せなし'].filter(k=>counts[k]).map(k=>' ／ '+k+' '+counts[k]+'R').join('')+coverageHtml+'<br>参考成績（1点100円の仮想購入）：<br>'+returns+'<br>予想時の全頭単勝オッズ不足 '+missing+'R ／ 時刻不明・古いオッズ '+stale+'R ／ 候補網羅度40%未満 '+low+'R'+(cohortHtml?'<br>'+cohortHtml:'')+'<br><span class="tiny">モデル別件数：'+Object.entries(modelCounts).map(([m,n])=>esc(m)+' '+n+'R').join(' ／ ')+'</span><br>候補漏れは点数追加だけでは解消しません。的中率と回収率を分けて評価し、払戻未取得は収支計算から除外します。注意判定は従来からの40%基準と予想時のオッズのみを使用し、結果から買い目を選び直しません。';
+ return '<b>選択条件の反省：'+rs.length+'R</b><br>三連単 的中 '+(counts['的中']||0)+'R ／ 候補5頭から漏れ '+(counts['候補5頭から漏れ']||0)+'R ／ 候補内の着順違い '+(counts['候補内の着順違い']||0)+'R'+(counts['旧方式・分類対象外']?' ／ 旧方式 '+counts['旧方式・分類対象外']+'R':'')+['三連単の買い目にいない馬あり','馬は買い目にいるが着順の組合せなし'].filter(k=>counts[k]).map(k=>' ／ '+k+' '+counts[k]+'R').join('')+coverageHtml+boxHtml+'<br>参考成績（1点100円の仮想購入）：<br>'+returns+'<br>予想時の全頭単勝オッズ不足 '+missing+'R ／ 時刻不明・古いオッズ '+stale+'R ／ 候補網羅度40%未満 '+low+'R'+(cohortHtml?'<br>'+cohortHtml:'')+'<br><span class="tiny">モデル別件数：'+Object.entries(modelCounts).map(([m,n])=>esc(m)+' '+n+'R').join(' ／ ')+'</span><br>候補漏れは点数追加だけでは解消しません。的中率と回収率を分けて評価し、払戻未取得は収支計算から除外します。注意判定は従来からの40%基準と予想時のオッズのみを使用し、結果から買い目を選び直しません。';
 }
 function narPct(v){return typeof v==='number'&&Number.isFinite(v)?v.toFixed(1)+'%':'—';}
 function narReferenceWager(r,key){
  if(!Array.isArray(r?.result)||r.result.length!==3)return null;
  const payoutKey=key==="trio_main"||key==="trio_value"||key==="trio_v5"?"trio":key;
- const pay=r.payouts?.[payoutKey];
- if(!Number.isInteger(pay)||pay<0)return null;
- const trio=savedTrioList(r),tickets=Array.isArray(r.tickets)?r.tickets:[],top=Array.isArray(r.top3)?r.top3.map(p=>Number(p.no)):[];
- const valueTrio=Array.isArray(r.trio_value?.tickets)?r.trio_value.tickets.filter(t=>Array.isArray(t)&&t.length===3&&t.every(Number.isInteger)).map(t=>[...t].sort((a,b)=>a-b)):[];
- const v5Trio=Array.isArray(r.strategy_v5?.tickets)?r.strategy_v5.tickets.filter(t=>Array.isArray(t)&&t.length===3&&t.every(Number.isInteger)).map(t=>[...t].sort((a,b)=>a-b)):[];
- const count=key==="trio"?trio.length:key==="trio_value"?valueTrio.length:key==="trio_v5"?v5Trio.length:key==="trifecta"?tickets.length:1;
- if(count<1)return null;
- const actual=r.result,ordered=actual.join("-"),unordered=[...actual].sort((a,b)=>a-b).join("-");
- let hit=false;
- if(key==="trio")hit=trio.some(t=>t.join("-")===unordered);
- else if(key==="trio_value")hit=valueTrio.some(t=>t.join("-")===unordered);
- else if(key==="trio_v5")hit=v5Trio.some(t=>t.join("-")===unordered);
- else if(key==="trio_main")hit=top.length===3&&[...top].sort((a,b)=>a-b).join("-")===unordered;
- else if(key==="trifecta")hit=tickets.some(t=>Array.isArray(t)&&t.join("-")===ordered);
- else if(key==="win")hit=top[0]===actual[0];
- else if(key==="quinella")hit=top.length>=2&&[...top.slice(0,2)].sort((a,b)=>a-b).join("-")===[...actual.slice(0,2)].sort((a,b)=>a-b).join("-");
- else if(key==="exacta")hit=top[0]===actual[0]&&top[1]===actual[1];
- const spent=count*100,returned=hit?pay:0;
+ const top=Array.isArray(r.top3)?r.top3.map(p=>Number(p.no)):[];
+ const ticketsByKey={
+  trio:savedTrioList(r),trio_value:r.trio_value?.tickets,trio_v5:r.strategy_v5?.tickets,
+  trifecta:r.tickets,trio_main:[top],win:[top.slice(0,1)],quinella:[top.slice(0,2)],exacta:[top.slice(0,2)]
+ };
+ const width=payoutKey==="win"?1:payoutKey==="quinella"||payoutKey==="exacta"?2:3;
+ const tickets=(ticketsByKey[key]||[]).filter(t=>Array.isArray(t)&&t.length===width&&t.every(Number.isInteger));
+ if(!tickets.length)return null;
+ const unordered=payoutKey==="trio"||payoutKey==="quinella";
+ const winners=[...new Set(narResultOrders(r).map(t=>narTicketKey(t.slice(0,width),unordered)))];
+ const amounts=r.result_alternatives&&width===3
+  ?r.payouts_by_ticket?.[payoutKey]||{}
+  :{[winners[0]]:r.payouts?.[payoutKey]};
+ if(winners.some(ticket=>!Number.isInteger(amounts[ticket])||amounts[ticket]<0))return null;
+ const purchased=new Set(tickets.map(t=>narTicketKey(t,unordered)));
+ const spent=tickets.length*100,returned=winners.reduce((sum,t)=>sum+(purchased.has(t)?amounts[t]:0),0);
  return {spent,returned,profit:returned-spent};
 }
 function narPeriodRaces(records,period){
@@ -1117,7 +1125,9 @@ function narPayoutHtml(r,trioMultiHit){
  if(!Array.isArray(r.result))return '';
  const payouts=r.payouts||{},kinds=[["win","単勝"],["quinella","馬連"],["exacta","馬単"],["trio","三連複"],["trifecta","三連単"]];
  const lines=kinds.map(([key,label])=>{
-  const v=payouts[key];return '<span style="display:inline-block;margin-right:9px">'+label+' <b>'+(Number.isInteger(v)&&v>=0?amount(v):'未取得')+'</b></span>';
+  const v=payouts[key],byTicket=r.payouts_by_ticket?.[key];
+  if(byTicket)return '<span style="display:inline-block;margin-right:9px">'+label+' <b>'+Object.entries(byTicket).map(([t,n])=>esc(t)+' '+amount(n)).join(' ／ ')+'</b></span>';
+  return '<span style="display:inline-block;margin-right:9px">'+label+' <b>'+(Number.isInteger(v)&&v>=0?amount(v):'未取得')+'</b></span>';
  }).join("");
  const notes=[["trio","三連複候補"],["trio_value","三連複・オッズ条件付き"],["trifecta","三連単"]].map(([key,label])=>{
   const w=narReferenceWager(r,key);
@@ -1263,8 +1273,8 @@ function narRender(data,localCopy=false){
   }
   const top=r.top5||r.top3||[],tickets=Array.isArray(r.tickets)?r.tickets:[],hits=r.hits||{},trio=savedTrioList(r);
    if(mode==='results'){
-    const result=r.result,correct=result.join(' → ');
-    const trioHit=trio.some(t=>t.join('-')===[...result].sort((a,b)=>a-b).join('-'));
+    const correct=narResultOrders(r).map(order=>order.join(' → ')).join(' ／ ')+(r.result_alternatives?'（3着同着）':'');
+    const trioHit=narTicketHit(r,trio,true);
     const hitText='<span class="'+(hits.win?'hit':'miss')+'">単勝 '+(hits.win?'的中':'不的中')+'</span> ／ <span class="'+(trioHit?'hit':'miss')+'">三連複 '+(trioHit?'的中':'不的中')+'</span> ／ <span class="'+(hits.trifecta?'hit':'miss')+'">三連単 '+(hits.trifecta?'的中':'不的中')+'</span>';
     return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(r.date+' '+r.venue+' '+r.race_no+'R')+'</strong><span class="pill">結果確定 '+esc(correct)+'</span></div><div class="muted tiny">発走予定 '+esc(r.start_at.replace('T',' ').slice(0,16))+' ／ 予想確定 '+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+'</div><div class="nar-result">'+resultOrderHtml(r)+'<div>'+hitText+'</div></div><details style="margin-top:8px"><summary>単勝オッズ・人気順（取得値）</summary>'+raceInsightHtml(r,'NAR')+'</details>'+purchaseDetailHtml(r)+narPayoutHtml(r,trioHit)+v5ShadowHtml(r)+'</div>';
    }
@@ -1274,7 +1284,7 @@ function narRender(data,localCopy=false){
   const actual=draft?(afterCutoff?'事前予想あり・確定保存待ち':'事前予想・更新中'):(Date.parse(r.start_at)<Date.now()?'予想固定・発走済み':'予想確定・発走前');
   const stampLabel=draft?'事前予想の最終更新 ':'最終予想の作成 ';
   const finalizeLabel=!draft&&r.finalized_at?' ／ 確定処理 '+String(r.finalized_at).replace('T',' ').slice(0,16):'';
-  const trioMultiHit=Array.isArray(r.result)&&trio.some(t=>t.join('-')===[...r.result].sort((a,b)=>a-b).join('-'));
+  const trioMultiHit=Array.isArray(r.result)&&narTicketHit(r,trio,true);
   const simple='';
   const {horses:marketList,updated_at:marketAt}=narDisplayMarket(r);
   const marketByNo=new Map(marketList.map(h=>[Number(h.no),h]));

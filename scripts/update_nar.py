@@ -317,7 +317,7 @@ def learn_parameters(records, now):
                         for p, m, i in prelock) / len(prelock)
                     + .01 * (w-.8)**2)
         weight = min([.5, .6, .7, .8, .9], key=market_loss)
-    podium = calibration_for_podium(records, now)
+    podium = calibration_for_podium([r for r in records if not r.get("result_alternatives")], now)
     return {"form_alpha": alpha, "market_weight": weight, **podium,
             "form_training_races": n, "market_training_races": len(prelock)}
 
@@ -440,15 +440,16 @@ def official_payouts(paybacks, race, result):
     return amounts
 
 
-def settled_order(horses):
+def settled_orders(horses):
     ranked = {i: [] for i in (1, 2, 3)}
     for horse in horses:
         if horse["rank"] in ranked:
             ranked[horse["rank"]].append(horse["no"])
-    # Skip dead heats / partial or conflicting provisional results.
-    if any(len(ranked[n]) != 1 for n in (1, 2, 3)):
-        return None
-    return [ranked[n][0] for n in (1, 2, 3)]
+    # A shared third place yields one official combination per tied horse.
+    # First/second-place ties still need separate verification rules.
+    if len(ranked[1]) != 1 or len(ranked[2]) != 1:
+        return []
+    return [ranked[1] + ranked[2] + [no] for no in sorted(ranked[3])]
 
 
 def frozen_trio_tickets(pred):
@@ -478,25 +479,29 @@ def trio_multi_hit(pred, result):
     return sorted(result) in frozen_trio_tickets(pred)
 
 
-def settle(pred, result, now):
+def settle(pred, result, now, alternatives=()):
     if pred.get("result") is not None:
         return False
     start = dt.datetime.fromisoformat(pred["start_at"])
     if now < start + dt.timedelta(minutes=3):
         return False
-    a, b, c = result
+    a, b, _ = result
+    orders = alternatives or [result]
+    if alternatives:
+        pred["result_alternatives"] = alternatives
     guessed = [x["no"] for x in pred["top3"]]
     same_pair = lambda q, w: sorted(q) == sorted(w)
     pred["result"] = result
     pred["settled_at"] = now.isoformat(timespec="seconds")
+    value_tickets = [sorted(t) for t in (pred.get("trio_value") or {}).get("tickets", [])]
     pred["hits"] = {
         "win": guessed[0] == a,
         "quinella": same_pair(guessed[:2], [a, b]),
         "exacta": guessed[:2] == [a, b],
-        "trio": same_pair(guessed, result),
-        "trio_multi": trio_multi_hit(pred, result),
-        "trio_value": sorted(result) in [sorted(t) for t in (pred.get("trio_value") or {}).get("tickets", [])],
-        "trifecta": result in pred["tickets"]
+        "trio": any(same_pair(guessed, order) for order in orders),
+        "trio_multi": any(trio_multi_hit(pred, order) for order in orders),
+        "trio_value": any(sorted(order) in value_tickets for order in orders),
+        "trifecta": any(order in pred["tickets"] for order in orders)
     }
     return True
 
@@ -508,7 +513,8 @@ def summary(predictions):
     # shortlist as unordered picks. No horse or probability is added after off.
     multi_eligible = [x for x in valid if frozen_trio_tickets(x)]
     trio_multi_rate = round(
-        100 * sum(trio_multi_hit(x, x["result"]) for x in multi_eligible) / len(multi_eligible), 1
+        100 * sum(any(trio_multi_hit(x, order) for order in (x.get("result_alternatives") or [x["result"]]))
+                  for x in multi_eligible) / len(multi_eligible), 1
     ) if multi_eligible else None
     return {
         "predicted": len(predictions), "settled": len(valid),
@@ -643,8 +649,10 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
         if visible and visible != record.get("market"):
             record["market"] = visible
             odds_updated += 1
-        order = settled_order(race["horses"])
-        if order and settle(entries[ident], order, now):
+        orders = settled_orders(race["horses"])
+        order = orders[0] if orders else None
+        alternatives = orders if len(orders) > 1 else []
+        if order and settle(record, order, now, alternatives):
             settled += 1
         record = entries[ident]
         if isinstance(record.get("result"), list):
@@ -657,6 +665,21 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
                     record["finish_order"] = finish_order
                     result_details_updated += 1
             verified = official_payouts(paybacks, race, record["result"])
+            if record.get("result_alternatives"):
+                by_ticket = {}
+                for actual in record["result_alternatives"]:
+                    amounts = official_payouts(paybacks, race, actual)
+                    for bet, ticket in (("trio", sorted(actual)), ("trifecta", actual)):
+                        if bet in amounts:
+                            by_ticket.setdefault(bet, {})["-".join(map(str, ticket))] = amounts[bet]
+                old_by_ticket = record.get("payouts_by_ticket") or {}
+                combined = {**old_by_ticket, **{
+                    bet: {**old_by_ticket.get(bet, {}), **values} for bet, values in by_ticket.items()
+                }}
+                if combined != old_by_ticket:
+                    record["payouts_by_ticket"] = combined
+                    payout_updated += 1
+                verified = {bet: amount for bet, amount in verified.items() if bet not in ("trio", "trifecta")}
             if verified:
                 old_amounts = record.get("payouts") or {}
                 if any(old_amounts.get(k) != v for k, v in verified.items()):
@@ -784,6 +807,25 @@ def selftest():
     assert enriched["races"][0]["payouts"] == {
         "win": 430, "quinella": 810, "exacta": 1420, "trio": 2750, "trifecta": 14820}
     assert update_data(races, late, enriched, paybacks)[3] == 0
+    tied_race = {**races[0], "horses": [
+        {**h, "rank": 3 if h["no"] == 4 else h["rank"]} for h in races[0]["horses"]
+    ]}
+    second_payrow = payrow.copy()
+    for pos, value in {46:4, 47:3100, 51:4, 52:16300}.items():
+        second_payrow[pos] = str(value)
+    tie_paybacks = payback_index({"payback": [(payrow, {}), (second_payrow, {})]})
+    frozen = {**pre, "result": None, "payouts": {}, "tickets": [[1, 2, 4]], "trio_tickets": [[1, 2, 4]]}
+    tied, _, settled, _ = update_data([tied_race], late, {"races": [frozen]}, tie_paybacks)
+    assert settled == 1
+    tied_record = tied["races"][0]
+    assert tied_record["result_alternatives"] == [[1, 2, 3], [1, 2, 4]]
+    assert tied_record["hits"]["trifecta"] and tied_record["hits"]["trio_multi"]
+    assert tied_record["payouts_by_ticket"] == {
+        "trio": {"1-2-3": 2750, "1-2-4": 3100},
+        "trifecta": {"1-2-3": 14820, "1-2-4": 16300},
+    }
+    assert tied["summary"]["trio_multi"] == 100
+    assert update_data([tied_race], late, tied, tie_paybacks)[2:] == (0, 0)
     old = dict(pre)
     old.pop("trio_tickets")
     assert len(frozen_trio_tickets(old)) >= 1

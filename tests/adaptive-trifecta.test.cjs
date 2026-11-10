@@ -46,7 +46,7 @@ fixtures.forEach((ps,i)=>{
 assert.ok(counts[0]<counts[1]&&counts[1]<counts[2],'concentrated races use fewer tickets');
 assert.equal(counts[2],36);
 assert.equal(counts[4],6);
-const reviewSource=html.slice(html.indexOf('function resultReview('),html.indexOf('function dailyReviewHtml('));
+const reviewSource=html.slice(html.indexOf('function narResultOrders('),html.indexOf('function trioTokens('))+html.slice(html.indexOf('function resultReview('),html.indexOf('function dailyReviewHtml('));
 const resultReview=new Function(reviewSource+';return resultReview;')();
 const saved={top5:[1,2,3,4,5].map(no=>({no})),tickets:[[1,2,3]]};
 assert.equal(resultReview({...saved,result:[1,2,3]}),'的中');

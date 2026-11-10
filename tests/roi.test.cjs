@@ -66,6 +66,13 @@ const historic={...nar,trio_tickets:undefined};
 assert.equal(api.savedTrioList(historic).length,1);
 assert.equal(api.narReferenceWager(historic,'trio').spent,100);
 
+const tie={...nar,result_alternatives:[[1,2,3],[1,2,4]],
+  trio_tickets:[[1,2,3],[1,2,4]],tickets:[[1,2,4]],
+  payouts_by_ticket:{trio:{'1-2-3':2000,'1-2-4':3000},trifecta:{'1-2-3':10000,'1-2-4':20000}}};
+assert.equal(api.narReferenceWager(tie,'trio').returned,5000);
+assert.equal(api.narReferenceWager(tie,'trifecta').returned,20000);
+assert.equal(api.narReferenceWager(tie,'win').returned,200);
+assert.equal(api.narReferenceWager({...tie,payouts_by_ticket:{trifecta:{'1-2-3':10000}}},'trifecta'),null);
 const publicData=JSON.parse(fs.readFileSync('data/auto/nar_predictions.json','utf8'));
 for(const race of publicData.races) {
   const result=api.completeBasket([race],api.narReferenceWager);

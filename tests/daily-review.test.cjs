@@ -28,4 +28,12 @@ if(nov9.length===48){
  assert.match(review,/6位までで全頭 7R ／ 7位までで全頭 14R/);
  assert.match(review,/単勝オッズ不足 6R：三連複 0\/6R ／ 三連単 0\/6R/);
 }
+const nov10=data.races.filter(r=>r.date==='2026-11-10');
+if(nov10.length===59){
+ const review=api.dailyReviewHtml(nov10);
+ assert.match(review,/選択条件の反省：59R/);
+ assert.match(review,/三連複5頭BOXの候補漏れ 37R/);
+ assert.match(review,/三連単 的中 14\/59R/);
+ assert.equal(api.reviewMetrics(nov10,'trifecta').stats.spent,130500);
+}
 console.log('PASS: pre-race quality, stale/future odds, missing payouts, losing hits and immutable daily ledger');
