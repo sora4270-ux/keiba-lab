@@ -42,10 +42,13 @@ if(nov11.length===48){
  assert.match(review,/1レースの予算別成績（48R）/);
  assert.match(review,/500円<\/th><td>14\/48R ／ 52\.2%/);
  assert.match(review,/<td>4\/48R ／ 36\.6%/);
- assert.match(review,/馬は買い目にいるが着順の組合せなし 27R/);
+ assert.match(review,/3頭は登場・同じ組なし 17R/);
+ assert.match(review,/3頭組あり・着順違い 10R/);
 }
 const box=Array.from({length:10},(_,i)=>[1,2,4+i]);
 const field=[r.result,...box.slice(0,9)];
 const review=api.dailyReviewHtml([{...r,trio_tickets:box,trio_full_field_tickets:field}]);
 assert.match(review,/上位5頭BOX 0\/1R ／ 回収率 0\.0% ／ 全出走馬から選ぶ10点 1\/1R ／ 回収率 5\.0%/);
+const trifectaReview=api.dailyReviewHtml([{...r,trifecta_diversified_tickets:[[2,1,3],[3,1,2]]}]);
+assert.match(trifectaReview,/従来の確率順 1\/1R ／ 回収率 50\.0% ／ 3頭の組を広げる方式 0\/1R ／ 回収率 0\.0%/);
 console.log('PASS: pre-race quality, stale/future odds, missing payouts, losing hits and immutable daily ledger');

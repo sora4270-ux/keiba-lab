@@ -19,7 +19,7 @@ import zipfile
 from zoneinfo import ZoneInfo
 from odds_encoding import detect_odds_csv_encoding
 from value_strategy_v5 import build_shadow_plan
-from trio_strategy import (trio_odds_index, ticket_ranking,
+from trio_strategy import (diversified_trifecta_tickets, trio_odds_index, ticket_ranking,
                            value_selection, calibration_for_podium, trifecta_plan)
 
 JST = ZoneInfo("Asia/Tokyo")
@@ -380,6 +380,7 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
                   "show_market_weight", "podium_training_races")},
         "top3": ranking[:3], "top5": ranking[:5], "ranking": ranking,
         "tickets": tickets, "trio_tickets": trio_tickets,
+        "trifecta_diversified_tickets": diversified_trifecta_tickets(ordered, len(tickets)) if market_p else [],
         # Compare the same number of tickets with a broader field when the
         # full pre-race win market is available.
         "trio_full_field_tickets": (
@@ -919,6 +920,7 @@ def selftest():
     assert after["market"]["horses"][1]["observed_at"] == mixed["updated_at"]
     assert after["market_at_lock"] == before["market_at_lock"]
     assert after["tickets"] == before["tickets"]
+    assert after["trifecta_diversified_tickets"] == before["trifecta_diversified_tickets"]
     assert after["strategy_v5"] == before["strategy_v5"]  # settled results never change pre-race shadow
     trained = forecast(races[0], dt.datetime(2026, 11, 2, 15, 23, tzinfo=JST),
                        big_fav, {"form_alpha": 1., "market_weight": .8,
@@ -931,6 +933,12 @@ def selftest():
     assert all(len(set(ticket)) == 3 and ticket == sorted(ticket) for ticket in field_trios)
     assert pre["trio_full_field_tickets"] == []
     assert len(trained["tickets"]) == trained["trifecta_plan"]["count"]
+    alternatives = trained["trifecta_diversified_tickets"]
+    assert len(alternatives) == len(trained["tickets"])
+    assert len({tuple(ticket) for ticket in alternatives}) == len(alternatives)
+    ordered_fixture = [(0.20, [1, 2, 3]), (0.19, [1, 3, 2]), (0.18, [1, 2, 4])]
+    assert diversified_trifecta_tickets(ordered_fixture, 2) == [[1, 2, 3], [1, 2, 4]]
+    assert not pre["trifecta_diversified_tickets"]
     assert trained["top3"][0]["no"] != forecast(races[0], now)["top3"][0]["no"]
     assert trained["market_at_lock"]["updated_at"] == trained["locked_at"]
     assert trained["cutoff_at"] == "2026-11-02T15:25+09:00"

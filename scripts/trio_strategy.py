@@ -7,6 +7,7 @@ Model-implied return multiples are hypotheses, not verified expected returns.
 """
 import csv
 import datetime as dt
+import heapq
 import io
 import itertools
 import json
@@ -110,6 +111,27 @@ def ticket_ranking(horses, win, form, market, config=None):
         trios[key] = trios.get(key, 0) + prob
     ordered.sort(key=lambda x: (-x[0], x[1]))
     return ordered, sorted(trios.items(), key=lambda x: (-x[1], x[0]))
+
+
+def diversified_trifecta_tickets(ordered, count):
+    """Reduce the priority of each additional order for the same three horses."""
+    groups = {}
+    for index, (probability, ticket) in enumerate(ordered):
+        group = tuple(sorted(ticket))
+        groups.setdefault(group, []).append((probability, index, ticket))
+    queue = [(-entries[0][0], entries[0][1], group, 0)
+             for group, entries in groups.items()]
+    heapq.heapify(queue)
+    tickets = []
+    while queue and len(tickets) < count:
+        _, _, group, used = heapq.heappop(queue)
+        entries = groups[group]
+        tickets.append(entries[used][2])
+        used += 1
+        if used < len(entries):
+            probability, index, _ = entries[used]
+            heapq.heappush(queue, (-probability * .9 ** used, index, group, used))
+    return tickets
 
 
 def trifecta_plan(ranked_ids, ordered):

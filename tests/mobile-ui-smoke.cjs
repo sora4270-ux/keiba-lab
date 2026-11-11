@@ -100,7 +100,7 @@ async function run() {
     assert.ok(!(await page.locator('#nar-races').innerText()).includes('園田 5R'),'race-number filter');
 
     mock.drafts=[];
-    mock.races=[{...narRace,status:'final',result:[1,2,3],payouts:{trio:120,trifecta:650}}];
+    mock.races=[{...narRace,status:'final',result:[1,2,3],trifecta_diversified_tickets:[...narRace.tickets].reverse(),payouts:{trio:120,trifecta:650}}];
     await page.locator('#nar-refresh').click();
     await page.waitForFunction(()=>document.querySelector('#nar-review')?.textContent?.includes('的中 1R'));
     assert.ok((await page.locator('#nar-review').innerText()).includes('購入 600円'),'review derives spending from frozen count');
@@ -109,6 +109,10 @@ async function run() {
     assert.equal(await page.locator('.mobile-dock [data-jump="nar"][data-display="results"]').getAttribute('aria-current'),'page','active menu follows result tab');
     assert.equal(await page.locator('[data-mode-select="nar-view-mode"] [data-mode="results"]').getAttribute('aria-pressed'),'true');
     assert.ok(await page.locator('#nar-results-summary').isVisible(),'statistics on results mode');
+    const review = page.locator('#nar-review');
+    await review.getByText('1レースの予算別成績（1R）').click();
+    assert.ok(await review.getByRole('row').filter({hasText:'500円'}).isVisible(),'budget comparison opens on mobile');
+    assert.match(await review.innerText(), /三連単の同点数比較/);
     await page.locator('[data-reset-scope="nar"]').click();
     assert.equal(await page.locator('#nar-view-number').inputValue(),'all','reset race-number filter');
     assert.equal(await page.locator('#nar-view-date').inputValue(),'today','reset race date');

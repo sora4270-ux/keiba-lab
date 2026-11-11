@@ -1061,8 +1061,10 @@ function resultReview(r){
  if(!Array.isArray(r.result)||r.result.length!==3)return null;
  if(narTicketHit(r,r.tickets||[],false))return '的中';
  if(r.trifecta_plan?.policy==='adaptive_full_field_v1'){
-  const candidates=new Set((r.tickets||[]).flat());
-  return narResultOrders(r).every(order=>order.some(no=>!candidates.has(no)))?'三連単の買い目にいない馬あり':'馬は買い目にいるが着順の組合せなし';
+  const tickets=r.tickets||[];
+  const candidates=new Set(tickets.flat());
+  if(narResultOrders(r).every(order=>order.some(no=>!candidates.has(no))))return '三連単の買い目にいない馬あり';
+  return narTicketHit(r,tickets,true)?'3頭組あり・着順違い':'3頭は登場・同じ組なし';
  }
  const candidates=Array.isArray(r.top5)?r.top5.map(h=>Number(h.no)):null;
  if(!candidates)return '旧方式・分類対象外';
@@ -1126,6 +1128,15 @@ function trioFullFieldReviewHtml(records){
  return '<br><b>三連複10点の検証</b>（払戻確認 '+baseline.priced+'/'+baseline.settled+'R）<br>'+
   '上位5頭BOX '+label(baseline)+' ／ 全出走馬から選ぶ10点 '+label(experimental);
 }
+function diversifiedTrifectaReviewHtml(records){
+ const comparable=records.filter(r=>r.tickets?.length>0&&r.trifecta_diversified_tickets?.length===r.tickets.length);
+ if(!comparable.length)return '';
+ const baseline=reviewMetrics(comparable,'trifecta');
+ const alternative=reviewMetrics(comparable.map(r=>({...r,tickets:r.trifecta_diversified_tickets})),'trifecta');
+ const label=x=>x.hits+'/'+x.settled+'R ／ 回収率 '+roiLabel(x.stats);
+ return '<br><b>三連単の同点数比較</b>（払戻確認 '+baseline.priced+'/'+baseline.settled+'R）<br>'+
+  '従来の確率順 '+label(baseline)+' ／ 3頭の組を広げる方式 '+label(alternative);
+}
 function dailyReviewHtml(records){
  const rs=records.filter(r=>Array.isArray(r.result)&&r.result.length===3);
  if(!rs.length)return '<b>選択条件の反省</b>：結果確定後に集計します。';
@@ -1156,7 +1167,7 @@ function dailyReviewHtml(records){
  const missedRanks=rs.filter(r=>resultReview(r)==='候補5頭から漏れ').map(rankedFinish).filter(Number.isFinite);
  const coverageHtml=missedRanks.length?'<br>候補漏れの内訳（3着以内の予想順位を確認できた '+missedRanks.length+'R）：6位までで全頭 '+missedRanks.filter(rank=>rank<=6).length+'R ／ 7位までで全頭 '+missedRanks.filter(rank=>rank<=7).length+'R。候補範囲の比較で、買い目の的中数とは別です。':'';
  const modelCounts={};for(const r of rs){const model=String(r.model||'旧モデル');modelCounts[model]=(modelCounts[model]||0)+1;}
- return '<b>選択条件の反省：'+rs.length+'R</b><br>三連単 的中 '+(counts['的中']||0)+'R ／ 候補5頭から漏れ '+(counts['候補5頭から漏れ']||0)+'R ／ 候補内の着順違い '+(counts['候補内の着順違い']||0)+'R'+(counts['旧方式・分類対象外']?' ／ 旧方式 '+counts['旧方式・分類対象外']+'R':'')+['三連単の買い目にいない馬あり','馬は買い目にいるが着順の組合せなし'].filter(k=>counts[k]).map(k=>' ／ '+k+' '+counts[k]+'R').join('')+coverageHtml+boxHtml+'<br>参考成績（1点100円の仮想購入、取消・除外の返還は集計外）：<br>'+returns+'<br>予想時の全頭単勝オッズ不足 '+missing+'R ／ 時刻不明・古いオッズ '+stale+'R ／ 候補網羅度40%未満 '+low+'R'+(cohortHtml?'<br>'+cohortHtml:'')+'<br><span class="tiny">モデル別件数：'+Object.entries(modelCounts).map(([m,n])=>esc(m)+' '+n+'R').join(' ／ ')+'</span><br>候補漏れは点数追加だけでは解消しません。的中率と回収率を分けて評価し、払戻未取得は収支計算から除外します。注意判定は従来からの40%基準と予想時のオッズのみを使用し、結果から買い目を選び直しません。'+budgetReviewHtml(rs)+trioFullFieldReviewHtml(rs);
+ return '<b>選択条件の反省：'+rs.length+'R</b><br>三連単 的中 '+(counts['的中']||0)+'R ／ 候補5頭から漏れ '+(counts['候補5頭から漏れ']||0)+'R ／ 候補内の着順違い '+(counts['候補内の着順違い']||0)+'R'+(counts['旧方式・分類対象外']?' ／ 旧方式 '+counts['旧方式・分類対象外']+'R':'')+['三連単の買い目にいない馬あり','3頭は登場・同じ組なし','3頭組あり・着順違い'].filter(k=>counts[k]).map(k=>' ／ '+k+' '+counts[k]+'R').join('')+coverageHtml+boxHtml+'<br>参考成績（1点100円の仮想購入、取消・除外の返還は集計外）：<br>'+returns+'<br>予想時の全頭単勝オッズ不足 '+missing+'R ／ 時刻不明・古いオッズ '+stale+'R ／ 候補網羅度40%未満 '+low+'R'+(cohortHtml?'<br>'+cohortHtml:'')+'<br><span class="tiny">モデル別件数：'+Object.entries(modelCounts).map(([m,n])=>esc(m)+' '+n+'R').join(' ／ ')+'</span><br>候補漏れは点数追加だけでは解消しません。的中率と回収率を分けて評価し、払戻未取得は収支計算から除外します。注意判定は従来からの40%基準と予想時のオッズのみを使用し、結果から買い目を選び直しません。'+budgetReviewHtml(rs)+trioFullFieldReviewHtml(rs)+diversifiedTrifectaReviewHtml(rs);
 }
 function narPct(v){return typeof v==='number'&&Number.isFinite(v)?v.toFixed(1)+'%':'—';}
 function narReferenceWager(r,key){
@@ -1397,8 +1408,12 @@ function narRender(data,localCopy=false){
   const fieldTrio=r.trio_full_field_tickets;
   const fieldTrioHtml=Array.isArray(fieldTrio)&&fieldTrio.length?
    '<details><summary>三連複の検証候補 '+fieldTrio.length+'点（全出走馬から選択）</summary><div class="nar-trio-list">'+trioTokens(fieldTrio)+'</div></details>':'';
+  const alternative=r.trifecta_diversified_tickets;
+  const alternativeHtml=Array.isArray(alternative)&&alternative.length?
+   '<details><summary>三連単の検証候補 '+alternative.length+'点（3頭の組を広げる方式）</summary><p>'+
+   alternative.map(ticket=>esc(ticket.join('→'))+'（100円）').join(' ／ ')+'</p></details>':'';
   const valueHtml='<div class="nar-trio-title">オッズ条件付き参考買い目 <span class="pill">'+valueTickets.length+'点'+(valueTickets.length?'':' ／ 見送り')+'</span></div><p class="nar-trio-note">'+esc(valueStatus)+' モデル上の倍率は仮説に基づく値で、実際の回収率を保証しません。</p>'+(valueTickets.length?'<div class="nar-trio-list">'+trioTokens(valueTickets)+'</div>':'');
-  return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></div><div class="muted tiny">発走予定 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ '+stampLabel+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+finalizeLabel+' ／ 締切 '+esc(frozenCutoffLabel(r))+' ／ '+esc(modelTag)+esc(staleNote)+'</div><div class="nar-line">'+top.map((p,i)=>'<span class="nar-pick">'+(['◎','○','▲','△','△'][i])+' '+esc(p.no)+'番 '+esc(p.name)+' <b>'+narPct(100*Number(i>0&&p.podium_probability!=null?p.podium_probability:p.win_probability))+'</b><small>'+esc((p.podium_probability==null?'':i===0?'勝率':'3着内')+pickOdds(p.no))+'</small></span>').join('')+'</div><p class="tiny muted">'+marketLabel+'</p>'+raceInsightHtml(r,'NAR')+forecastQualityHtml(r)+budgetTicketsHtml(trio,tickets,r.ranking||top)+'<div class="nar-trio-title">三連複の買い目 '+(r.top5?'（BOX）':'（保存時の方式）')+' <span class="pill">'+trio.length+'点</span></div><div class="nar-trio-list">'+trioTokens(trio)+'</div><div class="nar-trio-note">'+(Array.isArray(r.trio_tickets)?'着順に関係なく選んだ3頭が入れば的中。'+(draft?'確定前のため買い目は更新されます。':'予想固定済みで変更しません。')+'':'旧予想の保存済み三連単候補を順不同に換算（新規予想ではありません）。')+'</div>'+podiumHtml+fieldTrioHtml+valueHtml+v5ShadowHtml(r)+resultReviewHtml(r)+'<div class="nar-result">'+simple+'</div>'+purchaseDetailHtml(r)+trifectaPlanHtml(r)+'<details><summary>三連単 '+tickets.length+'点の買い目</summary><p>'+tickets.map((t,i)=>esc(Array.isArray(t)?t.join('→'):t)+'（100円）').join(' ／ ')+'</p></details></div>';
+  return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></div><div class="muted tiny">発走予定 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ '+stampLabel+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+finalizeLabel+' ／ 締切 '+esc(frozenCutoffLabel(r))+' ／ '+esc(modelTag)+esc(staleNote)+'</div><div class="nar-line">'+top.map((p,i)=>'<span class="nar-pick">'+(['◎','○','▲','△','△'][i])+' '+esc(p.no)+'番 '+esc(p.name)+' <b>'+narPct(100*Number(i>0&&p.podium_probability!=null?p.podium_probability:p.win_probability))+'</b><small>'+esc((p.podium_probability==null?'':i===0?'勝率':'3着内')+pickOdds(p.no))+'</small></span>').join('')+'</div><p class="tiny muted">'+marketLabel+'</p>'+raceInsightHtml(r,'NAR')+forecastQualityHtml(r)+budgetTicketsHtml(trio,tickets,r.ranking||top)+'<div class="nar-trio-title">三連複の買い目 '+(r.top5?'（BOX）':'（保存時の方式）')+' <span class="pill">'+trio.length+'点</span></div><div class="nar-trio-list">'+trioTokens(trio)+'</div><div class="nar-trio-note">'+(Array.isArray(r.trio_tickets)?'着順に関係なく選んだ3頭が入れば的中。'+(draft?'確定前のため買い目は更新されます。':'予想固定済みで変更しません。')+'':'旧予想の保存済み三連単候補を順不同に換算（新規予想ではありません）。')+'</div>'+podiumHtml+fieldTrioHtml+valueHtml+v5ShadowHtml(r)+resultReviewHtml(r)+'<div class="nar-result">'+simple+'</div>'+purchaseDetailHtml(r)+trifectaPlanHtml(r)+alternativeHtml+'<details><summary>三連単 '+tickets.length+'点の買い目</summary><p>'+tickets.map((t,i)=>esc(Array.isArray(t)?t.join('→'):t)+'（100円）').join(' ／ ')+'</p></details></div>';
  }).join('');
 }
 let narFetching=false,narLastPollAt=0;
