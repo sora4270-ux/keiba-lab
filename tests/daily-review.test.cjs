@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs');
 const html=fs.readFileSync('index.html','utf8');
 const slice=(a,b)=>html.slice(html.indexOf(a),html.indexOf(b,html.indexOf(a)));
-const source=slice('function savedTrioList(r){','function trioTokens(tickets){')+slice('function resultReview(r){','function narPct(v){')+slice('function narReferenceWager(r,key){','function narPeriodRaces(records,period){')+slice('function roiStatistics(bets){','function recordResult(rec,top,payouts={})');
+const source=slice('function savedTrioList(r){','function trioTokens(tickets){')+slice('function budgetTicketLists(trio,trifecta,ranking){','function budgetTicketsHtml(trio,trifecta,ranking){')+slice('function resultReview(r){','function narPct(v){')+slice('function narReferenceWager(r,key){','function narPeriodRaces(records,period){')+slice('function roiStatistics(bets){','function recordResult(rec,top,payouts={})');
 const api=new Function('esc','amount',source+';return {forecastQuality,forecastQualityHtml,reviewMetrics,dailyReviewHtml};')(x=>String(x),x=>String(x)+'円');
 const r={ranking:[1,2,3].map(no=>({no})),top5:[1,2,3].map(no=>({no})),top3:[1,2,3].map(no=>({no})),tickets:[[1,2,3],[1,3,2]],trio_tickets:[[1,2,3]],result:[1,2,3],payouts:{trio:50,trifecta:100},predicted_at:'2026-11-08T12:00:00+09:00',cutoff_at:'2026-11-08T12:05:00+09:00',market_at_lock:{updated_at:'2026-11-08T11:59:00+09:00',horses:[1,2,3].map(no=>({no,odds:3}))},trifecta_plan:{candidate_mass:.5}};
 assert.equal(api.forecastQuality(r).cautious,false);
@@ -36,4 +36,16 @@ if(nov10.length===59){
  assert.match(review,/三連単 的中 14\/59R/);
  assert.equal(api.reviewMetrics(nov10,'trifecta').stats.spent,130500);
 }
+const nov11=data.races.filter(r=>r.date==='2026-11-11'&&r.result);
+if(nov11.length===48){
+ const review=api.dailyReviewHtml(nov11);
+ assert.match(review,/1レースの予算別成績（48R）/);
+ assert.match(review,/500円<\/th><td>14\/48R ／ 52\.2%/);
+ assert.match(review,/<td>4\/48R ／ 36\.6%/);
+ assert.match(review,/馬は買い目にいるが着順の組合せなし 27R/);
+}
+const box=Array.from({length:10},(_,i)=>[1,2,4+i]);
+const field=[r.result,...box.slice(0,9)];
+const review=api.dailyReviewHtml([{...r,trio_tickets:box,trio_full_field_tickets:field}]);
+assert.match(review,/上位5頭BOX 0\/1R ／ 回収率 0\.0% ／ 全出走馬から選ぶ10点 1\/1R ／ 回収率 5\.0%/);
 console.log('PASS: pre-race quality, stale/future odds, missing payouts, losing hits and immutable daily ledger');

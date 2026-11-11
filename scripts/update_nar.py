@@ -380,6 +380,12 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
                   "show_market_weight", "podium_training_races")},
         "top3": ranking[:3], "top5": ranking[:5], "ranking": ranking,
         "tickets": tickets, "trio_tickets": trio_tickets,
+        # Compare the same number of tickets with a broader field when the
+        # full pre-race win market is available.
+        "trio_full_field_tickets": (
+            [list(ticket) for ticket, _ in podium_trios[:len(trio_tickets)]]
+            if market_p and len(podium_trios) > len(trio_tickets) else []
+        ),
         "trio_value": value,
         "strategy_v5": shadow,
         "trifecta_plan": plan,
@@ -919,6 +925,11 @@ def selftest():
                                  "form_training_races": 33, "market_training_races": 0})
     assert trained["top3"][0]["no"] == 1
     assert trained["trifecta_plan"]["policy"] == "adaptive_full_field_v1"
+    field_trios = trained["trio_full_field_tickets"]
+    assert len(field_trios) == len(trained["trio_tickets"]) == 10
+    assert len({tuple(ticket) for ticket in field_trios}) == 10
+    assert all(len(set(ticket)) == 3 and ticket == sorted(ticket) for ticket in field_trios)
+    assert pre["trio_full_field_tickets"] == []
     assert len(trained["tickets"]) == trained["trifecta_plan"]["count"]
     assert trained["top3"][0]["no"] != forecast(races[0], now)["top3"][0]["no"]
     assert trained["market_at_lock"]["updated_at"] == trained["locked_at"]
