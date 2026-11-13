@@ -1039,6 +1039,84 @@ function refreshBudgetTickets(event){
 }
 document.addEventListener('input',refreshBudgetTickets);
 document.addEventListener('change',refreshBudgetTickets);
+function trifectaAllocationWeights(r,tickets){
+ const config=r.calibration,ranking=r.ranking;
+ if(!config||!Array.isArray(ranking)||ranking.length<3)return null;
+ const {form_alpha:alpha,place_market_weight:placeWeight,show_market_weight:showWeight}=config;
+ if(!Number.isFinite(alpha)||alpha<=0)return null;
+ if(ranking.some(h=>![h.form_probability,h.win_probability].every(p=>Number.isFinite(p)&&p>0)))return null;
+ const normalize=values=>{
+  const total=values.reduce((sum,value)=>sum+value,0);
+  return values.map(value=>value/total);
+ };
+ const form=normalize(ranking.map(h=>h.form_probability**alpha));
+ const snapshot=r.market_at_lock?.horses||[];
+ let second=form,third=form;
+ if(snapshot.length){
+  const odds=new Map(snapshot.map(h=>[h.no,h.odds]));
+  const quotes=ranking.map(h=>odds.get(h.no));
+  if(quotes.some(o=>!Number.isFinite(o)||o<1||o>=10000))return null;
+  const market=normalize(quotes.map(o=>1/Math.max(1.01,o)));
+  const mix=weight=>normalize(form.map((p,i)=>(1-weight)*p+weight*market[i]));
+  second=mix(placeWeight||.65);
+  third=mix(showWeight||.50);
+ }else if(!String(r.model||'').endsWith('_no_odds')){
+  return null;
+ }
+ const index=new Map(ranking.map((h,i)=>[h.no,i]));
+ const weights=tickets.map(ticket=>{
+  const [i,j,k]=ticket.map(no=>index.get(no));
+  if(i==null||j==null||k==null)return NaN;
+  const probability=ranking[i].win_probability*second[j]/Math.max(1e-12,1-second[i]);
+  return probability*(third[k]/Math.max(1e-12,1-third[i]-third[j]));
+ });
+ return weights.every(w=>Number.isFinite(w)&&w>0)?weights:null;
+}
+function trifectaAllocation(tickets,weights,yen){
+ const units=Math.floor(yen/100);
+ const count=Math.min(tickets.length,units);
+ if(count<=0)return [];
+ const selected=weights.slice(0,count);
+ const total=selected.reduce((sum,w)=>sum+w,0);
+ const targets=selected.map(w=>(units-count)*(w/total));
+ const stakes=targets.map(target=>1+Math.floor(target));
+ const remaining=units-stakes.reduce((sum,stake)=>sum+stake,0);
+ const priority=targets.map((target,i)=>({i,fraction:target-Math.floor(target)}))
+  .sort((a,b)=>b.fraction-a.fraction||a.i-b.i);
+ priority.slice(0,remaining).forEach(({i})=>stakes[i]++);
+ return stakes.map((stake,i)=>({ticket:tickets[i],yen:stake*100}));
+}
+function trifectaAllocationContent(tickets,weights,yen){
+ if(!Number.isSafeInteger(yen)||yen<0)return {summary:'予算は0円以上の整数で入力してください。',html:''};
+ const entries=trifectaAllocation(tickets,weights,yen);
+ const spent=entries.reduce((sum,entry)=>sum+entry.yen,0);
+ return {
+  summary:entries.length+'点 ／ 仮想配分 '+amount(spent)+' ／ 残り '+amount(yen-spent),
+  html:entries.map(({ticket,yen})=>'<span class="nar-trio-item">'+esc(ticket.join(' → '))+
+   '<small class="nar-price">'+amount(yen)+'</small></span>').join('')
+ };
+}
+function trifectaAllocationHtml(r,tickets){
+ if(!tickets.length)return '';
+ const weights=trifectaAllocationWeights(r,tickets);
+ if(!weights)return '<p class="tiny muted">三連単の資金配分には予想時の確率とオッズの記録が必要です。</p>';
+ const defaultBudget=10000;
+ const {summary,html}=trifectaAllocationContent(tickets,weights,defaultBudget);
+ return '<details class="stake-summary" data-trifecta-allocation="'+esc(JSON.stringify({tickets,weights}))+'">'+
+  '<summary><b>三連単の資金配分（仮想）</b> · <span data-allocation-summary>'+esc(summary)+'</span></summary>'+
+  '<label class="field">1レースの予算（円）<input type="number" inputmode="numeric" min="0" step="100" value="'+defaultBudget+'" data-allocation-budget></label>'+
+  '<p class="tiny muted">1点100円を割り当て、残額は推定的中確率に比例して配分します。予算が少ない場合は保存順で点数を絞ります。</p>'+
+  '<div class="nar-trio-list" data-allocation-list>'+html+'</div></details>';
+}
+document.addEventListener('input',event=>{
+ const input=event.target;
+ if(!input.matches('[data-allocation-budget]'))return;
+ const panel=input.closest('[data-trifecta-allocation]');
+ const {tickets,weights}=JSON.parse(panel.dataset.trifectaAllocation);
+ const {summary,html}=trifectaAllocationContent(tickets,weights,input.valueAsNumber);
+ panel.querySelector('[data-allocation-summary]').textContent=summary;
+ panel.querySelector('[data-allocation-list]').innerHTML=html;
+});
 function trifectaPlanHtml(r){
  const p=r.trifecta_plan;if(!p)return '';
  const percent=x=>(100*Number(x||0)).toFixed(1)+'%';
@@ -1412,7 +1490,7 @@ function narRender(data,localCopy=false){
     const correct=narResultOrders(r).map(order=>order.join(' → ')).join(' ／ ')+(r.result_alternatives?'（3着同着）':'');
     const trioHit=narTicketHit(r,trio,true);
     const hitText='<span class="'+(hits.win?'hit':'miss')+'">単勝 '+(hits.win?'的中':'不的中')+'</span> ／ <span class="'+(trioHit?'hit':'miss')+'">三連複 '+(trioHit?'的中':'不的中')+'</span> ／ <span class="'+(hits.trifecta?'hit':'miss')+'">三連単 '+(hits.trifecta?'的中':'不的中')+'</span>';
-    return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(r.date+' '+r.venue+' '+r.race_no+'R')+'</strong><span class="pill">結果確定 '+esc(correct)+'</span></div><div class="muted tiny">発走予定 '+esc(r.start_at.replace('T',' ').slice(0,16))+' ／ 予想確定 '+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+'</div><div class="nar-result">'+resultOrderHtml(r)+'<div>'+hitText+'</div></div><details style="margin-top:8px"><summary>単勝オッズ・人気順（取得値）</summary>'+raceInsightHtml(r,'NAR')+'</details>'+purchaseDetailHtml(r)+narPayoutHtml(r,trioHit)+resultReviewHtml(r)+budgetTicketsHtml(trio,tickets,r.ranking||top,r.trio_full_field_tickets,r.trifecta_diversified_tickets)+v5ShadowHtml(r)+'</div>';
+    return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(r.date+' '+r.venue+' '+r.race_no+'R')+'</strong><span class="pill">結果確定 '+esc(correct)+'</span></div><div class="muted tiny">発走予定 '+esc(r.start_at.replace('T',' ').slice(0,16))+' ／ 予想確定 '+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+'</div><div class="nar-result">'+resultOrderHtml(r)+'<div>'+hitText+'</div></div><details style="margin-top:8px"><summary>単勝オッズ・人気順（取得値）</summary>'+raceInsightHtml(r,'NAR')+'</details>'+purchaseDetailHtml(r)+narPayoutHtml(r,trioHit)+resultReviewHtml(r)+trifectaAllocationHtml(r,tickets)+budgetTicketsHtml(trio,tickets,r.ranking||top,r.trio_full_field_tickets,r.trifecta_diversified_tickets)+v5ShadowHtml(r)+'</div>';
    }
   const displayDate=String(r.date||'')+' '+String(r.venue||'')+' '+String(r.race_no||'')+'R';
   const draft=r.status==='draft';
@@ -1450,7 +1528,7 @@ function narRender(data,localCopy=false){
    '<details><summary>三連単の検証候補 '+alternative.length+'点（3頭の組を広げる方式）</summary><p>'+
    alternative.map(ticket=>esc(ticket.join('→'))+'（100円）').join(' ／ ')+'</p></details>':'';
   const valueHtml='<div class="nar-trio-title">オッズ条件付き参考買い目 <span class="pill">'+valueTickets.length+'点'+(valueTickets.length?'':' ／ 見送り')+'</span></div><p class="nar-trio-note">'+esc(valueStatus)+' モデル上の倍率は仮説に基づく値で、実際の回収率を保証しません。</p>'+(valueTickets.length?'<div class="nar-trio-list">'+trioTokens(valueTickets)+'</div>':'');
-  return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></div><div class="muted tiny">発走予定 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ '+stampLabel+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+finalizeLabel+' ／ 締切 '+esc(frozenCutoffLabel(r))+' ／ '+esc(modelTag)+esc(staleNote)+'</div><div class="nar-line">'+top.map((p,i)=>'<span class="nar-pick">'+(['◎','○','▲','△','△'][i])+' '+esc(p.no)+'番 '+esc(p.name)+' <b>'+narPct(100*Number(i>0&&p.podium_probability!=null?p.podium_probability:p.win_probability))+'</b><small>'+esc((p.podium_probability==null?'':i===0?'勝率':'3着内')+pickOdds(p.no))+'</small></span>').join('')+'</div><p class="tiny muted">'+marketLabel+'</p>'+raceInsightHtml(r,'NAR')+forecastQualityHtml(r)+budgetTicketsHtml(trio,tickets,r.ranking||top,fieldTrio,r.trifecta_diversified_tickets)+'<div class="nar-trio-title">三連複の買い目 '+(r.top5?'（BOX）':'（保存時の方式）')+' <span class="pill">'+trio.length+'点</span></div><div class="nar-trio-list">'+trioTokens(trio)+'</div><div class="nar-trio-note">'+(Array.isArray(r.trio_tickets)?'着順に関係なく選んだ3頭が入れば的中。'+(draft?'確定前のため買い目は更新されます。':'予想固定済みで変更しません。')+'':'旧予想の保存済み三連単候補を順不同に換算（新規予想ではありません）。')+'</div>'+podiumHtml+fieldTrioHtml+valueHtml+v5ShadowHtml(r)+resultReviewHtml(r)+'<div class="nar-result">'+simple+'</div>'+purchaseDetailHtml(r)+trifectaPlanHtml(r)+alternativeHtml+'<details><summary>三連単 '+tickets.length+'点の買い目</summary><p>'+tickets.map((t,i)=>esc(Array.isArray(t)?t.join('→'):t)+'（100円）').join(' ／ ')+'</p></details></div>';
+  return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></div><div class="muted tiny">発走予定 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ '+stampLabel+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+finalizeLabel+' ／ 締切 '+esc(frozenCutoffLabel(r))+' ／ '+esc(modelTag)+esc(staleNote)+'</div><div class="nar-line">'+top.map((p,i)=>'<span class="nar-pick">'+(['◎','○','▲','△','△'][i])+' '+esc(p.no)+'番 '+esc(p.name)+' <b>'+narPct(100*Number(i>0&&p.podium_probability!=null?p.podium_probability:p.win_probability))+'</b><small>'+esc((p.podium_probability==null?'':i===0?'勝率':'3着内')+pickOdds(p.no))+'</small></span>').join('')+'</div><p class="tiny muted">'+marketLabel+'</p>'+raceInsightHtml(r,'NAR')+forecastQualityHtml(r)+trifectaAllocationHtml(r,tickets)+budgetTicketsHtml(trio,tickets,r.ranking||top,fieldTrio,r.trifecta_diversified_tickets)+'<div class="nar-trio-title">三連複の買い目 '+(r.top5?'（BOX）':'（保存時の方式）')+' <span class="pill">'+trio.length+'点</span></div><div class="nar-trio-list">'+trioTokens(trio)+'</div><div class="nar-trio-note">'+(Array.isArray(r.trio_tickets)?'着順に関係なく選んだ3頭が入れば的中。'+(draft?'確定前のため買い目は更新されます。':'予想固定済みで変更しません。')+'':'旧予想の保存済み三連単候補を順不同に換算（新規予想ではありません）。')+'</div>'+podiumHtml+fieldTrioHtml+valueHtml+v5ShadowHtml(r)+resultReviewHtml(r)+'<div class="nar-result">'+simple+'</div>'+purchaseDetailHtml(r)+trifectaPlanHtml(r)+alternativeHtml+'<details><summary>三連単 '+tickets.length+'点の買い目</summary><p>'+tickets.map((t,i)=>esc(Array.isArray(t)?t.join('→'):t)+'（100円）').join(' ／ ')+'</p></details></div>';
  }).join('');
 }
 let narFetching=false,narLastPollAt=0;
