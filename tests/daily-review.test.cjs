@@ -57,3 +57,13 @@ assert.doesNotMatch(api.dailyReviewHtml([{...r,payouts:{},trio_tickets:box,trio_
 const trifectaReview=api.dailyReviewHtml([{...r,trifecta_diversified_tickets:[[2,1,3],[3,1,2]]}]);
 assert.match(trifectaReview,/従来の確率順 1\/1R ／ 回収率 50\.0% ／ 3頭の組を広げる方式 0\/1R ／ 回収率 0\.0%/);
 console.log('PASS: pre-race quality, stale/future odds, missing payouts, losing hits and immutable daily ledger');
+const nov13=data.races.filter(r=>r.date==='2026-11-13'&&r.result);
+if(nov13.length===46){
+ const publishedReview=api.dailyReviewHtml(nov13);
+ assert.match(publishedReview,/三連単の予算別比較（40R）/);
+ assert.match(publishedReview,/300円<\/th><td>9\/40R ／ 回収率 122\.0%.*?<td>9\/40R ／ 回収率 122\.0%/);
+ assert.match(publishedReview,/1000円<\/th><td>13\/40R ／ 回収率 62\.9%.*?<td>13\/40R ／ 回収率 62\.9%/);
+}
+assert.match(api.budgetTicketsHtml(box,r.tickets,r.ranking,field,[[2,1,3]]),/value="diversifiedTrifecta"/);
+assert.doesNotMatch(api.budgetTicketsHtml(box,r.tickets,r.ranking,field),/value="diversifiedTrifecta"/);
+assert.doesNotMatch(api.dailyReviewHtml([{...r,payouts:{},trifecta_diversified_tickets:r.tickets}]),/三連単の予算別比較/);
