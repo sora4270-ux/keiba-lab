@@ -41,9 +41,9 @@ def market_probabilities(nos, snapshot):
     return normalize(odds)
 
 
-def trio_odds_index(archive):
-    """Parse observed 3連複 quotations. Never construct them from WIN odds."""
-    output = {}
+def combination_odds_indexes(archive):
+    """Parse official unordered trio and ordered trifecta quotes in one pass."""
+    trio, trifecta = {}, {}
     if len(archive) > 60 * 1024 * 1024:
         raise ValueError("trio odds ZIP exceeds size limit")
     with zipfile.ZipFile(io.BytesIO(archive)) as zipped:
@@ -66,13 +66,13 @@ def trio_odds_index(archive):
                     return row[idx].strip() if idx < len(row) else ""
                 def consume(row):
                     bet = unicodedata.normalize("NFKC", read(row, "賭式", 3)).strip()
-                    if bet not in ("3連複", "三連複"):
+                    if bet not in ("3連複", "三連複", "3連単", "三連単"):
                         return
                     venue = read(row, "競馬場", 0)
                     date = "".join(c for c in read(row, "競走年月日", 1) if c.isdigit())
                     try:
                         race = int(read(row, "レース番号", 2))
-                        nums = tuple(sorted(int(read(row, f"番号{i}", i + 3)) for i in (1, 2, 3)))
+                        nums = tuple(int(read(row, f"番号{i}", i + 3)) for i in (1, 2, 3))
                         odds = float(read(row, "オッズ", 7))
                     except (TypeError, ValueError):
                         return
@@ -80,12 +80,19 @@ def trio_odds_index(archive):
                             or len(set(nums)) != 3 or not all(1 <= n <= 30 for n in nums)
                             or not math.isfinite(odds) or not 1 <= odds < 10000):
                         return
-                    output.setdefault((venue, date, race), {})[nums] = round(odds, 1)
+                    if bet.endswith("複"):
+                        trio.setdefault((venue, date, race), {})[tuple(sorted(nums))] = round(odds, 1)
+                    else:
+                        trifecta.setdefault((venue, date, race), {})[nums] = round(odds, 1)
                 if not named:
                     consume(first)
                 for row in rows:
                     consume(row)
-    return output
+    return trio, trifecta
+
+
+def trio_odds_index(archive):
+    return combination_odds_indexes(archive)[0]
 
 
 def ticket_ranking(horses, win, form, market, config=None):

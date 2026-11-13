@@ -1039,84 +1039,91 @@ function refreshBudgetTickets(event){
 }
 document.addEventListener('input',refreshBudgetTickets);
 document.addEventListener('change',refreshBudgetTickets);
-function trifectaAllocationWeights(r,tickets){
- const config=r.calibration,ranking=r.ranking;
- if(!config||!Array.isArray(ranking)||ranking.length<3)return null;
- const {form_alpha:alpha,place_market_weight:placeWeight,show_market_weight:showWeight}=config;
- if(!Number.isFinite(alpha)||alpha<=0)return null;
- if(ranking.some(h=>![h.form_probability,h.win_probability].every(p=>Number.isFinite(p)&&p>0)))return null;
- const normalize=values=>{
-  const total=values.reduce((sum,value)=>sum+value,0);
-  return values.map(value=>value/total);
- };
- const form=normalize(ranking.map(h=>h.form_probability**alpha));
- const snapshot=r.market_at_lock?.horses||[];
- let second=form,third=form;
- if(snapshot.length){
-  const odds=new Map(snapshot.map(h=>[h.no,h.odds]));
-  const quotes=ranking.map(h=>odds.get(h.no));
-  if(quotes.some(o=>!Number.isFinite(o)||o<1||o>=10000))return null;
-  const market=normalize(quotes.map(o=>1/Math.max(1.01,o)));
-  const mix=weight=>normalize(form.map((p,i)=>(1-weight)*p+weight*market[i]));
-  second=mix(placeWeight||.65);
-  third=mix(showWeight||.50);
- }else if(!String(r.model||'').endsWith('_no_odds')){
-  return null;
- }
- const index=new Map(ranking.map((h,i)=>[h.no,i]));
- const weights=tickets.map(ticket=>{
-  const [i,j,k]=ticket.map(no=>index.get(no));
-  if(i==null||j==null||k==null)return NaN;
-  const probability=ranking[i].win_probability*second[j]/Math.max(1e-12,1-second[i]);
-  return probability*(third[k]/Math.max(1e-12,1-third[i]-third[j]));
+function trifectaRecoveryPlan(tickets,quotes,budget){
+ const units=Math.floor(budget/100);
+ const quoted=tickets.flatMap(ticket=>{
+  const odds=quotes[ticket.join('-')];
+  return Number.isFinite(odds)&&odds>=1?[{ticket,odds}]:[];
  });
- return weights.every(w=>Number.isFinite(w)&&w>0)?weights:null;
+ if(units<=0)return [];
+ // Work in tenths of the official odds and in 100-yen stake units.
+ const entries=[];
+ let required=0;
+ for(const entry of quoted){
+  const oddsTenths=Math.round(entry.odds*10);
+  const stake=Math.ceil(units*10/oddsTenths);
+  if(required+stake>units)continue;
+  entries.push({...entry,oddsTenths,stake});
+  required+=stake;
+ }
+ if(!entries.length)return [];
+ // Equalize the minimum return as far as the selected tickets and budget allow.
+ let low=units*10,high=Math.min(...entries.map(entry=>units*entry.oddsTenths));
+ while(low<high){
+  const target=low+Math.ceil((high-low)/2);
+  const needed=entries.reduce((sum,entry)=>sum+Math.ceil(target/entry.oddsTenths),0);
+  if(needed<=units)low=target;
+  else high=target-1;
+ }
+ for(const entry of entries)entry.stake=Math.ceil(low/entry.oddsTenths);
+ entries[0].stake+=units-entries.reduce((sum,entry)=>sum+entry.stake,0);
+ return entries.map(({ticket,odds,oddsTenths,stake})=>({
+  ticket,odds,yen:stake*100,payout:stake*oddsTenths*10
+ }));
 }
-function trifectaAllocation(tickets,weights,yen){
- const units=Math.floor(yen/100);
- const count=Math.min(tickets.length,units);
- if(count<=0)return [];
- const selected=weights.slice(0,count);
- const total=selected.reduce((sum,w)=>sum+w,0);
- const targets=selected.map(w=>(units-count)*(w/total));
- const stakes=targets.map(target=>1+Math.floor(target));
- const remaining=units-stakes.reduce((sum,stake)=>sum+stake,0);
- const priority=targets.map((target,i)=>({i,fraction:target-Math.floor(target)}))
-  .sort((a,b)=>b.fraction-a.fraction||a.i-b.i);
- priority.slice(0,remaining).forEach(({i})=>stakes[i]++);
- return stakes.map((stake,i)=>({ticket:tickets[i],yen:stake*100}));
-}
-function trifectaAllocationContent(tickets,weights,yen){
- if(!Number.isSafeInteger(yen)||yen<0)return {summary:'予算は0円以上の整数で入力してください。',html:''};
- const entries=trifectaAllocation(tickets,weights,yen);
+function trifectaAllocationContent(tickets,quotes,maximum,confidence){
+ if(!Number.isSafeInteger(maximum)||maximum<0||maximum>Math.floor(Number.MAX_SAFE_INTEGER/10000)){
+  return {summary:'予算には有効な金額を入力してください。',html:''};
+ }
+ const budget=confidence==null?maximum:Math.floor(maximum*confidence/100)*100;
+ const entries=trifectaRecoveryPlan(tickets,quotes,budget);
+ if(!entries.length)return {
+  summary:'設定上限 '+amount(maximum)+' ／ 配分予算 '+amount(budget)+' ／ 見送り',
+  html:'<p class="tiny muted">100円以上の配分予算と対象の三連単オッズが揃うと表示します。</p>'
+ };
  const spent=entries.reduce((sum,entry)=>sum+entry.yen,0);
+ const lowestReturn=Math.min(...entries.map(entry=>entry.payout));
  return {
-  summary:entries.length+'点 ／ 仮想配分 '+amount(spent)+' ／ 残り '+amount(yen-spent),
-  html:entries.map(({ticket,yen})=>'<span class="nar-trio-item">'+esc(ticket.join(' → '))+
-   '<small class="nar-price">'+amount(yen)+'</small></span>').join('')
+  summary:entries.length+'点 ／ 仮想購入 '+amount(spent)+' ／ 最低想定払戻 '+amount(lowestReturn),
+  html:'<p class="tiny muted">配分予算 '+amount(budget)+' ／ 設定上限 '+amount(maximum)+' ／ 未使用 '+amount(maximum-spent)+'</p>'+
+   '<div class="nar-trio-list">'+entries.map(({ticket,odds,yen,payout})=>
+    '<span class="nar-trio-item">'+esc(ticket.join(' → '))+'<small class="nar-price">'+amount(yen)+'</small>'+
+    '<small>'+odds.toFixed(1)+'倍 ／ 想定払戻 '+amount(payout)+'</small></span>').join('')+'</div>'
  };
 }
 function trifectaAllocationHtml(r,tickets){
  if(!tickets.length)return '';
- const weights=trifectaAllocationWeights(r,tickets);
- if(!weights)return '<p class="tiny muted">三連単の資金配分には予想時の確率とオッズの記録が必要です。</p>';
+ const snapshot=r.trifecta_market_at_lock;
+ const quotes=snapshot?.odds||{};
+ const quotedCount=tickets.filter(ticket=>Number.isFinite(quotes[ticket.join('-')])).length;
+ const rawConfidence=r.trifecta_plan?.covered_mass;
+ const confidence=Number.isFinite(rawConfidence)&&rawConfidence>=0&&rawConfidence<=1?rawConfidence:null;
  const defaultBudget=10000;
- const {summary,html}=trifectaAllocationContent(tickets,weights,defaultBudget);
- return '<details class="stake-summary" data-trifecta-allocation="'+esc(JSON.stringify({tickets,weights}))+'">'+
+ const {summary,html}=trifectaAllocationContent(tickets,quotes,defaultBudget,confidence);
+ return '<details class="stake-summary" data-trifecta-allocation="'+esc(JSON.stringify({tickets,quotes,confidence}))+'">'+
   '<summary><b>三連単の資金配分（仮想）</b> · <span data-allocation-summary>'+esc(summary)+'</span></summary>'+
-  '<label class="field">1レースの予算（円）<input type="number" inputmode="numeric" min="0" step="100" value="'+defaultBudget+'" data-allocation-budget></label>'+
-  '<p class="tiny muted">1点100円を割り当て、残額は推定的中確率に比例して配分します。予算が少ない場合は保存順で点数を絞ります。</p>'+
-  '<div class="nar-trio-list" data-allocation-list>'+html+'</div></details>';
+  '<div class="venue-toolbar"><label class="field">1レースの予算上限（円）<input type="number" inputmode="numeric" min="0" step="1" value="'+defaultBudget+'" data-allocation-budget></label>'+
+  '<label class="field">配分予算<select data-allocation-mode>'+
+  (confidence==null?'':'<option value="auto">自信度に応じて調整</option>')+
+  '<option value="manual">設定額を使用</option></select></label></div>'+
+  '<p class="tiny muted">'+(confidence==null?'推定的中確率は未記録。':'全候補のモデル推定的中確率 '+(confidence*100).toFixed(1)+'%。自動の場合は予算上限にこの割合を掛け、100円単位に切り下げます。')+'</p>'+
+  (quotedCount?'<p class="tiny muted">予想時の公式三連単オッズ '+quotedCount+'/'+tickets.length+'点（'+esc(String(snapshot.updated_at||'').replace('T',' ').slice(0,19))+' JST）。保存順に、的中時の想定払戻が購入総額以上になる買い目を組み合わせます。確定オッズで払戻は変わります。</p>':
+    '<p class="tiny muted">予想時の公式三連単オッズは未取得です。</p>')+
+  '<div data-allocation-list>'+html+'</div></details>';
 }
-document.addEventListener('input',event=>{
- const input=event.target;
- if(!input.matches('[data-allocation-budget]'))return;
- const panel=input.closest('[data-trifecta-allocation]');
- const {tickets,weights}=JSON.parse(panel.dataset.trifectaAllocation);
- const {summary,html}=trifectaAllocationContent(tickets,weights,input.valueAsNumber);
+function refreshTrifectaAllocation(event){
+ const target=event.target;
+ if(!target.matches('[data-allocation-budget],[data-allocation-mode]'))return;
+ const panel=target.closest('[data-trifecta-allocation]');
+ const {tickets,quotes,confidence}=JSON.parse(panel.dataset.trifectaAllocation);
+ const budget=panel.querySelector('[data-allocation-budget]').valueAsNumber;
+ const mode=panel.querySelector('[data-allocation-mode]').value;
+ const {summary,html}=trifectaAllocationContent(tickets,quotes,budget,mode==='auto'?confidence:null);
  panel.querySelector('[data-allocation-summary]').textContent=summary;
  panel.querySelector('[data-allocation-list]').innerHTML=html;
-});
+}
+document.addEventListener('input',refreshTrifectaAllocation);
+document.addEventListener('change',refreshTrifectaAllocation);
 function trifectaPlanHtml(r){
  const p=r.trifecta_plan;if(!p)return '';
  const percent=x=>(100*Number(x||0)).toFixed(1)+'%';

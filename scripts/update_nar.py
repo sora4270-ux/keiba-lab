@@ -19,7 +19,7 @@ import zipfile
 from zoneinfo import ZoneInfo
 from odds_encoding import detect_odds_csv_encoding
 from value_strategy_v5 import build_shadow_plan
-from trio_strategy import (diversified_trifecta_tickets, trio_odds_index, ticket_ranking,
+from trio_strategy import (diversified_trifecta_tickets, combination_odds_indexes, ticket_ranking,
                            value_selection, calibration_for_podium, trifecta_plan)
 
 JST = ZoneInfo("Asia/Tokyo")
@@ -322,7 +322,7 @@ def learn_parameters(records, now):
             "form_training_races": n, "market_training_races": len(prelock)}
 
 
-def forecast(race, timestamp, market=None, calibration=None, trio_market=None, market_observed_at=None):
+def forecast(race, timestamp, market=None, calibration=None, trio_market=None, market_observed_at=None, trifecta_market=None):
     deadline = race["start"] - FORECAST_LOCK_BEFORE_START
     if timestamp >= deadline:
         raise ValueError("発走15分前以降のレースの予想は新規作成しません")
@@ -392,6 +392,12 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
         "trifecta_plan": plan,
         "result": None, "settled_at": None, "hits": None
     }
+    if trifecta_market:
+        quotes = {"-".join(map(str, ticket)): trifecta_market[tuple(ticket)]
+                  for ticket in tickets if tuple(ticket) in trifecta_market}
+        if quotes:
+            output["trifecta_market_at_lock"] = {
+                "odds": quotes, "updated_at": timestamp.isoformat(timespec="seconds")}
     # Display verified official quotes even in preliminary forecasts. These
     # are observations, not model guesses, and can be incomplete.
     if isinstance(market, dict) and market:
@@ -551,7 +557,7 @@ def display_market(race, quotes, previous, now):
     return {"horses": rows, "updated_at": now.isoformat(timespec="seconds")}
 
 
-def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index=None):
+def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index=None, trifecta_index=None):
     old = previous.get("races", [])
     if not isinstance(old, list):
         raise ValueError("保存された予想履歴の形式が不正です")
@@ -592,6 +598,7 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
     paybacks = paybacks or {}
     odds_index = odds_index or {}
     trio_index = trio_index or {}
+    trifecta_index = trifecta_index or {}
 
     # Seal a snapshot that was computed before T-15, even if this scheduled
     # workflow was delayed or today's official CSV no longer lists that race.
@@ -622,14 +629,15 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
     result_details_updated = 0
     for race in races:
         ident = race["id"]
-        market = odds_index.get((race["venue"], race["date"].replace("-", ""), race["race_no"]), {})
+        market_key = (race["venue"], race["date"].replace("-", ""), race["race_no"])
+        market = odds_index.get(market_key, {})
         deadline = race["start"] - FORECAST_LOCK_BEFORE_START
         if ident not in entries:
             if now < deadline and not any(h["rank"] in (1, 2, 3) for h in race["horses"]):
                 # Publish a preliminary prediction early, keep updating it
                 # with only data available strictly before the T-15 cutoff.
                 prior = drafts.get(ident)
-                official_trios = trio_index.get((race["venue"], race["date"].replace("-", ""), race["race_no"]), {})
+                official_trios = trio_index.get(market_key, {})
                 prior_market = (prior or {}).get("market_at_lock") or {}
                 prior_quotes = {row["no"]: row for row in prior_market.get("horses", [])}
                 observed = prior_market.get("updated_at")
@@ -637,7 +645,7 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
                              and dt.timedelta(0) <= now - dt.datetime.fromisoformat(observed) <= MAX_FORECAST_ODDS_AGE
                              and market_probabilities(race["horses"], prior_quotes))
                 proposal = forecast(race, now, prior_quotes if use_prior else market, calibration,
-                                    official_trios, observed if use_prior else None)
+                                    official_trios, observed if use_prior else None, trifecta_index.get(market_key))
                 visible = display_market(race, market, prior, now)
                 if visible:
                     proposal["market"] = visible
@@ -967,17 +975,17 @@ def main():
     if not races:
         raise RuntimeError("有効なレースがありません。CSV形式か配信状況を確認してください")
     previous = json.loads(DATA_PATH.read_text(encoding="utf-8")) if DATA_PATH.exists() else {}
-    odds_index, trio_index = {}, {}
+    odds_index, trio_index, trifecta_index = {}, {}, {}
     odds_status = "unavailable"
     try:
         odds_archive = fetch_daily_zip(ODDS_URL, MAX_ODDS_DOWNLOAD)
         odds_index = odds_market_index(odds_archive)
         odds_status = "available" if odds_index else "empty"
-        trio_index = trio_odds_index(odds_archive)
+        trio_index, trifecta_index = combination_odds_indexes(odds_archive)
     except Exception as exc:
         print(f"NAR公式オッズ未取得（予想・結果は続行）: {exc}", file=sys.stderr)
     now = dt.datetime.now(JST)
-    out, added, settled_count, payout_count = update_data(races, now, previous, payback_index(tables), odds_index, trio_index)
+    out, added, settled_count, payout_count = update_data(races, now, previous, payback_index(tables), odds_index, trio_index, trifecta_index)
     out["odds_feed"] = {"date": now.date().isoformat(), "status": odds_status}
     print(f"NAR single-win feed: {odds_status}; {len(odds_index)} races with quotes")
     serialized = json.dumps(out, ensure_ascii=False, separators=(",", ":")) + "\n"
