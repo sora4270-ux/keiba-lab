@@ -41,7 +41,7 @@ async function run() {
     let licensedJraFixture={schema_version:1,status:'not_configured',updated_at:null,races:[],drafts:[],schedule:[],summary:{}};
     await page.route('**/data/auto/jra_predictions.json*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(licensedJraFixture)}));
     await page.goto('http://127.0.0.1:'+server.address().port+'/',{waitUntil:'domcontentloaded'});
-    await page.waitForFunction(()=>document.querySelector('#nar-count')?.textContent?.includes('開催情報'),{timeout:15000});
+    await page.waitForFunction(()=>document.querySelector('#nar-count')?.textContent?.includes('開催情報'),null,{timeout:15000});
     await page.waitForFunction(()=>document.querySelector('#jra-auto-status')?.textContent?.includes('未接続'),null,{timeout:15000});
     assert.ok((await page.locator('#jra-auto-status').innerText()).includes('未接続'),'JRA data remains clearly unconfigured without a license');
     assert.equal(await page.locator('.quick-link').count(),4,'home shortcuts');
@@ -69,9 +69,14 @@ async function run() {
     narRace.tickets=adaptive.tickets.map(t=>[t.a+1,t.b+1,t.c+1]);
     narRace.trifecta_plan=adaptive.plan;
     narRace.top5=narRace.top3;
+    narRace.trifecta_market_at_lock={updated_at:narRace.predicted_at,odds:{'1-2-3':4}};
     mock.drafts=[narRace];
     await page.locator('#nar-refresh').click();
     await page.waitForFunction(()=>document.querySelector('#nar-odds-status')?.textContent?.includes('取得 1/1R'),null,{timeout:10000});
+    const allocation=page.locator('#nar-races [data-trifecta-allocation]');
+    await allocation.locator('summary').click();
+    assert.match(await allocation.locator('[data-allocation-summary]').innerText(),/見送り.*1\/6点/);
+    assert.ok(await allocation.getByText('全候補の公式オッズが揃ったレースで配分を計算します。').isVisible());
     const budget=page.locator('#nar-races [data-budget-tickets]');
     await budget.locator('summary').click();
     const yen=budget.locator('[data-budget-amount]');
@@ -100,7 +105,10 @@ async function run() {
     assert.ok(!(await page.locator('#nar-races').innerText()).includes('園田 5R'),'race-number filter');
 
     mock.drafts=[];
-    mock.races=[{...narRace,status:'final',result:[1,2,3],trifecta_diversified_tickets:[...narRace.tickets].reverse(),payouts:{trio:120,trifecta:650}}];
+    const completeQuotes=Object.fromEntries(narRace.tickets.map((ticket,i)=>[ticket.join('-'),i===0?4:20]));
+    mock.races=[{...narRace,status:'final',result:[1,2,3],
+      trifecta_market_at_lock:{updated_at:narRace.predicted_at,odds:completeQuotes},
+      trifecta_diversified_tickets:[...narRace.tickets].reverse(),payouts:{trio:120,trifecta:650}}];
     await page.locator('#nar-refresh').click();
     await page.waitForFunction(()=>document.querySelector('#nar-review')?.textContent?.includes('的中 1R'));
     assert.ok((await page.locator('#nar-review').innerText()).includes('購入 600円'),'review derives spending from frozen count');
@@ -113,6 +121,8 @@ async function run() {
     await review.getByText('1レースの予算別成績（1R）').click();
     assert.ok(await review.getByRole('row').filter({hasText:'500円'}).isVisible(),'budget comparison opens on mobile');
     assert.match(await review.innerText(), /三連単の同点数比較/);
+    await review.getByText('三連単の資金配分を比較（1/1R）',{exact:true}).click();
+    assert.match(await review.innerText(), /均等配分 \d+\.\d%.*\nオッズに応じた配分 \d+\.\d%/);
     await page.locator('[data-reset-scope="nar"]').click();
     assert.equal(await page.locator('#nar-view-number').inputValue(),'all','reset race-number filter');
     assert.equal(await page.locator('#nar-view-date').inputValue(),'today','reset race date');
