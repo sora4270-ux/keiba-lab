@@ -15,7 +15,8 @@ permissions:
 
 jobs:
   mobile-ui:
-    runs-on: ubuntu-latest
+    # Playwright 1.56 supports Ubuntu 24.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
       - name: Check out project
@@ -27,6 +28,6 @@ jobs:
       - name: Install headless Chromium test tools
         run: |
           npm install --no-save --package-lock=false playwright@1.56.1
-          npx playwright install chromium
+          npx playwright install --with-deps chromium
       - name: Test smartphone navigation, filters and view switches
         run: node tests/mobile-ui-smoke.cjs
