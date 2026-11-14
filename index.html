@@ -1041,19 +1041,16 @@ document.addEventListener('input',refreshBudgetTickets);
 document.addEventListener('change',refreshBudgetTickets);
 function trifectaRecoveryPlan(tickets,quotes,budget){
  const units=Math.floor(budget/100);
- const quoted=tickets.flatMap(ticket=>{
-  const odds=quotes[ticket.join('-')];
-  return Number.isFinite(odds)&&odds>=1?[{ticket,odds}]:[];
- });
- if(units<=0)return [];
+ if(units<=0||trifectaQuotedCount(tickets,quotes)!==tickets.length)return [];
  // Work in tenths of the official odds and in 100-yen stake units.
  const entries=[];
  let required=0;
- for(const entry of quoted){
-  const oddsTenths=Math.round(entry.odds*10);
+ for(const ticket of tickets){
+  const odds=quotes[narTicketKey(ticket,false)];
+  const oddsTenths=Math.round(odds*10);
   const stake=Math.ceil(units*10/oddsTenths);
   if(required+stake>units)continue;
-  entries.push({...entry,oddsTenths,stake});
+  entries.push({ticket,odds,oddsTenths,stake});
   required+=stake;
  }
  if(!entries.length)return [];
@@ -1071,20 +1068,34 @@ function trifectaRecoveryPlan(tickets,quotes,budget){
   ticket,odds,yen:stake*100,payout:stake*oddsTenths*10
  }));
 }
+function trifectaQuotedCount(tickets,quotes){
+ return tickets.filter(ticket=>{
+  const odds=quotes[narTicketKey(ticket,false)];
+  return Number.isFinite(odds)&&odds>=1;
+ }).length;
+}
+function trifectaAllocationBudget(maximum,confidence){
+ return Math.floor(maximum*(confidence??1)/100)*100;
+}
 function trifectaAllocationContent(tickets,quotes,maximum,confidence){
  if(!Number.isSafeInteger(maximum)||maximum<0||maximum>Math.floor(Number.MAX_SAFE_INTEGER/10000)){
   return {summary:'予算には有効な金額を入力してください。',html:''};
  }
- const budget=confidence==null?maximum:Math.floor(maximum*confidence/100)*100;
+ const budget=trifectaAllocationBudget(maximum,confidence);
+ const quoted=trifectaQuotedCount(tickets,quotes);
+ if(quoted<tickets.length)return {
+  summary:'見送り ／ 予想時の公式三連単オッズ '+quoted+'/'+tickets.length+'点',
+  html:'<p class="tiny muted">全候補の公式オッズが揃ったレースで配分を計算します。</p>'
+ };
  const entries=trifectaRecoveryPlan(tickets,quotes,budget);
  if(!entries.length)return {
   summary:'設定上限 '+amount(maximum)+' ／ 配分予算 '+amount(budget)+' ／ 見送り',
-  html:'<p class="tiny muted">100円以上の配分予算と対象の三連単オッズが揃うと表示します。</p>'
+  html:'<p class="tiny muted">配分予算が100円未満か、的中時の想定払戻で購入総額を回収できる買い目がありません。</p>'
  };
  const spent=entries.reduce((sum,entry)=>sum+entry.yen,0);
  const lowestReturn=Math.min(...entries.map(entry=>entry.payout));
  return {
-  summary:entries.length+'点 ／ 仮想購入 '+amount(spent)+' ／ 最低想定払戻 '+amount(lowestReturn),
+  summary:entries.length+'点 ／ 仮想購入 '+amount(spent)+' ／ 的中時の最低想定払戻 '+amount(lowestReturn),
   html:'<p class="tiny muted">配分予算 '+amount(budget)+' ／ 設定上限 '+amount(maximum)+' ／ 未使用 '+amount(maximum-spent)+'</p>'+
    '<div class="nar-trio-list">'+entries.map(({ticket,odds,yen,payout})=>
     '<span class="nar-trio-item">'+esc(ticket.join(' → '))+'<small class="nar-price">'+amount(yen)+'</small>'+
@@ -1095,7 +1106,7 @@ function trifectaAllocationHtml(r,tickets){
  if(!tickets.length)return '';
  const snapshot=r.trifecta_market_at_lock;
  const quotes=snapshot?.odds||{};
- const quotedCount=tickets.filter(ticket=>Number.isFinite(quotes[ticket.join('-')])).length;
+ const quotedCount=trifectaQuotedCount(tickets,quotes);
  const rawConfidence=r.trifecta_plan?.covered_mass;
  const confidence=Number.isFinite(rawConfidence)&&rawConfidence>=0&&rawConfidence<=1?rawConfidence:null;
  const defaultBudget=10000;
@@ -1107,8 +1118,7 @@ function trifectaAllocationHtml(r,tickets){
   (confidence==null?'':'<option value="auto">自信度に応じて調整</option>')+
   '<option value="manual">設定額を使用</option></select></label></div>'+
   '<p class="tiny muted">'+(confidence==null?'推定的中確率は未記録。':'全候補のモデル推定的中確率 '+(confidence*100).toFixed(1)+'%。自動の場合は予算上限にこの割合を掛け、100円単位に切り下げます。')+'</p>'+
-  (quotedCount?'<p class="tiny muted">予想時の公式三連単オッズ '+quotedCount+'/'+tickets.length+'点（'+esc(String(snapshot.updated_at||'').replace('T',' ').slice(0,19))+' JST）。保存順に、的中時の想定払戻が購入総額以上になる買い目を組み合わせます。確定オッズで払戻は変わります。</p>':
-    '<p class="tiny muted">予想時の公式三連単オッズは未取得です。</p>')+
+  (quotedCount===tickets.length?'<p class="tiny muted">予想時の公式三連単オッズ '+quotedCount+'/'+tickets.length+'点（'+esc(String(snapshot.updated_at||'').replace('T',' ').slice(0,19))+' JST）。保存順に、的中時の想定払戻が購入総額以上になる買い目を組み合わせます。確定オッズで払戻は変わります。</p>':'')+
   '<div data-allocation-list>'+html+'</div></details>';
 }
 function refreshTrifectaAllocation(event){
@@ -1259,6 +1269,38 @@ function diversifiedTrifectaReviewHtml(records){
   '<p class="tiny">両方式の買い目と確定払戻が揃ったレースを比較。各方式の保存順で1点100円、予算内に収まる点数を集計します。</p>'+
   '<table class="intel-all-table"><thead><tr><th scope="col">予算上限</th><th scope="col">従来の確率順</th><th scope="col">3頭の組を広げる方式</th></tr></thead><tbody>'+rows.join('')+'</tbody></table></details>';
 }
+function trifectaAllocationReview(records){
+ const equal=[],recovery=[];
+ const maximum=10000;
+ for(const r of records){
+  const snapshot=r.trifecta_market_at_lock;
+  const observed=Date.parse(snapshot?.updated_at);
+  const locked=Date.parse(r.locked_at||r.predicted_at),cutoff=Date.parse(r.cutoff_at);
+  const confidence=r.trifecta_plan?.covered_mass;
+  if(!(observed<=locked&&observed<cutoff&&locked-observed<=15*60000))continue;
+  if(!Number.isFinite(confidence)||confidence<0||confidence>1)continue;
+  const quotes=snapshot.odds||{},tickets=r.tickets||[];
+  const budget=trifectaAllocationBudget(maximum,confidence);
+  const plan=trifectaRecoveryPlan(tickets,quotes,budget);
+  if(!plan.length)continue;
+  const selected={...r,tickets:plan.map(entry=>entry.ticket)};
+  const units=budget/100,base=Math.floor(units/plan.length),extra=units%plan.length;
+  const equalBet=narReferenceWager(selected,'trifecta',plan.map((_,i)=>100*(base+Number(i<extra))));
+  const recoveryBet=narReferenceWager(selected,'trifecta',plan.map(entry=>entry.yen));
+  if(!equalBet||!recoveryBet)continue;
+  equal.push(equalBet);
+  recovery.push(recoveryBet);
+ }
+ return {equal:roiStatistics(equal),recovery:roiStatistics(recovery)};
+}
+function trifectaAllocationReviewHtml(records){
+ const {equal,recovery}=trifectaAllocationReview(records);
+ if(!equal.n)return '';
+ const label=stat=>roiLabel(stat)+' ／ 払戻 '+amount(stat.returned)+' ／ 収支 '+roiSigned(stat.profit);
+ return '<details><summary>三連単の資金配分を比較（'+equal.n+'/'+records.length+'R）</summary>'+
+  '<p class="tiny">1レースの上限1万円にモデル推定的中確率を掛けた予算を使用。締切前の全候補の三連単オッズと確定払戻が揃ったレースで、同じ買い目・同じ購入額を比較します。100円単位の端数は均等配分では保存順に加えます。取消・除外による返還は集計外です。</p>'+
+  '<p>仮想購入額（各方式） '+amount(equal.spent)+'<br>均等配分 '+label(equal)+'<br>オッズに応じた配分 '+label(recovery)+'</p></details>';
+}
 function dailyReviewHtml(records){
  const rs=records.filter(r=>Array.isArray(r.result)&&r.result.length===3);
  if(!rs.length)return '<b>選択条件の反省</b>：結果確定後に集計します。';
@@ -1289,10 +1331,10 @@ function dailyReviewHtml(records){
  const missedRanks=rs.filter(r=>resultReview(r)==='候補5頭から漏れ').map(rankedFinish).filter(Number.isFinite);
  const coverageHtml=missedRanks.length?'<br>候補漏れの内訳（3着以内の予想順位を確認できた '+missedRanks.length+'R）：6位までで全頭 '+missedRanks.filter(rank=>rank<=6).length+'R ／ 7位までで全頭 '+missedRanks.filter(rank=>rank<=7).length+'R。候補範囲の比較で、買い目の的中数とは別です。':'';
  const modelCounts={};for(const r of rs){const model=String(r.model||'旧モデル');modelCounts[model]=(modelCounts[model]||0)+1;}
- return '<b>選択条件の反省：'+rs.length+'R</b><br>三連単 的中 '+(counts['的中']||0)+'R ／ 候補5頭から漏れ '+(counts['候補5頭から漏れ']||0)+'R ／ 候補内の着順違い '+(counts['候補内の着順違い']||0)+'R'+(counts['旧方式・分類対象外']?' ／ 旧方式 '+counts['旧方式・分類対象外']+'R':'')+['三連単の買い目にいない馬あり','3頭は登場・同じ組なし','3頭組あり・着順違い'].filter(k=>counts[k]).map(k=>' ／ '+k+' '+counts[k]+'R').join('')+coverageHtml+boxHtml+'<br>参考成績（1点100円の仮想購入、取消・除外の返還は集計外）：<br>'+returns+'<br>予想時の全頭単勝オッズ不足 '+missing+'R ／ 時刻不明・古いオッズ '+stale+'R ／ 候補網羅度40%未満 '+low+'R'+(cohortHtml?'<br>'+cohortHtml:'')+'<br><span class="tiny">モデル別件数：'+Object.entries(modelCounts).map(([m,n])=>esc(m)+' '+n+'R').join(' ／ ')+'</span><br>候補漏れは点数追加だけでは解消しません。的中率と回収率を分けて評価し、払戻未取得は収支計算から除外します。注意判定は従来からの40%基準と予想時のオッズのみを使用し、結果から買い目を選び直しません。'+budgetReviewHtml(rs)+trioFullFieldReviewHtml(rs)+trioBudgetComparisonHtml(rs)+diversifiedTrifectaReviewHtml(rs);
+ return '<b>選択条件の反省：'+rs.length+'R</b><br>三連単 的中 '+(counts['的中']||0)+'R ／ 候補5頭から漏れ '+(counts['候補5頭から漏れ']||0)+'R ／ 候補内の着順違い '+(counts['候補内の着順違い']||0)+'R'+(counts['旧方式・分類対象外']?' ／ 旧方式 '+counts['旧方式・分類対象外']+'R':'')+['三連単の買い目にいない馬あり','3頭は登場・同じ組なし','3頭組あり・着順違い'].filter(k=>counts[k]).map(k=>' ／ '+k+' '+counts[k]+'R').join('')+coverageHtml+boxHtml+'<br>参考成績（1点100円の仮想購入、取消・除外の返還は集計外）：<br>'+returns+'<br>予想時の全頭単勝オッズ不足 '+missing+'R ／ 時刻不明・古いオッズ '+stale+'R ／ 候補網羅度40%未満 '+low+'R'+(cohortHtml?'<br>'+cohortHtml:'')+'<br><span class="tiny">モデル別件数：'+Object.entries(modelCounts).map(([m,n])=>esc(m)+' '+n+'R').join(' ／ ')+'</span><br>候補漏れは点数追加だけでは解消しません。的中率と回収率を分けて評価し、払戻未取得は収支計算から除外します。注意判定は従来からの40%基準と予想時のオッズのみを使用し、結果から買い目を選び直しません。'+budgetReviewHtml(rs)+trioFullFieldReviewHtml(rs)+trioBudgetComparisonHtml(rs)+diversifiedTrifectaReviewHtml(rs)+trifectaAllocationReviewHtml(rs);
 }
 function narPct(v){return typeof v==='number'&&Number.isFinite(v)?v.toFixed(1)+'%':'—';}
-function narReferenceWager(r,key){
+function narReferenceWager(r,key,stakes){
  if(!Array.isArray(r?.result)||r.result.length!==3)return null;
  const payoutKey=key==="trio_main"||key==="trio_value"||key==="trio_v5"?"trio":key;
  const top=Array.isArray(r.top3)?r.top3.map(p=>Number(p.no)):[];
@@ -1309,8 +1351,9 @@ function narReferenceWager(r,key){
   ?r.payouts_by_ticket?.[payoutKey]||{}
   :{[winners[0]]:r.payouts?.[payoutKey]};
  if(winners.some(ticket=>!Number.isInteger(amounts[ticket])||amounts[ticket]<0))return null;
- const purchased=new Set(tickets.map(t=>narTicketKey(t,unordered)));
- const spent=tickets.length*100,returned=winners.reduce((sum,t)=>sum+(purchased.has(t)?amounts[t]:0),0);
+ const purchased=new Map(tickets.map((t,i)=>[narTicketKey(t,unordered),stakes?stakes[i]/100:1]));
+ const spent=stakes?stakes.reduce((sum,yen)=>sum+yen,0):tickets.length*100;
+ const returned=winners.reduce((sum,t)=>sum+(purchased.get(t)||0)*amounts[t],0);
  return {spent,returned,profit:returned-spent};
 }
 function narPeriodRaces(records,period){
