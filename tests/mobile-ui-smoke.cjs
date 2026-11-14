@@ -67,7 +67,8 @@ async function run() {
     const selectTickets=new Function(source.slice(source.indexOf('function predictionTickets('),source.indexOf('const pct='))+';return predictionTickets;')();
     const adaptive=selectTickets([{no:1},{no:2},{no:3}],[.5,.3,.2],[0,1,2]);
     narRace.tickets=adaptive.tickets.map(t=>[t.a+1,t.b+1,t.c+1]);
-    narRace.trifecta_plan=adaptive.plan;
+    // The NAR exporter rounds the saved probability to six decimal places.
+    narRace.trifecta_plan={...adaptive.plan,covered_mass:Number(adaptive.plan.covered_mass.toFixed(6))};
     narRace.top5=narRace.top3;
     narRace.trifecta_market_at_lock={updated_at:narRace.predicted_at,odds:{'1-2-3':4}};
     mock.drafts=[narRace];
