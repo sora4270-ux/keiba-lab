@@ -13,7 +13,7 @@ const source=[
   snippet('function resultMatches(rec){','function optionalPayout(v,label){'),
   snippet('function payoutValue(r,key){','function recordResult(rec,top,payouts={})'),
   snippet('function savedTrioList(r){','function trioTokens(tickets){'),
-  snippet('function narReferenceWager(r,key){','function narPeriodRaces(records,period){')
+  snippet('function narReferenceWager(','function narPeriodRaces(records,period){')
 ].join('\n')+'\n({resultMatches,payoutValue,referenceWager,roiStatistics,roiLabel,completeBasket,savedTrioList,narReferenceWager})';
 const api=vm.runInNewContext(source,{console});
 
