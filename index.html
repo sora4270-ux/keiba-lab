@@ -257,6 +257,16 @@
   <div class="hrow"><h2>🏆 中央競馬（JRA）予想</h2><span class="pill amber">発走15分前に予想固定</span></div>
   <p class="intro" style="margin-top:9px">東京・中山・京都・阪神などJRA10競馬場に対応。入力された出馬表から<b>三連複・三連単の買い目</b>を発走前に保存し、確定結果との的中率を集計します。</p>
   <div class="live-warning">JRA公式の出馬表を自動取得する接続は未設定です。JRA-VAN Data Lab.はWindows向けで、通常契約のデータをWebサイトへ再配信できません。<b>自分で入力した情報または公開利用が許可されたデータ</b>のみ取り込みます。オッズのみではAI学習予測でなく市場支持率による推定です。</div>
+  <section class="jra-card" id="jra-netkeiba" aria-labelledby="jra-netkeiba-title">
+   <div class="hrow">
+    <h3 id="jra-netkeiba-title" style="margin:0">netkeibaで中央競馬を見る</h3>
+    <div class="field"><label for="jra-netkeiba-date">開催日（任意）</label><input id="jra-netkeiba-date" type="date"></div>
+   </div>
+   <div class="source-links">
+    <a href="https://race.netkeiba.com/top/" data-netkeiba-link target="_blank" rel="noopener noreferrer">出馬表・オッズ ↗</a>
+    <a href="https://race.netkeiba.com/top/payback_list.html" data-netkeiba-link target="_blank" rel="noopener noreferrer">結果・払戻 ↗</a>
+   </div>
+  </section>
   <section class="jra-card" id="jra-x-reference" aria-labelledby="jra-x-title">
    <h3 id="jra-x-title" style="margin:0">Xの中央競馬予想</h3>
    <p class="tiny muted">公開投稿を参考にできます。表示した投稿はKEIBA LABの買い目・成績とは別です。</p>
@@ -1764,6 +1774,15 @@ function loadJraXWidgets(){
  }
  return jraXWidgets;
 }
+$('jra-netkeiba-date').addEventListener('change',event=>{
+ const date=event.target.value;
+ for(const link of $('jra-netkeiba').querySelectorAll('[data-netkeiba-link]')){
+  const url=new URL(link.href);
+  if(/^\d{4}-\d{2}-\d{2}$/.test(date))url.searchParams.set('kaisai_date',date.replaceAll('-',''));
+  else url.searchParams.delete('kaisai_date');
+  link.href=url.href;
+ }
+});
 $('jra-x-date').value=jstRaceToday();
 $('jra-x-search').addEventListener('submit',event=>{
  const name=$('jra-x-race');

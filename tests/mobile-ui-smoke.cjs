@@ -165,6 +165,16 @@ async function run() {
     assert.equal(await page.locator('#jra-view-number').inputValue(),'all','JRA reset filters');
 
     const xSearch=page.locator('#jra-x-search');
+    const netkeiba=page.locator('#jra-netkeiba');
+    const cards=netkeiba.getByRole('link',{name:'出馬表・オッズ ↗'});
+    const paybacks=netkeiba.getByRole('link',{name:'結果・払戻 ↗'});
+    const netkeibaDate=netkeiba.getByLabel('開催日（任意）');
+    assert.equal(await cards.getAttribute('href'),'https://race.netkeiba.com/top/');
+    await netkeibaDate.fill('2026-11-15');
+    assert.equal(await cards.getAttribute('href'),'https://race.netkeiba.com/top/?kaisai_date=20261115');
+    assert.equal(await paybacks.getAttribute('href'),'https://race.netkeiba.com/top/payback_list.html?kaisai_date=20261115');
+    await netkeibaDate.fill('');
+    assert.equal(await paybacks.getAttribute('href'),'https://race.netkeiba.com/top/payback_list.html');
     await xSearch.evaluate(form=>form.addEventListener('submit',event=>event.preventDefault(),{once:true}));
     await page.locator('#jra-x-race').fill('京都11R');
     await page.locator('#jra-x-date').fill('2026-11-15');
