@@ -85,6 +85,8 @@ async function run() {
     assert.equal(await mainBets.nth(1).locator('.bet-number small').count(),0);
     const allocation=page.locator('#nar-races [data-trifecta-allocation]');
     await allocation.locator('summary').click();
+    assert.match(await allocation.locator('[data-allocation-summary]').innerText(),/自動配分は見送り.*0円/);
+    await allocation.locator('[data-allocation-mode]').selectOption('manual');
     assert.match(await allocation.locator('[data-allocation-summary]').innerText(),/見送り.*1\/6点/);
     assert.ok(await allocation.getByText('全候補の公式オッズが揃ったレースで配分を計算します。').isVisible());
     const budget=page.locator('#nar-races [data-budget-tickets]');

@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs');
 const html=fs.readFileSync('index.html','utf8');
 const slice=(a,b)=>html.slice(html.indexOf(a),html.indexOf(b,html.indexOf(a)));
 const source=slice('function savedTrioList(r){','function refreshBudgetTickets(')+slice('function trifectaRecoveryPlan(', 'function trifectaAllocationHtml(')+slice('function resultReview(r){','function narPct(v){')+slice('function narReferenceWager(','function narPeriodRaces(records,period){')+slice('function roiStatistics(bets){','function recordResult(rec,top,payouts={})');
-const api=new Function('esc','amount',source+';return {forecastQuality,forecastQualityHtml,reviewMetrics,dailyReviewHtml,budgetTicketsHtml,trifectaAllocationReview,trifectaAllocationContent,narReferenceWager};')(x=>String(x),x=>String(x)+'円');
+const api=new Function('esc','amount',source+';return {forecastQuality,forecastQualityHtml,reviewMetrics,dailyReviewHtml,budgetTicketsHtml,trifectaAllocationReview,trifectaAutoEvidence,trifectaAllocationContent,narReferenceWager};')(x=>String(x),x=>String(x)+'円');
 const r={ranking:[1,2,3].map(no=>({no})),top5:[1,2,3].map(no=>({no})),top3:[1,2,3].map(no=>({no})),tickets:[[1,2,3],[1,3,2]],trio_tickets:[[1,2,3]],result:[1,2,3],payouts:{trio:50,trifecta:100},predicted_at:'2026-11-08T12:00:00+09:00',cutoff_at:'2026-11-08T12:05:00+09:00',market_at_lock:{updated_at:'2026-11-08T11:59:00+09:00',horses:[1,2,3].map(no=>({no,odds:3}))},trifecta_plan:{candidate_mass:.5}};
 assert.equal(api.forecastQuality(r).cautious,false);
 assert.equal(api.forecastQuality({...r,trifecta_plan:{candidate_mass:.399}}).lowCoverage,true);
@@ -51,6 +51,9 @@ const review=api.dailyReviewHtml([{...r,trio_tickets:box,trio_full_field_tickets
 assert.match(review,/上位5頭BOX 0\/1R ／ 回収率 0\.0% ／ 全出走馬から選ぶ10点 1\/1R ／ 回収率 5\.0%/);
 assert.match(review,/三連複の予算別比較（1R）/);
 assert.match(review,/300円<\/th><td>0\/1R ／ 0\.0%.*?<td>1\/1R ／ 16\.7%/);
+assert.match(api.dailyReviewHtml([{...r,trio_tickets:field,trio_box_tickets:box}]),
+ /上位5頭BOX 0\/1R ／ 回収率 0\.0% ／ 全出走馬から選ぶ10点 1\/1R ／ 回収率 5\.0%/);
+assert.match(api.budgetTicketsHtml(field,r.tickets,r.ranking,[],[],box),/value="boxTrio"/);
 assert.match(api.budgetTicketsHtml(box,r.tickets,r.ranking,field),/value="fieldTrio"/);
 assert.doesNotMatch(api.budgetTicketsHtml(box,r.tickets,r.ranking),/value="fieldTrio"/);
 assert.doesNotMatch(api.dailyReviewHtml([{...r,payouts:{},trio_tickets:box,trio_full_field_tickets:field}]),/三連複の予算別比較/);
@@ -81,6 +84,12 @@ assert.match(api.trifectaAllocationContent(r.tickets,partial.trifecta_market_at_
 assert.match(api.trifectaAllocationContent(r.tickets,allocationInput.trifecta_market_at_lock.odds,1099,null).html,/配分予算 1000円/);
 const late={...allocationInput,trifecta_market_at_lock:{...allocationInput.trifecta_market_at_lock,updated_at:r.cutoff_at}};
 assert.equal(api.trifectaAllocationReview([late]).recovery.n,0);
+const prior={...allocationInput,date:'2026-11-08',settled_at:'2026-11-08T12:30:00+09:00',
+ payouts:{trifecta:300}};
+assert.equal(api.trifectaAutoEvidence(Array(29).fill(prior),'2026-11-09').passed,false);
+assert.equal(api.trifectaAutoEvidence(Array(30).fill(prior),'2026-11-09').passed,true);
+assert.equal(api.trifectaAutoEvidence(Array(61).fill(prior),'2026-11-09').n,60);
+assert.equal(api.trifectaAutoEvidence(Array(30).fill(prior),'2026-11-08').n,0);
 const deadHeat={...r,result_alternatives:r.tickets,payouts_by_ticket:{trifecta:{'1-2-3':140,'1-3-2':250}}};
 assert.equal(api.narReferenceWager(deadHeat,'trifecta',[300,200]).returned,920);
 const nov14=data.races.filter(r=>r.date==='2026-11-14'&&r.result);
@@ -89,4 +98,13 @@ if(nov14.length===34){
  assert.equal(compare.equal.n,33);
  assert.equal(compare.equal.spent,compare.recovery.spent);
  console.log('Nov 14 equal/allocation:',compare);
+}
+const nov15=data.races.filter(r=>r.date==='2026-11-15'&&r.result);
+if(nov15.length===56){
+ assert.equal(api.reviewMetrics(nov15,'trio').hits,21);
+ assert.equal(api.reviewMetrics(nov15,'trifecta').stats.returned,51020);
+ const evidence=api.trifectaAutoEvidence(data.races,'2026-11-16');
+ assert.equal(evidence.n,60);
+ assert.equal(evidence.passed,false);
+ console.log('Nov 16 allocation evidence:',evidence);
 }

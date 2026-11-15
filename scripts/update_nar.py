@@ -348,7 +348,10 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
                 "podium_probability": round(podium[horses[i]["no"]], 6),
                 "form_probability": round(original_form[i], 6)} for i in ranked]
     five = sorted(row["no"] for row in ranking[:5])
-    trio_tickets = [list(combo) for combo in itertools.combinations(five, 3)]
+    trio_box = [list(combo) for combo in itertools.combinations(five, 3)]
+    # The verified win market is needed to rank combinations outside the top five.
+    field_trios = ([list(ticket) for ticket, _ in podium_trios[:len(trio_box)]]
+                   if market_p and len(podium_trios) > len(trio_box) else [])
     plan = trifecta_plan(five, ordered)
     tickets = plan.pop("tickets")
     if market_p:
@@ -379,19 +382,15 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
                   "form_training_races", "market_training_races", "place_market_weight",
                   "show_market_weight", "podium_training_races")},
         "top3": ranking[:3], "top5": ranking[:5], "ranking": ranking,
-        "tickets": tickets, "trio_tickets": trio_tickets,
+        "tickets": tickets, "trio_tickets": field_trios or trio_box,
         "trifecta_diversified_tickets": diversified_trifecta_tickets(ordered, len(tickets)) if market_p else [],
-        # Compare the same number of tickets with a broader field when the
-        # full pre-race win market is available.
-        "trio_full_field_tickets": (
-            [list(ticket) for ticket, _ in podium_trios[:len(trio_tickets)]]
-            if market_p and len(podium_trios) > len(trio_tickets) else []
-        ),
         "trio_value": value,
         "strategy_v5": shadow,
         "trifecta_plan": plan,
         "result": None, "settled_at": None, "hits": None
     }
+    if field_trios:
+        output["trio_box_tickets"] = trio_box
     if trifecta_market:
         quotes = {"-".join(map(str, ticket)): trifecta_market[tuple(ticket)]
                   for ticket in tickets if tuple(ticket) in trifecta_market}
@@ -928,6 +927,7 @@ def selftest():
     assert after["market"]["horses"][1]["observed_at"] == mixed["updated_at"]
     assert after["market_at_lock"] == before["market_at_lock"]
     assert after["tickets"] == before["tickets"]
+    assert after["trio_tickets"] == before["trio_tickets"]
     assert after["trifecta_diversified_tickets"] == before["trifecta_diversified_tickets"]
     assert after["strategy_v5"] == before["strategy_v5"]  # settled results never change pre-race shadow
     trained = forecast(races[0], dt.datetime(2026, 11, 2, 15, 23, tzinfo=JST),
@@ -935,11 +935,11 @@ def selftest():
                                  "form_training_races": 33, "market_training_races": 0})
     assert trained["top3"][0]["no"] == 1
     assert trained["trifecta_plan"]["policy"] == "adaptive_full_field_v1"
-    field_trios = trained["trio_full_field_tickets"]
-    assert len(field_trios) == len(trained["trio_tickets"]) == 10
+    field_trios = trained["trio_tickets"]
+    assert len(field_trios) == len(trained["trio_box_tickets"]) == 10
     assert len({tuple(ticket) for ticket in field_trios}) == 10
     assert all(len(set(ticket)) == 3 and ticket == sorted(ticket) for ticket in field_trios)
-    assert pre["trio_full_field_tickets"] == []
+    assert "trio_box_tickets" not in pre
     assert len(trained["tickets"]) == trained["trifecta_plan"]["count"]
     alternatives = trained["trifecta_diversified_tickets"]
     assert len(alternatives) == len(trained["tickets"])
