@@ -54,6 +54,12 @@ assert.match(review,/300円<\/th><td>0\/1R ／ 0\.0%.*?<td>1\/1R ／ 16\.7%/);
 assert.match(api.dailyReviewHtml([{...r,trio_tickets:field,trio_box_tickets:box}]),
  /上位5頭BOX 0\/1R ／ 回収率 0\.0% ／ 全出走馬から選ぶ10点 1\/1R ／ 回収率 5\.0%/);
 assert.match(api.budgetTicketsHtml(field,r.tickets,r.ranking,[],[],box),/value="boxTrio"/);
+const recent={status:'ready',tickets:field,market_tickets:box};
+const recentReview=api.dailyReviewHtml([{...r,trio_tickets:box,recent_trio:recent}]);
+assert.match(recentReview,/直近3走を用いた三連複の比較（1R）/);
+assert.match(recentReview,/近走データ追加<\/th><td>1\/1R<\/td><td>5\.0%/);
+assert.doesNotMatch(api.dailyReviewHtml([{...r,trio_tickets:box,recent_trio:{...recent,status:'waiting_odds'}}]),
+ /直近3走を用いた三連複の比較/);
 assert.match(api.budgetTicketsHtml(box,r.tickets,r.ranking,field),/value="fieldTrio"/);
 assert.doesNotMatch(api.budgetTicketsHtml(box,r.tickets,r.ranking),/value="fieldTrio"/);
 assert.doesNotMatch(api.dailyReviewHtml([{...r,payouts:{},trio_tickets:box,trio_full_field_tickets:field}]),/三連複の予算別比較/);

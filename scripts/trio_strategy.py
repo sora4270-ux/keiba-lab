@@ -112,12 +112,12 @@ def mix_market(form, market, weight, power):
     return [(1-weight)*f + weight*m for f, m in zip(form, adjusted)]
 
 
-def ticket_ranking(horses, win, form, market, config=None):
+def ticket_ranking(horses, win, form, market, config=None, *, stages=None):
     """Rank 3-way tickets using distinct conditional second/third weights."""
     n = len(horses)
     if n < 3 or len(win) != n or len(form) != n:
         raise ValueError("Incomplete race probability input")
-    second, third = position_weights(form, market, config)
+    second, third = stages if stages is not None else position_weights(form, market, config)
     ordered, trios = [], {}
     for i, j, k in itertools.permutations(range(n), 3):
         prob = win[i] * second[j] / max(1e-12, 1-second[i])

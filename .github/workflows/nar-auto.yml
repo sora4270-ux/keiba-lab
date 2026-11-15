@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/update_nar.py'
+      - 'scripts/recent_form.py'
       - 'scripts/odds_encoding.py'
       - 'scripts/trio_strategy.py'
       - 'scripts/value_strategy_v5.py'
@@ -89,6 +90,14 @@ jobs:
           node tests/forecast-lock.test.cjs
           node tests/view-switch.test.cjs
           python scripts/trio_strategy.py --backtest
+      - name: Recent form archive date
+        id: recent-form-date
+        run: |
+          echo "snapshot=$(TZ=Asia/Tokyo date -d '3 hours ago' +%F)-$(TZ=Asia/Tokyo date +%F)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/keiba-form-v1
+          key: keiba-form-v1-${{ steps.recent-form-date.outputs.snapshot }}
       - name: Refresh and save NAR forecasts and results
         shell: bash
         env:

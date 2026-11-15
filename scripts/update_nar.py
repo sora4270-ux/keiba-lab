@@ -14,10 +14,13 @@ import os
 from pathlib import Path
 import re
 import sys
+import tempfile
+from urllib.parse import urlencode
 import urllib.request
 import zipfile
 from zoneinfo import ZoneInfo
 from odds_encoding import detect_odds_csv_encoding
+from recent_form import LOOKBACK_DAYS, features_on, history_runs, horse_key, recent_adjustment
 from value_strategy_v5 import build_shadow_plan
 from trio_strategy import (diversified_trifecta_tickets, combination_odds_indexes, ticket_ranking,
                            value_selection, calibration_for_podium, position_weights, trifecta_plan)
@@ -156,6 +159,7 @@ def parse_races(tables):
         horse = {
             "no": no,
             "name": name[:60],
+            "history_key": horse_key(fields),
             "overall": stats(cell(row, fields, "全成績", idx=24)),
             "venue": stats(cell(row, fields, "当競馬場成績", idx=27)),
             "distance": stats(cell(row, fields, "うち当距離成績", idx=28)),
@@ -403,6 +407,24 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
         output["trio_box_tickets"] = trio_box
     if previous_trios:
         output["trio_uncalibrated_tickets"] = previous_trios
+    if "recent_features" in race:
+        features = race["recent_features"]
+        coverage = sum(feature is not None for feature in features)
+        trial = {"horses": len(horses), "covered": coverage,
+                 "with_three": sum(bool(feature and feature[1] == 3) for feature in features)}
+        if len(horses) <= 5:
+            trial["status"] = "small_field"
+        elif coverage < 3 or coverage * 2 < len(horses):
+            trial["status"] = "insufficient_form"
+        elif not market_p:
+            trial["status"] = "waiting_odds"
+        else:
+            _, recent = ticket_ranking(horses, probs, form, market_p, stages=(
+                recent_adjustment(place, features), recent_adjustment(show, features)))
+            _, market_only = ticket_ranking(horses, market_p, market_p, None)
+            trial.update(status="ready", tickets=[list(combo) for combo, _ in recent[:10]],
+                         market_tickets=[list(combo) for combo, _ in market_only[:10]])
+        output["recent_trio"] = trial
     if trifecta_market:
         quotes = {"-".join(map(str, ticket)): trifecta_market[tuple(ticket)]
                   for ticket in tickets if tuple(ticket) in trifecta_market}
@@ -745,6 +767,39 @@ def fetch_daily_zip(url=BASE_URL, max_download=MAX_DOWNLOAD):
     return data
 
 
+def monthly_features(target, vintage):
+    cache_dir = Path(os.environ.get("RUNNER_TEMP") or tempfile.gettempdir()) / "keiba-form-v1"
+    cache = cache_dir / f"{target}-{vintage}.json"
+    try:
+        return json.loads(cache.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        pass
+    day = dt.date.fromisoformat(target)
+    first = (day - dt.timedelta(days=LOOKBACK_DAYS)).replace(day=1)
+    month = day.replace(day=1)
+    history = {}
+    complete = True
+    while month >= first:
+        url = BASE_URL.split("?", 1)[0] + "?" + urlencode(
+            {"type": "monthly", "k_year": month.year, "k_month": f"{month.month:02d}"})
+        try:
+            history_runs(load_zip_tables(fetch_daily_zip(url)), history)
+        except (OSError, ValueError, zipfile.BadZipFile) as exc:
+            complete = False
+            print(f"NAR近走データ {month:%Y-%m} を取得できません: {exc}", file=sys.stderr)
+        month = (month - dt.timedelta(days=1)).replace(day=1)
+    features = features_on(history, target)
+    if complete and features:
+        try:
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile(dir=cache_dir, mode="w", encoding="utf-8", delete=False) as tmp:
+                json.dump(features, tmp, ensure_ascii=False, separators=(",", ":"))
+            Path(tmp.name).replace(cache)
+        except OSError as exc:
+            print(f"NAR近走データのキャッシュを保存できません: {exc}", file=sys.stderr)
+    return features
+
+
 def selftest():
     now = dt.datetime(2026, 11, 2, 15, 22, tzinfo=JST)
     horse_template = []
@@ -945,6 +1000,12 @@ def selftest():
     trained = forecast(races[0], dt.datetime(2026, 11, 2, 15, 23, tzinfo=JST),
                        big_fav, {"form_alpha": 1., "market_weight": .8,
                                  "form_training_races": 33, "market_training_races": 0})
+    with_recent = {**races[0], "recent_features": [(.8, 3)] * 8}
+    trial = forecast(with_recent, now, big_fav)
+    assert trial["recent_trio"]["status"] == "ready"
+    assert len(trial["recent_trio"]["tickets"]) == len(trial["recent_trio"]["market_tickets"]) == 10
+    assert trial["trio_tickets"] == forecast(races[0], now, big_fav)["trio_tickets"]
+    assert forecast(with_recent, now)["recent_trio"]["status"] == "waiting_odds"
     assert trained["top3"][0]["no"] == 1
     assert trained["trifecta_plan"]["policy"] == "adaptive_full_field_v1"
     field_trios = trained["trio_tickets"]
@@ -986,6 +1047,14 @@ def main():
     races = parse_races(tables)
     if not races:
         raise RuntimeError("有効なレースがありません。CSV形式か配信状況を確認してください")
+    observed = dt.datetime.now(JST)
+    today = observed.date().isoformat()
+    vintage = (observed - dt.timedelta(hours=3)).date().isoformat()
+    upcoming = [race for race in races if race["date"] == today and observed < race["start"] - FORECAST_LOCK_BEFORE_START]
+    if upcoming:
+        features = monthly_features(today, vintage)
+        for race in upcoming:
+            race["recent_features"] = [features.get(h["history_key"]) for h in race["horses"]]
     previous = json.loads(DATA_PATH.read_text(encoding="utf-8")) if DATA_PATH.exists() else {}
     odds_index, trio_index, trifecta_index = {}, {}, {}
     odds_status = "unavailable"
