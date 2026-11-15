@@ -40,10 +40,24 @@ async function run() {
     }));
     let licensedJraFixture={schema_version:1,status:'not_configured',updated_at:null,races:[],drafts:[],schedule:[],summary:{}};
     await page.route('**/data/auto/jra_predictions.json*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(licensedJraFixture)}));
+    let xWidgetLoads=0;
+    await page.route('https://platform.twitter.com/widgets.js',route=>{
+      xWidgetLoads++;
+      return route.fulfill({contentType:'text/javascript',body:`
+        window.twttr={widgets:{createTweet:async (id,target)=>{
+          if(id==='456')return undefined;
+          const post=document.createElement('div');
+          post.textContent='テスト投稿 '+id;
+          target.append(post);
+          return post;
+        }}};
+      `});
+    });
     await page.goto('http://127.0.0.1:'+server.address().port+'/',{waitUntil:'domcontentloaded'});
     await page.waitForFunction(()=>document.querySelector('#nar-count')?.textContent?.includes('開催情報'),null,{timeout:15000});
     await page.waitForFunction(()=>document.querySelector('#jra-auto-status')?.textContent?.includes('未接続'),null,{timeout:15000});
     assert.ok((await page.locator('#jra-auto-status').innerText()).includes('未接続'),'JRA data remains clearly unconfigured without a license');
+    assert.equal(xWidgetLoads,0,'X resources are loaded only when a post is requested');
     assert.equal(await page.locator('.quick-link').count(),4,'home shortcuts');
     assert.ok((await page.locator('#quick-live-summary').innerText()).includes('開催情報 2R'),'summary includes schedule');
     assert.ok((await page.locator('#quick-next-race').innerText()).includes('発走まで約'),'next-race countdown shown');
@@ -149,6 +163,30 @@ async function run() {
     assert.equal(await page.locator('#jra-view-number').inputValue(),'11','JRA race filter');
     await page.locator('[data-reset-scope="jra"]').click();
     assert.equal(await page.locator('#jra-view-number').inputValue(),'all','JRA reset filters');
+
+    const xSearch=page.locator('#jra-x-search');
+    await xSearch.evaluate(form=>form.addEventListener('submit',event=>event.preventDefault(),{once:true}));
+    await page.locator('#jra-x-race').fill('京都11R');
+    await page.locator('#jra-x-date').fill('2026-11-15');
+    await xSearch.getByRole('button').click();
+    assert.equal(await xSearch.locator('[name="q"]').inputValue(),'京都11R 予想 since:2026-11-14 until:2026-11-16');
+    const xPost=page.locator('#jra-x-post');
+    const xUrl=page.locator('#jra-x-url');
+    const xOriginal=page.locator('#jra-x-original');
+    await xUrl.fill('https://x.com.example.com/example/status/123');
+    await xPost.getByRole('button').click();
+    assert.match(await page.locator('#jra-x-status').innerText(),/URLを入力してください/);
+    assert.equal(xWidgetLoads,0,'invalid post URLs do not load the X widget');
+    assert.equal(await xOriginal.isVisible(),false);
+    await xUrl.fill('https://twitter.com/example/status/123?s=46');
+    await xPost.getByRole('button').click();
+    await page.locator('#jra-x-preview').getByText('テスト投稿 123').waitFor();
+    assert.equal(await xOriginal.getAttribute('href'),'https://x.com/example/status/123');
+    await xUrl.fill('https://x.com/i/status/456');
+    await xPost.getByRole('button').click();
+    await page.locator('#jra-x-status').getByText(/埋め込みを表示できません/).waitFor();
+    assert.equal(await xOriginal.getAttribute('href'),'https://x.com/i/web/status/456');
+    assert.equal(xWidgetLoads,1,'the widget is shared across preview requests');
     // Import a future JRA race through the shared CSV intake, then forecast via JRA one-tap controls.
     const future=new Date(Date.now()+48*3600000);
     const nextJst=future.toLocaleDateString('sv-SE',{timeZone:'Asia/Tokyo'});
@@ -162,6 +200,9 @@ async function run() {
     assert.ok((await page.locator('#jra-import-count').innerText()).includes('予想可能 1R'),'new JRA import is eligible');
     await page.locator('#jra-predict-imported').click();
     assert.ok((await page.locator('#jra-list').innerText()).includes('東京 11R'),'JRA forecast saved and displayed');
+    const raceSearch=new URL(await page.locator('#jra-list .jra-x-link').getAttribute('href'));
+    assert.equal(raceSearch.origin,'https://x.com');
+    assert.match(raceSearch.searchParams.get('q'),/^東京11R 予想 since:/);
     assert.ok((await page.locator('#jra-list').innerText()).includes('単勝オッズ'),'JRA odds/popularity detail available');
     assert.ok((await page.locator('#jra-import-count').innerText()).includes('予想可能 0R'),'duplicate prediction disabled');
 

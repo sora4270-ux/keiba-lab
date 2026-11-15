@@ -122,6 +122,12 @@
     .jra-card{padding:13px;border:1px solid var(--line);border-radius:10px;margin-top:9px;background:#fafcff}
     .jra-card-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
     .jra-card small{color:var(--sub)}
+    #jra-x-reference form{display:flex;align-items:end;flex-wrap:wrap;gap:8px;margin-top:12px}
+    #jra-x-reference .x-text-field{flex:1 1 180px;min-width:0}
+    #jra-x-reference input{width:100%;min-width:0;font-size:16px}
+    #jra-x-preview{margin-top:8px;max-width:550px}
+    .jra-x-link{display:inline-block;margin-top:8px;color:var(--blue);font-size:13px;font-weight:750}
+    .jra-x-link[hidden]{display:none}
     .jra-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}
     .jra-summary .metric{padding:12px}
     @media(max-width:720px){.jra-input-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.jra-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -251,6 +257,23 @@
   <div class="hrow"><h2>🏆 中央競馬（JRA）予想</h2><span class="pill amber">発走15分前に予想固定</span></div>
   <p class="intro" style="margin-top:9px">東京・中山・京都・阪神などJRA10競馬場に対応。入力された出馬表から<b>三連複・三連単の買い目</b>を発走前に保存し、確定結果との的中率を集計します。</p>
   <div class="live-warning">JRA公式の出馬表を自動取得する接続は未設定です。JRA-VAN Data Lab.はWindows向けで、通常契約のデータをWebサイトへ再配信できません。<b>自分で入力した情報または公開利用が許可されたデータ</b>のみ取り込みます。オッズのみではAI学習予測でなく市場支持率による推定です。</div>
+  <section class="jra-card" id="jra-x-reference" aria-labelledby="jra-x-title">
+   <h3 id="jra-x-title" style="margin:0">Xの中央競馬予想</h3>
+   <p class="tiny muted">公開投稿を参考にできます。表示した投稿はKEIBA LABの買い目・成績とは別です。</p>
+   <form id="jra-x-search" action="https://x.com/search" method="get" target="_blank" rel="noopener noreferrer">
+    <div class="field x-text-field"><label for="jra-x-race">レース名・競馬場と番号</label><input id="jra-x-race" maxlength="80" placeholder="例：京都11R、マイルチャンピオンシップ" required></div>
+    <div class="field"><label for="jra-x-date">開催日（任意）</label><input id="jra-x-date" type="date"></div>
+    <input type="hidden" name="q"><input type="hidden" name="f" value="live">
+    <button class="btn sm" type="submit">Xで予想を探す ↗</button>
+   </form>
+   <form id="jra-x-post">
+    <div class="field x-text-field"><label for="jra-x-url">公開投稿のURL</label><input id="jra-x-url" type="url" inputmode="url" maxlength="500" placeholder="https://x.com/…/status/…" required></div>
+    <button class="btn sm" type="submit">投稿を表示</button>
+   </form>
+   <p id="jra-x-status" class="tiny muted" role="status"></p>
+   <a id="jra-x-original" class="jra-x-link" target="_blank" rel="noopener noreferrer" hidden>元の投稿をXで開く ↗</a>
+   <div id="jra-x-preview"></div>
+  </section>
   <div class="jra-card" id="jra-automated" aria-label="中央競馬の許諾済みデータ自動取得">
    <div class="hrow"><h3 style="margin:0">⚡ 中央競馬・自動取得＆自動予想</h3><span class="pill amber">許諾済みデータ接続が必要</span></div>
    <p class="tiny muted" style="margin-top:10px">配信権限のあるデータ提供元を設定すると、サーバーが約5分ごとに取得・予想更新し、発走15分前までの予想を固定。確定着順が提供されれば結果も自動照合します。</p>
@@ -1691,6 +1714,96 @@ function jraValidRaces(races){if(!Array.isArray(races)||!races.length)throw Erro
 function jraMessage(message,warning=false){const elem=$('jra-message');elem.textContent=message;elem.className='hint'+(warning?' warning':'');}
 
 
+function jraXSearchQuery(name,date){
+ const parts=[name.trim(),'予想'];
+ if(/^\d{4}-\d{2}-\d{2}$/.test(date)){
+  const day=Date.parse(date);
+  if(Number.isFinite(day)){
+   const dateAt=offset=>new Date(day+offset*86400000).toISOString().slice(0,10);
+   parts.push('since:'+dateAt(-1),'until:'+dateAt(1));
+  }
+ }
+ return parts.join(' ');
+}
+function jraXRaceLink(r){
+ const raceNo=Number(r.raceNo??r.race_no);
+ if(!JRA_VENUES.has(r.venue)||!Number.isInteger(raceNo)||raceNo<1||raceNo>12)return '';
+ const race=r.venue+raceNo+'R';
+ const url=new URL('https://x.com/search');
+ url.searchParams.set('q',jraXSearchQuery(race,r.date));
+ url.searchParams.set('f','live');
+ return '<a class="jra-x-link" href="'+esc(url.href)+'" target="_blank" rel="noopener noreferrer" aria-label="'+esc(race+'の予想をXで探す')+'">Xでこのレースの予想を探す ↗</a>';
+}
+function parseJraXPost(input){
+ const match=/^https:\/\/(?:www\.|mobile\.)?(?:x\.com|twitter\.com)\/(?:([a-z0-9_]{1,15})\/status|i\/(?:web\/)?status)\/([1-9][0-9]{0,19})(?:\/(?:photo|video)\/[0-9]+)?\/?(?:[?#].*)?$/i.exec(input.trim());
+ if(!match)return null;
+ const [,name,id]=match;
+ return {id,url:'https://x.com/'+(name?name+'/status/':'i/web/status/')+id};
+}
+let jraXWidgets;
+function loadJraXWidgets(){
+ if(!jraXWidgets){
+  jraXWidgets=new Promise((resolve,reject)=>{
+   const script=document.createElement('script');
+   script.src='https://platform.twitter.com/widgets.js';
+   script.async=true;
+   const failed=()=>{
+    clearTimeout(timer);
+    script.remove();
+    reject(new Error('Xのウィジェットを読み込めませんでした。'));
+   };
+   const timer=setTimeout(failed,8000);
+   script.addEventListener('error',failed,{once:true});
+   script.addEventListener('load',()=>{
+    if(typeof window.twttr?.widgets?.createTweet!=='function'){failed();return;}
+    clearTimeout(timer);
+    resolve(window.twttr.widgets);
+   },{once:true});
+   document.head.append(script);
+  }).catch(error=>{jraXWidgets=null;throw error;});
+ }
+ return jraXWidgets;
+}
+$('jra-x-date').value=jstRaceToday();
+$('jra-x-search').addEventListener('submit',event=>{
+ const name=$('jra-x-race');
+ if(!name.value.trim()){
+  event.preventDefault();
+  name.focus();
+  return;
+ }
+ event.currentTarget.elements.q.value=jraXSearchQuery(name.value,$('jra-x-date').value);
+});
+$('jra-x-post').addEventListener('submit',async event=>{
+ event.preventDefault();
+ const post=parseJraXPost($('jra-x-url').value);
+ const status=$('jra-x-status'),original=$('jra-x-original'),preview=$('jra-x-preview');
+ preview.replaceChildren();
+ original.hidden=!post;
+ if(!post){
+  original.removeAttribute('href');
+  status.textContent='Xの公開投稿のURLを入力してください。';
+  return;
+ }
+ original.href=post.url;
+ status.textContent='Xの投稿を読み込んでいます…';
+ const target=document.createElement('div');
+ preview.append(target);
+ let timer;
+ try{
+  const render=loadJraXWidgets().then(widgets=>target.isConnected
+   ?widgets.createTweet(post.id,target,{lang:'ja',dnt:true,conversation:'none'}):null);
+  const timeout=new Promise(resolve=>{timer=setTimeout(()=>resolve(null),12000);});
+  const widget=await Promise.race([render,timeout]);
+  if(!target.isConnected)return;
+  if(!widget)target.remove();
+  status.textContent=widget?'':'埋め込みを表示できません。元の投稿をXで確認できます。';
+ }catch{
+  if(!target.isConnected)return;
+  target.remove();
+  status.textContent='埋め込みを表示できません。元の投稿をXで確認できます。';
+ }finally{clearTimeout(timer);}
+});
 function jraAutoRender(venue,date,raceNumber,mode){
  const data=jraAutoData,container=$('jra-auto-races'),stats=$('jra-auto-summary');
  if(!data||data.status!=='ready'){
@@ -1713,14 +1826,14 @@ function jraAutoRender(venue,date,raceNumber,mode){
  if(!shown.length){container.innerHTML='<div class="empty">'+(mode==='results'?'この条件で結果を照合した自動予想はまだありません。':'この条件で自動予想・開催情報はまだありません。')+'</div>';return;}
  renderBetCards(container,shown.slice(0,70).map(r=>{
   const label=esc(r.date+' '+r.venue+' '+r.race_no+'R');
-  if(r._scheduleOnly)return '<div class="jra-card"><div class="jra-card-head"><strong>'+label+'</strong><span class="pill gray">予想データ未取得</span></div><p class="tiny muted">発走 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ 未取得データから予想を捏造しません。</p></div>';
+  if(r._scheduleOnly)return '<div class="jra-card"><div class="jra-card-head"><strong>'+label+'</strong><span class="pill gray">予想データ未取得</span></div><p class="tiny muted">発走 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+'</p>'+jraXRaceLink(r)+'</div>';
   const draft=r.status==='draft',hasResult=Array.isArray(r.result)&&r.result.length===3;
   const status=draft?(Date.now()<Date.parse(r.cutoff_at)?'事前予想・更新中':'事前予想・確定待ち'):hasResult?'結果確定':'予想固定済み';
   const top=r.top5||r.top3||[];
   const picks=top.map((p,i)=>'<span class="nar-pick">'+['◎','○','▲','△','△'][i]+' '+esc(p.no)+'番 '+esc(p.name)+' <b>'+narPct(100*Number(p.win_probability))+'</b> ／ '+esc(p.odds)+'倍・'+esc(p.popularity)+'人気</span>').join('');
   const trio=Array.isArray(r.trio_tickets)?r.trio_tickets:[],tickets=Array.isArray(r.tickets)?r.tickets:[];
   const wagers=hasResult?'<div class="nar-result">'+resultOrderHtml(r)+'<div>単勝 '+(r.hits?.win?'的中':'不的中')+' ／ 三連複 '+(r.hits?.trio?'的中':'不的中')+' ／ 三連単 '+(r.hits?.trifecta?'的中':'不的中')+'</div><div>確定払戻（100円あたり）：'+[['win','単勝'],['trio','三連複'],['trifecta','三連単']].map(([key,name])=>name+' '+(Number.isInteger(r.payouts?.[key])?amount(r.payouts[key]):'未取得')).join(' ／ ')+'</div></div>':'';
-  return '<div class="jra-card"><div class="jra-card-head"><strong>'+label+'</strong><span class="pill '+(draft?'gray':'')+'">'+esc(status)+'</span></div><p class="tiny muted">発走 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ 予想取得 '+esc(String(r.predicted_at||'').replace('T',' ').slice(0,16))+' ／ 予想締切 '+esc(String(r.cutoff_at||'').replace('T',' ').slice(0,16))+' ／ 市場支持率モデル（未学習）</p><div class="nar-line">'+picks+'</div>'+wagers+(mode==='results'?'':betSectionHtml('三連単',tickets,true,r.id)+betSectionHtml(r.top5?'三連複BOX':'三連複候補',trio,false,r.id)+budgetTicketsHtml(trio,tickets,r.ranking||top))+trifectaPlanHtml(r)+'</div>';
+  return '<div class="jra-card"><div class="jra-card-head"><strong>'+label+'</strong><span class="pill '+(draft?'gray':'')+'">'+esc(status)+'</span></div><p class="tiny muted">発走 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ 予想取得 '+esc(String(r.predicted_at||'').replace('T',' ').slice(0,16))+' ／ 予想締切 '+esc(String(r.cutoff_at||'').replace('T',' ').slice(0,16))+' ／ 市場支持率モデル（未学習）</p><div class="nar-line">'+picks+'</div>'+wagers+(mode==='results'?'':betSectionHtml('三連単',tickets,true,r.id)+betSectionHtml(r.top5?'三連複BOX':'三連複候補',trio,false,r.id)+budgetTicketsHtml(trio,tickets,r.ranking||top)+jraXRaceLink(r))+trifectaPlanHtml(r)+'</div>';
  }).join(''));
 }
 async function jraAutoRefresh(silent=false){
@@ -1755,7 +1868,7 @@ function jraImportedRender(){
  const open=list.filter(eligible);
  $('jra-import-count').textContent=list.length?'取込済み '+list.length+'R ／ 予想可能 '+open.length+'R ／ 保存済み・締切済み '+(list.length-open.length)+'R':'JRA出馬表が未登録です。下のCSV/JSON・かんたん入力・許諾済みフィードを利用してください。';
  $('jra-predict-imported').disabled=!open.length;
- $('jra-import-list').innerHTML=list.slice(0,36).map(r=>'<div class="jra-card" style="margin:5px 0;background:#fff"><div class="jra-card-head"><strong>'+esc(r.date+' '+r.venue+' '+r.race_no+'R')+'</strong><span class="pill '+(eligible(r)?'':'gray')+'">'+(saved.has(raceKey(r))?'予想保存済み':eligible(r)?'予想可能':'締切済み')+'</span></div><p class="tiny muted">'+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+'発走 ／ '+r.horses.length+'頭</p>'+(eligible(r)?'<button type="button" class="btn sm" data-jra-pick="'+esc(r.id)+'">このレースを予想</button>':'')+'</div>').join('');
+ $('jra-import-list').innerHTML=list.slice(0,36).map(r=>'<div class="jra-card" style="margin:5px 0;background:#fff"><div class="jra-card-head"><strong>'+esc(r.date+' '+r.venue+' '+r.race_no+'R')+'</strong><span class="pill '+(eligible(r)?'':'gray')+'">'+(saved.has(raceKey(r))?'予想保存済み':eligible(r)?'予想可能':'締切済み')+'</span></div><p class="tiny muted">'+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+'発走 ／ '+r.horses.length+'頭</p>'+(eligible(r)?'<button type="button" class="btn sm" data-jra-pick="'+esc(r.id)+'">このレースを予想</button>':'')+' '+jraXRaceLink(r)+'</div>').join('');
 }
 function jraPredictImported(id=null){
  const races=jraImportedRaces().filter(r=>id===null||r.id===id),done=new Set(ledger.map(r=>r.key)),made=[],skips=[];
@@ -1780,7 +1893,7 @@ function jraForecastCard(r,top,trio){
  const picks=ranks.slice(0,5).map((h,i)=>'<span class="nar-pick">'+['◎','○','▲','△','△'][i]+' '+esc(h.no)+'番 '+esc(h.name)+' <b>'+narPct(Number(h.win_probability)*100)+'</b> ／ '+esc(oddsLabel(h))+'・'+esc(popLabel(h))+'</span>').join('');
  const table=ranks.map((h,i)=>'<div class="intel-item"><b>'+esc(i+1)+'位</b><span>'+esc(h.no)+'番 '+esc(h.name)+'</span><span>'+esc(oddsLabel(h))+' ／ '+esc(popLabel(h))+'</span></div>').join('');
  const tickets=Array.isArray(r.tickets)?r.tickets:[];
- return '<div class="jra-card"><div class="jra-card-head"><strong>'+esc(r.date+' '+r.venue+' '+(r.raceNo||'')+'R')+'</strong><span class="pill gray">予想確定・固定済み</span></div><small>'+esc(r.name)+' ／ 発走 '+esc(String(r.startAt||'').replace('T',' ').slice(0,16))+' ／ 保存 '+esc(new Date(r.lockedAt||r.createdAt).toLocaleString('ja-JP'))+' ／ 締切 '+esc(frozenCutoffLabel(r))+(r.marketMode?' ／ オッズ参考（学習AIではない）':' ／ 指数モデル')+'</small><div class="nar-line">'+picks+'</div>'+betSectionHtml('三連単',tickets,true,r.id)+betSectionHtml('三連複',trio,false,r.id)+budgetTicketsHtml(trio,tickets,ranks.length?ranks:top)+raceInsightHtml(r,'JRA')+'<details><summary>全出走馬の予想順位・オッズ・人気順</summary>'+table+'</details>'+purchaseDetailHtml(r)+trifectaPlanHtml(r)+'<p class="tiny muted">◎ '+esc(top[0]??'—')+' ／ ○ '+esc(top[1]??'—')+' ／ ▲ '+esc(top[2]??'—')+'。人気・オッズは予想保存時点の入力値。</p></div>';
+ return '<div class="jra-card"><div class="jra-card-head"><strong>'+esc(r.date+' '+r.venue+' '+(r.raceNo||'')+'R')+'</strong><span class="pill gray">予想確定・固定済み</span></div><small>'+esc(r.name)+' ／ 発走 '+esc(String(r.startAt||'').replace('T',' ').slice(0,16))+' ／ 保存 '+esc(new Date(r.lockedAt||r.createdAt).toLocaleString('ja-JP'))+' ／ 締切 '+esc(frozenCutoffLabel(r))+(r.marketMode?' ／ オッズ参考（学習AIではない）':' ／ 指数モデル')+'</small><div class="nar-line">'+picks+'</div>'+betSectionHtml('三連単',tickets,true,r.id)+betSectionHtml('三連複',trio,false,r.id)+budgetTicketsHtml(trio,tickets,ranks.length?ranks:top)+raceInsightHtml(r,'JRA')+'<details><summary>全出走馬の予想順位・オッズ・人気順</summary>'+table+'</details>'+purchaseDetailHtml(r)+trifectaPlanHtml(r)+'<p class="tiny muted">◎ '+esc(top[0]??'—')+' ／ ○ '+esc(top[1]??'—')+' ／ ▲ '+esc(top[2]??'—')+'。人気・オッズは予想保存時点の入力値。</p>'+jraXRaceLink(r)+'</div>';
 }
 function jraAutoPredict(races,label){
  jraValidRaces(races);
