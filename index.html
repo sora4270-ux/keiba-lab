@@ -107,6 +107,20 @@
     .bet-section summary{padding:10px 0;cursor:pointer;color:#193956;font-size:14px;font-weight:750}
     .bet-section summary small{margin-left:6px;display:inline-block;color:#455d77;font-size:12px;font-weight:650}
     .bet-section .bet-list{margin-top:0}
+    .forecast-short{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin:10px 0 6px}
+    .forecast-short div{min-width:0;padding:7px 8px;background:#edf4fc;border-radius:8px}
+    .forecast-short dt{font-size:11px;color:#395373;font-weight:750}
+    .forecast-short dd{margin:3px 0 0;color:#163d62;font-size:15px;font-weight:800;line-height:1.45;overflow-wrap:anywhere}
+    .forecast-short dd small{display:block;font-size:10px;color:#4a627d;font-weight:650}
+    .formation-list{display:grid;gap:5px}
+    .formation-row{background:#f0f5fb;border-radius:8px;padding:7px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:7px;align-items:start}
+    .formation-col{min-width:0}
+    .formation-col small{display:block;font-size:10px;color:#415b77}
+    .formation-col strong{font-size:14px;color:#173c5f;overflow-wrap:anywhere}
+    .formation-count{font-size:11px;white-space:nowrap;align-self:center}
+    .forecast-details{margin-top:9px;border-top:1px solid var(--line)}
+    .forecast-details>summary{padding:9px 0;font-size:12px;font-weight:750;color:#395373;cursor:pointer}
+    @media(max-width:550px){.forecast-short{grid-template-columns:repeat(3,minmax(0,1fr))}.forecast-short div{padding:6px 7px}}
     .stake-summary{padding:10px 12px;background:#eff7ff;border:1px solid #d8e7fa;border-radius:10px;margin:10px 0;font-size:12px;color:#234467;line-height:1.75}.stake-summary b{font-size:13px;color:#163d6d}.stake-detail{color:#536d8c;font-size:11px}.stake-banner{margin:10px 0;padding:12px 14px;border:1px solid #d8e7fa;border-radius:10px;background:#f5f9ff;color:#234467;font-size:12px}.stake-banner b{font-size:14px}
     .nar-race summary{cursor:pointer;font-weight:700}
     .nar-race .nar-result{font-size:12px;margin-top:8px}
@@ -263,8 +277,7 @@
     <details class="venue-breakdown"><summary>地方競馬場別の的中率・回収率を一覧で比較</summary><div class="scroll" id="nar-venue-breakdown"></div><p class="section-note">取得済み記録から集計。5券種回収率は5券種の払戻が揃ったレースのみ対象です。</p></details>
    </div>
    <div class="hrow"><h3 style="margin:15px 0 8px" id="nar-list-title">レース予想</h3><span id="nar-count" class="muted tiny"></span></div>
-   <div id="nar-model-comparison" class="roi-mini" aria-live="polite">新旧モデルの成績を読み込み中...</div>
-   <div id="nar-review" class="hint" aria-live="polite"></div>
+   <div id="nar-review-panel" hidden><div id="nar-model-comparison" class="roi-mini" aria-live="polite"></div><div id="nar-review" class="hint" aria-live="polite"></div></div>
    <div id="nar-coverage" class="roi-mini" aria-live="polite">予想対象レースの取得状況を確認中...</div>
    <div id="nar-races"><div class="empty">データ読み込み待ち</div></div>
    <p class="section-note">全頭の単勝オッズが揃った新規予想では、三連複は全出走馬から推定確率順に最大10点。三連単は確率順の候補と、過去の検証成績を踏まえた仮想の資金配分を表示します。</p>
@@ -402,19 +415,22 @@
      <div class="scroll" id="horse-list"><div class="horse-header"><span>馬番</span><span>馬名</span><span>単勝</span><span>近走指数</span><span>距離適性</span><span>馬場適性</span><span>騎手勝率%</span><span>調教評価</span><span>脚質</span><span></span></div><div id="horses"></div></div>
      <div class="hint">目安：近走指数 0〜100／距離・馬場・調教 1〜5（5が高評価）／騎手勝率 0〜100%。指数は<strong>同じ基準</strong>で全頭入力してください。欠損値は自動推測しません。</div>
      <div class="bottom-actions"><div class="controls"><button type="button" class="btn sm" id="add-horse">＋ 馬を追加</button><button type="button" class="btn sm" id="load-sample">サンプル</button><button type="button" class="btn sm" id="clear-horses">全頭クリア</button></div><div class="controls"><button type="button" class="btn sm" id="race-import">出馬表CSV読込</button><button type="button" class="btn sm" id="race-csv-template">CSVひな型</button></div></div>
-     <div class="config-bar"><label class="toggle" title="単勝オッズを参考に推定確率を40%補正"><input type="checkbox" id="use-market"> オッズで40%補正する</label><div class="field"><label for="ticket-limit">表示件数</label><select id="ticket-limit"><option value="10">10件</option><option value="36" selected>全件</option></select></div></div>
-     <p class="feed-source" id="race-data-source">データ出典：架空サンプル（実レースではありません）</p><div class="controls" style="margin-top:17px"><button type="button" id="run-prediction" class="btn primary" style="flex:1;min-height:49px;font-size:15px">勝率と三連単を予想する →</button></div>
+     <div class="config-bar"><label class="toggle" title="単勝オッズを参考に推定確率を40%補正"><input type="checkbox" id="use-market"> オッズで40%補正する</label></div>
+     <p class="feed-source" id="race-data-source">データ出典：架空サンプル（実レースではありません）</p><div class="controls" style="margin-top:17px"><button type="button" id="run-prediction" class="btn primary" style="flex:1;min-height:49px;font-size:15px">予想と買い目を表示 →</button></div>
    </div>
    <div id="error" class="hint warning" style="display:none" role="alert"></div>
-   <div id="results" class="results" aria-live="polite"><div class="stat-grid"><div class="stat"><small>出走頭数</small><strong id="stat-count">—</strong></div><div class="stat"><small id="stat-win-label">本命馬の推定勝率</small><strong class="accent" id="stat-win">—</strong></div><div class="stat"><small>三連単の候補点数</small><strong id="stat-combos">—</strong></div></div>
-     <div class="predict-layout"><div>
-       <div class="panel"><div class="hrow"><h2>02. 勝率ランキング</h2><div class="controls"><button type="button" class="btn sm primary" id="record-from-predict">この予想を履歴に保存</button><button type="button" class="btn sm" id="export-ranking">CSV保存</button></div></div><p id="result-race" class="intro tiny"></p><div id="manual-race-overview"></div><div id="manual-simulation"></div><div class="list-head"><span>順位</span><span>馬番</span><span>馬名</span><span style="text-align:right" id="rank-prob-label">勝率推定</span><span style="text-align:right">単勝</span></div><div id="rank-list"></div><p class="section-note" id="ranking-disclaimer">※数値はモデルによる推定値です。的中率や利益は保証しません。</p></div>
-       <div class="panel"><div class="hrow"><h2>03. 三連単の候補</h2><button type="button" class="btn sm" id="export-tickets">全買い目CSV</button></div><p class="intro tiny" id="ticket-caption"></p><ul class="bet-list" role="list" id="ticket-list"></ul><p class="section-note">※各組み合わせの確率は、推定勝率から順位を重複なしで抽選する近似方式です。三連単オッズを取得していないため収支期待値は算定していません。実際の投票・購入機能はありません。</p></div>
-       <div class="panel"><div class="hrow"><h2>04. 三連複の買い目</h2><span id="manual-trio-count" class="pill gray">—</span></div><p class="intro tiny">中央競馬は全出走馬から推定確率順に最大10点。その他の開催区分は上位5頭BOX。各組100円で試算します。</p><div id="manual-trio-list"></div><p id="manual-trio-stake" class="stake-summary"></p><div id="manual-budget-tickets"></div><p class="section-note">三連単と三連複は別の券種です。ここには三連複の払戻オッズは反映していません。</p></div>
-     </div><div>
-       <div class="panel"><h2>AIの印と狙い目</h2><p class="intro tiny">データに基づく目安（必ずしも推奨馬券ではありません）</p><div id="recommendations"></div></div>
-       <div class="panel"><h2>モデルの状態</h2><div id="result-model-state" class="muted tiny" style="margin:12px 0"></div><button type="button" class="btn sm" id="go-train">過去レースから学習する →</button></div>
-     </div></div>
+   <div id="results" class="results" aria-live="polite">
+    <div class="panel">
+     <div class="hrow"><h2>予想と買い目</h2><button type="button" class="btn sm primary" id="record-from-predict">予想を保存</button></div>
+     <p id="result-race" class="intro tiny"></p><div id="manual-top"></div><div id="manual-bets"></div><div id="manual-simulation"></div>
+     <details class="forecast-details"><summary>全頭の勝率・オッズ・予算設定</summary>
+      <div class="controls"><button type="button" class="btn sm" id="export-ranking">順位CSV</button><button type="button" class="btn sm" id="export-tickets">三連単CSV</button><button type="button" class="btn sm" id="go-train">過去レースから学習</button></div>
+      <p id="manual-model-status" class="tiny muted"></p>
+      <div id="manual-race-overview"></div>
+      <div class="list-head"><span>順位</span><span>馬番</span><span>馬名</span><span style="text-align:right" id="rank-prob-label">推定勝率</span><span style="text-align:right">単勝</span></div>
+      <div id="rank-list"></div><div id="manual-budget-tickets"></div>
+     </details>
+    </div>
    </div>
  </section>
 
@@ -604,23 +620,21 @@ function refreshManualDeadline(){
 }
 function analyze(){setError('');try{if(!demo)assertForecastOpen(manualStartAt());const marketMode=oddsOnly(horses);validateRace(horses,marketMode);let p=marketMode?(()=>{let x=horses.map(h=>1/Number(h.odds)),sum=x.reduce((a,b)=>a+b,0);return x.map(v=>v/sum)})():probs(horses,model.weights,$('use-market').checked);const ranks=horses.map((h,i)=>({...h,index:i,p:p[i],ev:p[i]*(+h.odds)-1})).sort((a,b)=>b.p-a.p);const fullField=JRA_VENUES.has($('manual-venue').value);const {trio,tickets,plan}=predictionTickets(horses,p,ranks.map(h=>h.index),fullField);lastResult={p,ranks,trio,tickets,plan,fullField,horseList:clone(horses),race:$('race-name').value||'レース名なし',marketMode};renderResults(lastResult);$('results').classList.add('show');$('results').scrollIntoView({behavior:'smooth',block:'start'});save();}catch(e){invalidate();setError(e.message);}}
 $('run-prediction').addEventListener('click',analyze);
-function renderResults(r){const ranks=r.ranks;$('stat-win-label').textContent=r.marketMode?'1位馬の市場支持率':'本命馬の推定勝率';$('rank-prob-label').textContent=r.marketMode?'市場支持率':'推定勝率';$('ranking-disclaimer').textContent=r.marketMode?'単勝オッズの逆数を合計1に正規化した市場支持率。AIの予想ではなく、控除率・払戻変動を考慮した予測値でもありません。':'機械学習モデルによる推定値。校正や検証前は信頼できません。';$('stat-count').textContent=`${horses.length}頭`;$('stat-win').textContent=pct(ranks[0].p);$('stat-combos').textContent=`${r.tickets.length}点`;$('result-race').textContent=`${r.race}${demo?' ・ 架空のデモ':' ・ 未確定プレビュー（履歴への保存が必要）・締切 '+forecastCutoffLabel(manualStartAt())}${r.marketMode?' ・ オッズ参照（AI不使用）':''}`;
-$('manual-race-overview').innerHTML=raceInsightHtml({ranking:ranks.map(h=>({no:h.no,name:h.name,win_probability:h.p,runningStyle:h.runningStyle||''})),market:{horses:r.horseList.map(h=>({no:h.no,odds:Number(h.odds)}))}},'input');
-$('manual-simulation').innerHTML=simulationButton(r.race,ranks.map(h=>({no:h.no,name:h.name,win_probability:h.p})),demo?'架空サンプル':'入力した予想データを使った試算');
-$('rank-list').innerHTML=ranks.map((h,i)=>`<div class="rank"><span class="pos">${i+1}</span><span class="horse-no">${h.no}</span><div><div class="name" title="${esc(h.name)}">${esc(h.name)}</div><div class="bar-bg"><div class="bar" style="width:${Math.max(1,100*h.p/ranks[0].p)}%"></div></div></div><span class="prob">${pct(h.p)}</span><span class="odd">${fmt(h.odds)}倍</span></div>`).join('');
-let t=r.tickets,visible=Math.min(+$('ticket-limit').value,t.length);$('ticket-caption').textContent=`参考購入金額（三連単）：${t.length}点 × 100円 = ${(t.length*100).toLocaleString('ja-JP')}円 ／ ${r.plan?.reason||""}・確率の集中度で可変 ／ 上位${visible}点を表示`;$('ticket-list').innerHTML=t.slice(0,visible).map(x=>{
- const runners=[x.a,x.b,x.c].map(i=>r.horseList[i]);
- const names=runners.map(h=>h.name).join(' → ');
- return betRowHtml(runners.map(h=>h.no),true,100,names+' ／ 推定確率 '+fmt(x.prob*100,2)+'%');
-}).join('');
-const manualTrio=r.trio;
-$('manual-budget-tickets').innerHTML=budgetTicketsHtml(manualTrio,t.map(x=>[x.a,x.b,x.c].map(i=>r.horseList[i].no)),ranks);
-$('manual-trio-count').textContent=manualTrio.length+'点';
-$('manual-trio-list').innerHTML=trioTokens(manualTrio)+trifectaPlanHtml({trifecta_plan:r.plan});$('manual-trio-stake').textContent='参考購入金額（各点100円）：三連複 '+amount(manualTrio.length*100)+' ／ 三連単 '+amount(t.length*100)+' ／ 両券種合計 '+amount((manualTrio.length+t.length)*100);
-let top=ranks[0],second=ranks[1],third=ranks[2];let value=[...ranks].sort((a,b)=>b.ev-a.ev)[0];let box=`<div class="callout"><small>◎ 本命</small><strong>${top.no}番 ${esc(top.name)}</strong><p>推定勝率 ${pct(top.p)} ・ 単勝 ${fmt(top.odds)}倍</p></div><div class="ev-row"><div><b>◯ 対抗</b><br><span>${second.no}番 ${esc(second.name)}</span></div><b>${pct(second.p)}</b></div><div class="ev-row"><div><b>▲ 3番手</b><br><span>${third.no}番 ${esc(third.name)}</span></div><b>${pct(third.p)}</b></div>`;
-box+=`<div class="ev-row"><div><b>☆ 単勝の割安度が高い候補</b><br><span>${value.no}番 ${esc(value.name)}</span></div><b>${value.ev>=0?'+':''}${fmt(value.ev*100,0)}%</b></div><p class="section-note">割安度＝推定勝率×単勝オッズ−1（理論上の期待回収率から1を引いた試算）。未校正モデルでは大きく誤るため購入根拠に使わないでください。</p>`;if(r.marketMode){box=`<div class="callout"><small>◎ オッズ1位</small><strong>${top.no}番 ${esc(top.name)}</strong><p>市場支持率 ${pct(top.p)} ・ 単勝 ${fmt(top.odds)}倍</p></div><div class="ev-row"><div><b>◯ 2番手</b><br>${second.no}番 ${esc(second.name)}</div><b>${pct(second.p)}</b></div><div class="ev-row"><div><b>▲ 3番手</b><br>${third.no}番 ${esc(third.name)}</div><b>${pct(third.p)}</b></div><p class="section-note">AIの能力評価や期待値ではありません。単勝オッズから作った市場支持率です。三連単も独立したモデルによる近似で、購入推奨ではありません。</p>`;}$('recommendations').innerHTML=box;
-$('result-model-state').textContent=r.marketMode?'市場支持率モード：AIは使用していません。指数を全頭に入力するとAIモデルで推定できます。':model.trained?`過去${model.raceCount}レースを使用して学習済み。保留検証 ${model.testCount}レース、最上位馬の的中率 ${pct(model.testAccuracy)}。小標本・環境変化に注意。`:'初期の手動設定した重みです。過去の実際のレース結果による学習・精度検証は未実施です。';}
-$('ticket-limit').addEventListener('change',()=>{if(lastResult)renderResults(lastResult)});
+function renderResults(r){
+ const ranks=r.ranks;
+ const rows=ranks.map(h=>({no:Number(h.no),name:h.name,win_probability:h.p,odds:h.odds,runningStyle:h.runningStyle||''}));
+ const tickets=r.tickets.map(t=>[t.a,t.b,t.c].map(i=>Number(r.horseList[i].no)));
+ $('result-race').textContent=r.race+(demo?' ／ 架空サンプル':r.marketMode?' ／ オッズ参考':' ／ 未保存の予想');
+ const modelStatus=r.marketMode?'単勝オッズに基づく市場支持率。':model.trained?'学習 '+model.raceCount+'R ／ 検証 '+model.testCount+'R ／ 本命的中率 '+pct(model.testAccuracy):'初期の重みで算出。';
+ $('manual-model-status').textContent=modelStatus+(demo?'':' ／ 締切 '+forecastCutoffLabel(manualStartAt()));
+ $('rank-prob-label').textContent=r.marketMode?'市場支持率':'推定勝率';
+ $('manual-top').innerHTML=forecastPicksHtml(rows,h=>'単勝 '+fmt(h.odds)+'倍');
+ $('manual-bets').innerHTML=compactBetsHtml(rows,rows,r.trio,tickets,r.race);
+ $('manual-race-overview').innerHTML=raceInsightHtml({ranking:rows,market:{horses:r.horseList}},'input');
+ $('manual-simulation').innerHTML=simulationButton(r.race,rows,demo?'架空サンプル':'入力した予想データを使った試算');
+ $('rank-list').innerHTML=ranks.map((h,i)=>`<div class="rank"><span class="pos">${i+1}</span><span class="horse-no">${esc(h.no)}</span><div><div class="name" title="${esc(h.name)}">${esc(h.name)}</div><div class="bar-bg"><div class="bar" style="width:${Math.max(1,100*h.p/ranks[0].p)}%"></div></div></div><span class="prob">${pct(h.p)}</span><span class="odd">${fmt(h.odds)}倍</span></div>`).join('');
+ $('manual-budget-tickets').innerHTML=budgetTicketsHtml(r.trio,tickets,ranks)+trifectaPlanHtml({trifecta_plan:r.plan});
+}
 function csvEscape(s){let x=String(s??'');if(/^[=+@\-\t\r]/.test(x)&&/[=+@]/.test(x[0]))x="'"+x;return /[,"\n\r]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x;}
 function saveText(filename,text,mime='text/csv;charset=utf-8'){const blob=new Blob(['\ufeff',text],{type:mime});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}
 function csvLines(rows){return rows.map(row=>row.map(csvEscape).join(',')).join('\r\n')+'\r\n'}
@@ -1087,12 +1101,126 @@ function betRowHtml(ticket,ordered,yen=100,meta=''){
 function betListHtml(tickets,ordered){
  return '<ul class="bet-list" role="list">'+tickets.map(ticket=>betRowHtml(ticket,ordered)).join('')+'</ul>';
 }
+function ticketFormations(tickets,ordered){
+ const byFirst=new Map();
+ for(const ticket of tickets){
+  if(!Array.isArray(ticket)||ticket.length!==3||new Set(ticket).size!==3||
+     !ticket.every(n=>Number.isInteger(n)&&n>0))continue;
+  const [a,b,c]=ordered?ticket:[...ticket].sort((x,y)=>x-y);
+  if(!byFirst.has(a))byFirst.set(a,new Map());
+  const seconds=byFirst.get(a);
+  if(!seconds.has(b))seconds.set(b,new Set());
+  seconds.get(b).add(c);
+ }
+ const formations=new Map();
+ for(const [first,seconds] of byFirst){
+  const byThird=new Map();
+  for(const [second,thirds] of seconds){
+   const values=[...thirds].sort((a,b)=>a-b);
+   const key=values.join(',');
+   if(!byThird.has(key))byThird.set(key,{second:[],third:values});
+   byThird.get(key).second.push(second);
+  }
+  for(const group of byThird.values()){
+   group.second.sort((a,b)=>a-b);
+   const key=JSON.stringify([group.second,group.third]);
+   if(!formations.has(key))formations.set(key,{first:[],...group});
+   formations.get(key).first.push(first);
+  }
+ }
+ const groups=[...formations.values()].map(group=>({
+  columns:[group.first.sort((a,b)=>a-b),group.second,group.third],
+  count:group.first.length*group.second.length*group.third.length
+ }));
+ const used=[...new Set(groups.flatMap(group=>group.columns.flat()))].sort((a,b)=>a-b);
+ const total=groups.reduce((sum,group)=>sum+group.count,0);
+ const full=used.length*(used.length-1)*(used.length-2)/(ordered?1:6);
+ return used.length>=3&&total===full?[{columns:[used,used,used],count:total}]:groups;
+}
 function betSectionHtml(label,tickets,ordered,raceId){
- const total=tickets.length+'点・合計 '+amount(tickets.length*100);
- const rule=ordered?'着順どおり':'着順なし';
+ const groups=ticketFormations(tickets,ordered);
+ const count=groups.reduce((n,g)=>n+g.count,0);
+ const columns=ordered?['1着','2着','3着']:['1列目','2列目','3列目'];
+ const body=groups.map(group=>'<div class="formation-row">'+group.columns.map((values,i)=>
+  '<div class="formation-col"><small>'+columns[i]+'</small><strong>'+values.join('・')+'</strong></div>'
+ ).join('')+'<span class="formation-count">'+group.count+'点</span></div>').join('');
  const key=JSON.stringify([raceId,label]);
- return '<details class="bet-section" data-bet-section="'+esc(key)+'"><summary>'+esc(label)+' <small>'+total+' ／ '+rule+'</small></summary>'+
-  (tickets.length?betListHtml(tickets,ordered):'<p class="tiny muted">買い目なし</p>')+'</details>';
+ return '<details class="bet-section" data-bet-section="'+esc(key)+'"><summary>'+esc(label)+' <small>'+
+  (count?'フォーメーション ／ '+count+'点':'候補なし')+'</small></summary>'+
+ (count?'<div class="formation-list">'+body+'</div>'+
+  '<p class="tiny muted">'+(ordered?'同じ馬の重複は除外。':'着順なし。同じ3頭の組は1点。')+'</p>':'')+'</details>';
+}
+function forecastShortBets(rows,fallback){
+ const usable=Array.isArray(rows)&&rows.length>=3&&rows.every(h=>
+  Number.isInteger(h.no)&&h.no>0&&Number.isFinite(h.win_probability)&&h.win_probability>=0)&&
+  new Set(rows.map(h=>h.no)).size===rows.length;
+ if(!usable||!rows.some(h=>h.win_probability>0)){
+  const ids=[...new Set(fallback.map(h=>Number(h.no??h)).filter(n=>Number.isInteger(n)&&n>0))];
+  const pair=ids.length>=2?[ids.slice(0,2)]:[];
+  return {win:ids.length?[[ids[0]]]:[],place:[],quinella:pair,exacta:pair,wide:[]};
+ }
+ const numbers=rows.map(h=>h.no);
+ const weights=['win_probability','place_weight','show_weight'].map(key=>{
+  const raw=rows.map(h=>{
+   const value=h[key];
+   return Math.max(1e-12,Number.isFinite(value)&&value>=0?value:h.win_probability);
+  });
+  const total=raw.reduce((sum,p)=>sum+p,0);
+  return raw.map(p=>p/total);
+ });
+ const [win,second,third]=weights;
+ const place=new Map(),quinella=new Map(),exacta=new Map(),wide=new Map();
+ const add=(map,ids,p)=>{
+  const key=ids.join('-');
+  map.set(key,(map.get(key)||0)+p);
+ };
+ const samePair=(a,b)=>a<b?[a,b]:[b,a];
+ for(const [i,a] of numbers.entries()){
+  add(place,[a],win[i]);
+  for(const [j,b] of numbers.entries()){
+   if(i===j)continue;
+   const pair=win[i]*second[j]/Math.max(1e-12,1-second[i]);
+   add(place,[b],pair);
+   add(quinella,samePair(a,b),pair);
+   add(exacta,[a,b],pair);
+   for(const [k,c] of numbers.entries()){
+    if(k===i||k===j)continue;
+    const probability=pair*third[k]/Math.max(1e-12,1-third[i]-third[j]);
+    if(numbers.length>=8)add(place,[c],probability);
+    for(const combination of [samePair(a,b),samePair(a,c),samePair(b,c)])add(wide,combination,probability);
+   }
+  }
+ }
+ const prioritized=(map,limit,close)=>{
+  const sorted=[...map].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'en',{numeric:true}));
+  return sorted.slice(0,limit).filter(([,p])=>p>=sorted[0][1]*close).map(([key])=>key.split('-').map(Number));
+ };
+ const starters=numbers.map((n,i)=>[String(n),win[i]]);
+ return {win:prioritized(starters,1,1),place:numbers.length>=5?prioritized(place,2,.9):[],
+  quinella:prioritized(quinella,2,.85),exacta:prioritized(exacta,2,.85),
+  wide:numbers.length>=4?prioritized(wide,2,.9):[]};
+}
+function forecastPicksHtml(top,odds){
+ return '<div class="nar-line">'+top.slice(0,3).map((h,i)=>{
+  const chance=i>0?h.podium_probability??h.win_probability:h.win_probability;
+  const text=Number.isFinite(chance)?'<b>'+narPct(chance*100)+'</b>':'';
+  return '<span class="nar-pick">'+['◎','○','▲'][i]+' '+esc(h.no)+'番 '+esc(h.name)+' '+text+
+   (text?'<small>'+(i>0&&h.podium_probability!=null?'3着内':'勝率')+'</small>':'')+'<small>'+esc(odds(h))+'</small></span>';
+ }).join('')+'</div>';
+}
+function compactBetsHtml(rows,top,trio,trifecta,raceId){
+ const short=forecastShortBets(rows,top);
+ const blocks=[['win','単勝'],['place','複勝'],['quinella','馬連'],['exacta','馬単'],['wide','ワイド']].map(([key,label])=>{
+  const tickets=short[key],separator=key==='exacta'?'→':'－';
+  return '<div><dt>'+label+'</dt><dd>'+ (tickets.length?tickets.map(t=>t.join(separator)).join('、'):'—')+
+   (tickets.length?'<small>'+tickets.length+'点</small>':'')+'</dd></div>';
+ });
+ return '<div class="forecast-bets" aria-label="券種別の参考買い目"><dl class="forecast-short">'+blocks.join('')+'</dl>'+
+  betSectionHtml('三連複',trio,false,raceId)+betSectionHtml('三連単',trifecta,true,raceId)+'</div>';
+}
+function forecastDetails(label,contents,id){
+ return '<details class="forecast-details" data-bet-section="'+esc(JSON.stringify([id,label]))+'"><summary>'+
+  esc(label)+'</summary>'+contents+'</details>';
 }
 function simulationButton(title,rows,source){
  if(!window.KeibaSimulation?.raceInputs(rows))return '';
@@ -1606,6 +1734,7 @@ function narRender(data,localCopy=false){
  narViewedData=data;narViewedCached=localCopy;
  const mode=$('nar-view-mode').value;
  $('nar-results-summary').hidden=mode!=='results';
+ $('nar-review-panel').hidden=mode!=='results';
  $('nar-list-title').textContent=mode==='results'?'レース結果':'レース予想';
  const now=new Date(),arr=Array.isArray(data?.races)?data.races:[];
  const sealedIds=new Set(arr.map(r=>r.id));
@@ -1743,7 +1872,7 @@ function narRender(data,localCopy=false){
     const correct=narResultOrders(r).map(order=>order.join(' → ')).join(' ／ ')+(r.result_alternatives?'（3着同着）':'');
     const trioHit=narTicketHit(r,trio,true);
     const hitText='<span class="'+(hits.win?'hit':'miss')+'">単勝 '+(hits.win?'的中':'不的中')+'</span> ／ <span class="'+(trioHit?'hit':'miss')+'">三連複 '+(trioHit?'的中':'不的中')+'</span> ／ <span class="'+(hits.trifecta?'hit':'miss')+'">三連単 '+(hits.trifecta?'的中':'不的中')+'</span>';
-    return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(r.date+' '+r.venue+' '+r.race_no+'R')+'</strong><span class="pill">結果確定 '+esc(correct)+'</span></div><div class="muted tiny">発走予定 '+esc(r.start_at.replace('T',' ').slice(0,16))+' ／ 予想確定 '+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+'</div><div class="nar-result">'+resultOrderHtml(r)+'<div>'+hitText+'</div></div><details style="margin-top:8px"><summary>単勝オッズ・人気順（取得値）</summary>'+raceInsightHtml(r,'NAR')+'</details>'+purchaseDetailHtml(r)+narPayoutHtml(r,trioHit)+resultReviewHtml(r)+trifectaAllocationHtml(r,tickets)+budgetTicketsHtml(trio,tickets,r.ranking||top,r.trio_full_field_tickets,r.trifecta_diversified_tickets,r.trio_box_tickets)+v5ShadowHtml(r)+recentTrioHtml(r)+savedSimulationButton(r)+'</div>';
+    return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(r.date+' '+r.venue+' '+r.race_no+'R')+'</strong><span class="pill">結果確定 '+esc(correct)+'</span></div><div class="muted tiny">発走予定 '+esc(r.start_at.replace('T',' ').slice(0,16))+' ／ 予想確定 '+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+'</div><div class="nar-result">'+resultOrderHtml(r)+'<div>'+hitText+'</div></div><details style="margin-top:8px"><summary>単勝オッズ・人気順（取得値）</summary>'+raceInsightHtml(r,'NAR')+'</details>'+narPayoutHtml(r,trioHit)+savedSimulationButton(r)+forecastDetails('予想の検証・資金配分',purchaseDetailHtml(r)+resultReviewHtml(r)+trifectaAllocationHtml(r,tickets)+budgetTicketsHtml(trio,tickets,r.ranking||top,r.trio_full_field_tickets,r.trifecta_diversified_tickets,r.trio_box_tickets)+v5ShadowHtml(r)+recentTrioHtml(r),r.id)+'</div>';
    }
   const displayDate=String(r.date||'')+' '+String(r.venue||'')+' '+String(r.race_no||'')+'R';
   const draft=r.status==='draft';
@@ -1757,10 +1886,10 @@ function narRender(data,localCopy=false){
   const marketOrder=fullMarket?[...marketList].sort((a,b)=>Number(a.odds)-Number(b.odds)):[];
   const pickOdds=(no)=>{
    const item=marketByNo.get(Number(no));
-   if(!item)return ' ／ 単勝未取得';
+   if(!item)return '単勝未取得';
    const rank=Number(item.popularity);
    const pos=Number.isInteger(rank)&&rank>=1?rank:marketOrder.findIndex(h=>Number(h.odds)===Number(item.odds))+1;
-   return ' ／ 単勝'+Number(item.odds).toFixed(1)+'倍'+(pos>0?'・'+pos+'人気':'')+(item.observed_at?'（保存値）':'');
+   return '単勝'+Number(item.odds).toFixed(1)+'倍'+(pos>0?'・'+pos+'人気':'')+(item.observed_at?'（保存値）':'');
   };
   const marketLabel=marketList.length?'単勝オッズ：公式取得 '+marketList.length+'頭（最終確認 '+esc(String(marketAt||'時刻不明').replace('T',' ').slice(0,19))+'）':'単勝オッズは未取得です。取得後に表示します。';
   const modelTag=r.trio_uncalibrated_tickets?.length?'三連複：2・3着補正あり':String(r.model||'').includes('_v5_adaptive')?'v5｜三連単の点数を確率の集中度で調整':String(r.model||'').includes('_v4_box')?'v4｜本命は勝率・相手は3着内確率':String(r.model||'').startsWith('form_market_v3')?'v3｜着順別モデル／単勝あり':String(r.model||'').startsWith('form_v3')?'v3｜着順別モデル／単勝なし':String(r.model||'').startsWith('form_market_v2')?'v2｜単勝あり':String(r.model||'').startsWith('form_v2')?'v2｜単勝なし':'旧モデル';
@@ -1781,7 +1910,18 @@ function narRender(data,localCopy=false){
   const alternativeHtml=Array.isArray(alternative)&&alternative.length?
    betSectionHtml('三連単の検証候補（3頭の組を広げる方式）',alternative,true,r.id):'';
   const valueHtml='<div class="nar-trio-title">オッズ条件付き参考買い目 <span class="pill">'+valueTickets.length+'点'+(valueTickets.length?'':' ／ 見送り')+'</span></div><p class="nar-trio-note">'+esc(valueStatus)+' モデル上の倍率は仮説に基づく値で、実際の回収率を保証しません。</p>'+(valueTickets.length?trioTokens(valueTickets):'');
-  return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></div><div class="muted tiny">発走予定 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ '+stampLabel+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+finalizeLabel+' ／ 締切 '+esc(frozenCutoffLabel(r))+' ／ '+esc(modelTag)+esc(staleNote)+'</div><div class="nar-line">'+top.map((p,i)=>'<span class="nar-pick">'+(['◎','○','▲','△','△'][i])+' '+esc(p.no)+'番 '+esc(p.name)+' <b>'+narPct(100*Number(i>0&&p.podium_probability!=null?p.podium_probability:p.win_probability))+'</b><small>'+esc((p.podium_probability==null?'':i===0?'勝率':'3着内')+pickOdds(p.no))+'</small></span>').join('')+'</div><p class="tiny muted">'+marketLabel+'</p>'+betSectionHtml('三連単',tickets,true,r.id)+betSectionHtml(!Array.isArray(r.trio_tickets)?'三連複（旧予想から換算）':boxTrio?.length?'三連複（全出走馬）':r.top5?'三連複BOX':'三連複',trio,false,r.id)+trifectaAllocationHtml(r,tickets,upcomingAllocation?evidenceByDay.get(r.date):null)+budgetTicketsHtml(trio,tickets,r.ranking||top,fieldTrio,r.trifecta_diversified_tickets,boxTrio)+raceInsightHtml(r,'NAR')+forecastQualityHtml(r)+podiumHtml+trioComparison+valueHtml+v5ShadowHtml(r)+resultReviewHtml(r)+purchaseDetailHtml(r)+trifectaPlanHtml(r)+alternativeHtml+recentTrioHtml(r)+savedSimulationButton(r)+'</div>';
+  const timestamps='<p class="tiny muted">'+stampLabel+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+
+   finalizeLabel+' ／ 締切 '+esc(frozenCutoffLabel(r))+' ／ '+esc(modelTag)+esc(staleNote)+'</p>';
+  const details=timestamps+'<p class="tiny muted">'+marketLabel+'</p>'+raceInsightHtml(r,'NAR')+
+   trifectaAllocationHtml(r,tickets,upcomingAllocation?evidenceByDay.get(r.date):null)+
+   budgetTicketsHtml(trio,tickets,r.ranking||top,fieldTrio,alternative,boxTrio)+
+   forecastQualityHtml(r)+purchaseDetailHtml(r)+trifectaPlanHtml(r)+
+   podiumHtml+trioComparison+valueHtml+v5ShadowHtml(r)+resultReviewHtml(r)+alternativeHtml+recentTrioHtml(r);
+  return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></div>'+
+   '<div class="muted tiny">発走 '+esc(String(r.start_at||'').slice(11,16)||'未取得')+
+   (marketList.length?'':' ／ 単勝オッズ未取得')+'</div>'+forecastPicksHtml(top,p=>pickOdds(p.no))+
+   compactBetsHtml(r.ranking,top,trio,tickets,r.id)+savedSimulationButton(r)+
+   forecastDetails('予想の根拠・オッズ・予算・検証',details,r.id)+'</div>';
  }).join(''));
 }
 let narFetching=false,narLastPollAt=0;
@@ -1954,10 +2094,16 @@ function jraAutoRender(venue,date,raceNumber,mode){
   const draft=r.status==='draft',hasResult=Array.isArray(r.result)&&r.result.length===3;
   const status=draft?(Date.now()<Date.parse(r.cutoff_at)?'事前予想・更新中':'事前予想・確定待ち'):hasResult?'結果確定':'予想固定済み';
   const top=r.top5||r.top3||[];
-  const picks=top.map((p,i)=>'<span class="nar-pick">'+['◎','○','▲','△','△'][i]+' '+esc(p.no)+'番 '+esc(p.name)+' <b>'+narPct(100*Number(p.win_probability))+'</b> ／ '+esc(p.odds)+'倍・'+esc(p.popularity)+'人気</span>').join('');
+  const picks=forecastPicksHtml(top,h=>Number.isFinite(h.odds)?'単勝 '+h.odds+'倍'+(h.popularity?'・'+h.popularity+'人気':''):'');
   const trio=Array.isArray(r.trio_tickets)?r.trio_tickets:[],tickets=Array.isArray(r.tickets)?r.tickets:[];
   const wagers=hasResult?'<div class="nar-result">'+resultOrderHtml(r)+'<div>単勝 '+(r.hits?.win?'的中':'不的中')+' ／ 三連複 '+(r.hits?.trio?'的中':'不的中')+' ／ 三連単 '+(r.hits?.trifecta?'的中':'不的中')+'</div><div>確定払戻（100円あたり）：'+[['win','単勝'],['trio','三連複'],['trifecta','三連単']].map(([key,name])=>name+' '+(Number.isInteger(r.payouts?.[key])?amount(r.payouts[key]):'未取得')).join(' ／ ')+'</div></div>':'';
-  return '<div class="jra-card"><div class="jra-card-head"><strong>'+label+'</strong><span class="pill '+(draft?'gray':'')+'">'+esc(status)+'</span></div><p class="tiny muted">発走 '+esc(String(r.start_at||'').replace('T',' ').slice(0,16))+' ／ 予想取得 '+esc(String(r.predicted_at||'').replace('T',' ').slice(0,16))+' ／ 予想締切 '+esc(String(r.cutoff_at||'').replace('T',' ').slice(0,16))+' ／ 市場支持率モデル（未学習）</p><div class="nar-line">'+picks+'</div>'+wagers+(mode==='results'?'':betSectionHtml('三連単',tickets,true,r.id)+betSectionHtml(r.trio_policy==='full_field'?'三連複候補（全出走馬）':r.top5?'三連複BOX':'三連複候補',trio,false,r.id)+budgetTicketsHtml(trio,tickets,r.ranking||top)+jraXRaceLink(r))+trifectaPlanHtml(r)+savedSimulationButton(r)+'</div>';
+  const details='<p class="tiny muted">予想取得 '+esc(String(r.predicted_at||'').replace('T',' ').slice(0,16))+
+   ' ／ 締切 '+esc(frozenCutoffLabel(r))+' ／ 市場支持率モデル</p>'+
+   raceInsightHtml(r,'JRA')+budgetTicketsHtml(trio,tickets,r.ranking||top)+trifectaPlanHtml(r)+jraXRaceLink(r);
+  return '<div class="jra-card"><div class="jra-card-head"><strong>'+label+'</strong><span class="pill '+(draft?'gray':'')+'">'+esc(status)+'</span></div>'+
+   '<p class="tiny muted">発走 '+esc(String(r.start_at||'').slice(11,16)||'未取得')+'</p>'+
+   (mode==='results'?wagers:picks+compactBetsHtml(r.ranking,top,trio,tickets,r.id))+
+   savedSimulationButton(r)+forecastDetails('オッズ・予算・参考情報',details,r.id)+'</div>';
  }).join(''));
 }
 async function jraAutoRefresh(silent=false){
@@ -2019,10 +2165,18 @@ function jraForecastCard(r,top,trio){
  const pop=mixed?new Map():new Map(oddsOrder.map((h,i)=>[Number(h.no),i+1]));
  const oddsLabel=h=>displayedOdd(h).toFixed(1)+'倍'+(manual.has(Number(h.no))?'（手動更新）':mixed?'（予想時）':'');
  const popLabel=h=>pop.has(Number(h.no))?pop.get(Number(h.no))+'人気':'人気未確定';
- const picks=ranks.slice(0,5).map((h,i)=>'<span class="nar-pick">'+['◎','○','▲','△','△'][i]+' '+esc(h.no)+'番 '+esc(h.name)+' <b>'+narPct(Number(h.win_probability)*100)+'</b> ／ '+esc(oddsLabel(h))+'・'+esc(popLabel(h))+'</span>').join('');
- const table=ranks.map((h,i)=>'<div class="intel-item"><b>'+esc(i+1)+'位</b><span>'+esc(h.no)+'番 '+esc(h.name)+'</span><span>'+esc(oddsLabel(h))+' ／ '+esc(popLabel(h))+'</span></div>').join('');
+ const shown=ranks.length?ranks:top.map(no=>({no,name:''}));
+ const picks=forecastPicksHtml(shown,h=>ranks.length?'単勝 '+oddsLabel(h)+'・'+popLabel(h):'');
  const tickets=Array.isArray(r.tickets)?r.tickets:[];
- return '<div class="jra-card"><div class="jra-card-head"><strong>'+esc(r.date+' '+r.venue+' '+(r.raceNo||'')+'R')+'</strong><span class="pill gray">予想確定・固定済み</span></div><small>'+esc(r.name)+' ／ 発走 '+esc(String(r.startAt||'').replace('T',' ').slice(0,16))+' ／ 保存 '+esc(new Date(r.lockedAt||r.createdAt).toLocaleString('ja-JP'))+' ／ 締切 '+esc(frozenCutoffLabel(r))+(r.marketMode?' ／ オッズ参考（学習AIではない）':' ／ 指数モデル')+'</small><div class="nar-line">'+picks+'</div>'+betSectionHtml('三連単',tickets,true,r.id)+betSectionHtml('三連複',trio,false,r.id)+budgetTicketsHtml(trio,tickets,ranks.length?ranks:top)+raceInsightHtml(r,'JRA')+'<details><summary>全出走馬の予想順位・オッズ・人気順</summary>'+table+'</details>'+purchaseDetailHtml(r)+trifectaPlanHtml(r)+'<p class="tiny muted">◎ '+esc(top[0]??'—')+' ／ ○ '+esc(top[1]??'—')+' ／ ▲ '+esc(top[2]??'—')+'。人気・オッズは予想保存時点の入力値。</p>'+jraXRaceLink(r)+savedSimulationButton(r)+'</div>';
+ const allOdds=ranks.map((h,i)=>'<div class="intel-item"><b>'+esc(i+1)+'位</b><span>'+esc(h.no)+'番 '+esc(h.name)+
+  '</span><span>'+esc(oddsLabel(h))+' ／ '+esc(popLabel(h))+'</span></div>').join('');
+ const details='<p class="tiny muted">保存 '+esc(new Date(r.lockedAt||r.createdAt).toLocaleString('ja-JP'))+
+  ' ／ 締切 '+esc(frozenCutoffLabel(r))+(r.marketMode?' ／ オッズ参考':' ／ 指数モデル')+'</p>'+
+  allOdds+raceInsightHtml(r,'JRA')+budgetTicketsHtml(trio,tickets,shown)+purchaseDetailHtml(r)+trifectaPlanHtml(r)+jraXRaceLink(r);
+ return '<div class="jra-card"><div class="jra-card-head"><strong>'+esc(r.date+' '+r.venue+' '+(r.raceNo||'')+'R')+
+  '</strong><span class="pill gray">予想確定</span></div><p class="tiny muted">発走 '+esc(String(r.startAt||'').slice(11,16)||'未取得')+
+  '</p>'+picks+compactBetsHtml(r.runners,top,trio,tickets,r.id)+savedSimulationButton(r)+
+  forecastDetails('全頭のオッズ・人気順・予算',details,r.id)+'</div>';
 }
 function jraAutoPredict(races,label){
  jraValidRaces(races);

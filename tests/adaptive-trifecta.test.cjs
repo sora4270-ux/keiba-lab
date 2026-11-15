@@ -53,7 +53,35 @@ assert.equal(resultReview({...saved,result:[1,2,3]}),'的中');
 assert.equal(resultReview({...saved,result:[1,3,2]}),'候補内の着順違い');
 assert.equal(resultReview({...saved,result:[1,2,6]}),'候補5頭から漏れ');
 assert.equal(resultReview({...saved,result:null}),null);
-assert.ok(html.includes('<option value="36" selected>全件</option>'),'all 36 picks can be displayed');
+const formatSource=html.slice(html.indexOf('function ticketFormations('),html.indexOf('function simulationButton('));
+const {ticketFormations,forecastShortBets}=new Function(formatSource+'return {ticketFormations,forecastShortBets};')();
+const nar=JSON.parse(fs.readFileSync('data/auto/nar_predictions.json','utf8'));
+for(const race of [...nar.races,...nar.drafts]){
+ for(const [tickets,ordered] of [[race.tickets||[],true],[race.trio_tickets||[],false]]){
+  const key=t=>[...(ordered?t:[...t].sort((a,b)=>a-b))].join('-');
+  const expected=[...new Set(tickets.map(key))].sort();
+  const shown=new Set();
+  for(const group of ticketFormations(tickets,ordered)){
+   const expectedGroup=new Set();
+   for(const a of group.columns[0])for(const b of group.columns[1])for(const c of group.columns[2]){
+    if(a!==b&&a!==c&&b!==c)expectedGroup.add(key([a,b,c]));
+   }
+   assert.equal(group.count,expectedGroup.size);
+   for(const combination of expectedGroup){
+    assert.ok(!shown.has(combination));
+    shown.add(combination);
+   }
+  }
+  assert.deepEqual([...shown].sort(),expected,'formation must represent exactly the stored combinations');
+ }
+}
+const runners=probs=>probs.map((win_probability,i)=>({no:i+1,win_probability}));
+assert.deepEqual(forecastShortBets(runners([.7,.2,.08,.01,.01]),[]).win,[[1]]);
+assert.equal(forecastShortBets(runners([.7,.2,.08,.01,.01]),[]).quinella.length,1);
+const openField=forecastShortBets(runners([.2,.2,.2,.2,.2]),[]);
+for(const type of ['place','quinella','exacta','wide'])assert.equal(openField[type].length,2);
+assert.deepEqual(forecastShortBets(runners([.5,.3,.2]),[]).place,[]);
+assert.deepEqual(forecastShortBets(undefined,[1,2,3]).exacta,[[1,2]]);
 const simulator=require('../race-simulator.js');
 const field=simulator.raceInputs([1,2,3,4].map(no=>({
  no,name:'Runner '+no,

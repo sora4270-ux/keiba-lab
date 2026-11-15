@@ -45,7 +45,7 @@ jobs:
           html = Path('index.html').read_text(encoding='utf-8')
           js = html.rsplit('<script>', 1)[1].split('</script>', 1)[0]
           Path('/tmp/keiba-lab-inline.js').write_text(js, encoding='utf-8')
-          for token in ('id="nar-races"', 'function savedTrioList(', 'id="manual-trio-list"', 'id="manual-trio-count"', 'id="jra-center"', 'function jraDateTime(', 'id="jra-entries"', 'function jraAutoPredict('):
+          for token in ('id="nar-races"', 'function savedTrioList(', 'id="manual-bets"', 'function ticketFormations(', 'id="jra-center"', 'function jraDateTime(', 'id="jra-entries"', 'function jraAutoPredict('):
               assert token in html, f'Feature missing: {token}'
           print('All trio UI elements found')
           PY
