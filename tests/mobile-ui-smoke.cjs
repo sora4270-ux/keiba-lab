@@ -90,7 +90,7 @@ async function run() {
     await page.locator('#nar-refresh').click();
     await page.waitForFunction(()=>document.querySelector('#nar-odds-status')?.textContent?.includes('取得 1/1R'),null,{timeout:10000});
     const mainBets=page.locator('#nar-races .forecast-bets');
-    assert.equal(await page.locator('#nar-races .confidence-tag').innerText(),'信頼度 B','NAR grade is capped without pre-race odds evidence');
+    assert.equal(await page.locator('#nar-races .confidence-tag').textContent(),'信頼度 B','NAR grade is capped without pre-race odds evidence');
     assert.deepEqual(await mainBets.locator('dt').allTextContents(),['単勝','複勝','馬連','馬単','ワイド']);
     const trio=mainBets.locator('.bet-section').nth(0);
     const trifecta=mainBets.locator('.bet-section').nth(1);
@@ -257,14 +257,14 @@ async function run() {
     await page.waitForFunction(()=>document.querySelector('#jra-auto-status')?.textContent?.includes('接続済み'),null,{timeout:12000});
     assert.ok((await page.locator('#jra-auto-status').innerText()).includes('接続済み'),'licensed feed status');
     assert.ok((await page.locator('#jra-auto-races').innerText()).includes('テスト一号'),'server-side JRA drafts appear without manual input');
-    assert.equal(await page.locator('#jra-auto-races .confidence-tag').innerText(),'信頼度 A');
+    assert.equal(await page.locator('#jra-auto-races .confidence-tag').textContent(),'信頼度 A');
     assert.match(await page.locator('#jra-auto-races').innerText(),/三連複.*フォーメーション/);
     await page.locator('.tab[data-tab="predict"]').click();
     await page.locator('#load-sample').click();
     await page.locator('#run-prediction').click();
     assert.equal(await page.locator('#manual-bets dt').count(),5);
     assert.equal(await page.locator('#manual-bets .bet-section').count(),2);
-    assert.match(await page.locator('#manual-confidence').innerText(),/^信頼度 [SABC]$/);
+    assert.match(await page.locator('#manual-confidence').textContent(),/^信頼度 [SABC]$/);
     assert.deepEqual(errors,[],'no uncaught JavaScript errors');
     console.log('PASS mobile Chromium: home counts, race countdown, refresh, active dock, NAR/JRA filters, reset and prediction/result switches');
   }finally{
