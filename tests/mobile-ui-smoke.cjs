@@ -68,6 +68,7 @@ async function run() {
     assert.ok((await page.locator('#quick-next-race').innerText()).includes('発走予定'),'next race preview');
 
     assert.ok((await page.locator('#nar-odds-status').innerText()).includes('取得 0/0R'),'unpublished NAR odds are explicitly reported');
+    assert.equal(await page.locator('#nar-races .confidence-tag').count(),0,'schedule-only races have no grade');
     const narRace={
       id:schedule[0].id,date:today,venue:'園田',race_no:4,name:'架空の試験競走4R',
       start_at:schedule[0].start_at,cutoff_at:new Date(Date.now()+1.75*3600000).toISOString(),
@@ -89,6 +90,7 @@ async function run() {
     await page.locator('#nar-refresh').click();
     await page.waitForFunction(()=>document.querySelector('#nar-odds-status')?.textContent?.includes('取得 1/1R'),null,{timeout:10000});
     const mainBets=page.locator('#nar-races .forecast-bets');
+    assert.equal(await page.locator('#nar-races .confidence-tag').innerText(),'信頼度 B','NAR grade is capped without pre-race odds evidence');
     assert.deepEqual(await mainBets.locator('dt').allTextContents(),['単勝','複勝','馬連','馬単','ワイド']);
     const trio=mainBets.locator('.bet-section').nth(0);
     const trifecta=mainBets.locator('.bet-section').nth(1);
@@ -101,6 +103,7 @@ async function run() {
     const forecastDetails=page.locator('#nar-races .forecast-details > summary');
     assert.equal(await page.locator('#nar-races .forecast-details').getAttribute('open'),null);
     await forecastDetails.click();
+    assert.ok(await page.getByText('本命の信頼度 B',{exact:true}).isVisible());
     const allocation=page.locator('#nar-races [data-trifecta-allocation]');
     await allocation.locator('summary').click();
     assert.match(await allocation.locator('[data-allocation-summary]').innerText(),/自動配分は見送り.*0円/);
@@ -247,18 +250,21 @@ async function run() {
         trio_tickets:[[1,2,3]],tickets:[[1,2,3]]
       }]
     };
+    licensedJraFixture.drafts[0].ranking=licensedJraFixture.drafts[0].top3;
     await page.locator('#jra-view-date').selectOption('all');
     await page.locator('#jra-view-number').selectOption('all');
     await page.locator('#jra-auto-refresh').click();
     await page.waitForFunction(()=>document.querySelector('#jra-auto-status')?.textContent?.includes('接続済み'),null,{timeout:12000});
     assert.ok((await page.locator('#jra-auto-status').innerText()).includes('接続済み'),'licensed feed status');
     assert.ok((await page.locator('#jra-auto-races').innerText()).includes('テスト一号'),'server-side JRA drafts appear without manual input');
+    assert.equal(await page.locator('#jra-auto-races .confidence-tag').innerText(),'信頼度 A');
     assert.match(await page.locator('#jra-auto-races').innerText(),/三連複.*フォーメーション/);
     await page.locator('.tab[data-tab="predict"]').click();
     await page.locator('#load-sample').click();
     await page.locator('#run-prediction').click();
     assert.equal(await page.locator('#manual-bets dt').count(),5);
     assert.equal(await page.locator('#manual-bets .bet-section').count(),2);
+    assert.match(await page.locator('#manual-confidence').innerText(),/^信頼度 [SABC]$/);
     assert.deepEqual(errors,[],'no uncaught JavaScript errors');
     console.log('PASS mobile Chromium: home counts, race countdown, refresh, active dock, NAR/JRA filters, reset and prediction/result switches');
   }finally{
