@@ -185,7 +185,7 @@ async function run() {
     await xUrl.fill('https://x.com/i/status/456');
     await xPost.getByRole('button').click();
     await page.locator('#jra-x-status').getByText(/埋め込みを表示できません/).waitFor();
-    assert.equal(await xOriginal.getAttribute('href'),'https://x.com/i/web/status/456');
+    assert.equal(await xOriginal.getAttribute('href'),'https://x.com/i/status/456');
     assert.equal(xWidgetLoads,1,'the widget is shared across preview requests');
     // Import a future JRA race through the shared CSV intake, then forecast via JRA one-tap controls.
     const future=new Date(Date.now()+48*3600000);
