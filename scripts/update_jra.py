@@ -8,7 +8,6 @@ This repository is public; only execute with explicit PUBLICATION authorization.
 from __future__ import annotations
 
 import datetime as dt
-import itertools
 import json
 import math
 import os
@@ -17,7 +16,7 @@ import sys
 import urllib.parse
 import urllib.request
 from zoneinfo import ZoneInfo
-from trio_strategy import top_five_tickets, trifecta_plan
+from trio_strategy import ticket_ranking, trifecta_plan
 
 JST = ZoneInfo("Asia/Tokyo")
 OUT = Path("data/auto/jra_predictions.json")
@@ -80,16 +79,10 @@ def forecast(r, now):
          "win_probability": round(p[i], 6), "odds": runners[i]["odds"], "popularity": popularity[i]}
         for i in ranks
     ]
-    trifecta = []
-    for i, j, k in itertools.permutations(ranks[:5], 3):
-        denom1 = 1 - p[i]
-        denom2 = 1 - p[i] - p[j]
-        if denom1 <= 0 or denom2 <= 0:
-            continue
-        probability = p[i] * p[j] / denom1 * p[k] / denom2
-        trifecta.append((probability, [runners[i]["no"], runners[j]["no"], runners[k]["no"]]))
-    trifecta.sort(key=lambda t: (-t[0], t[1]))
-    trio_tickets, tickets = top_five_tickets([h["no"] for h in ranking], trifecta)
+    ordered, trios = ticket_ranking(runners, p, p, None)
+    trio_tickets = [list(key) for key, _ in trios[:10]]
+    plan = trifecta_plan([h["no"] for h in ranking], ordered)
+    tickets = plan.pop("tickets")
     cutoff = iso(r["start_at"]) - CUT_OFF
     return {
         "id": r["id"], "date": r["date"], "venue": r["venue"], "race_no": r["race_no"],
@@ -98,8 +91,8 @@ def forecast(r, now):
         "status": "draft", "predicted_at": now.isoformat(timespec="seconds"),
         "model": "market_only_plackett_luce_untrained",
         "top3": ranking[:3], "top5": ranking[:5], "ranking": ranking,
-        "trio_tickets": trio_tickets, "tickets": tickets,
-        "trifecta_plan": {k: v for k, v in trifecta_plan([h["no"] for h in ranking], trifecta).items() if k != "tickets"},
+        "trio_tickets": trio_tickets, "tickets": tickets, "trio_policy": "full_field",
+        "trifecta_plan": plan,
     }
 
 

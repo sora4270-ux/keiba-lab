@@ -54,4 +54,16 @@ assert.equal(resultReview({...saved,result:[1,3,2]}),'候補内の着順違い')
 assert.equal(resultReview({...saved,result:[1,2,6]}),'候補5頭から漏れ');
 assert.equal(resultReview({...saved,result:null}),null);
 assert.ok(html.includes('<option value="36" selected>全件</option>'),'all 36 picks can be displayed');
+const simulator=require('../race-simulator.js');
+const field=simulator.raceInputs([1,2,3,4].map(no=>({
+ no,name:'Runner '+no,
+ win_probability:no===1?1:0,
+ place_weight:no===4?1:0,
+ show_weight:no===3?1:0
+})));
+assert.deepEqual(simulator.sampleOrder(field,()=>.5).map(h=>h.no),[1,4,3,2]);
+const estimated=simulator.estimate(field);
+for(const stage of ['win','place','show'])assert.equal(estimated.reduce((sum,row)=>sum+row[stage],0),5000);
+assert.deepEqual(estimated,simulator.estimate(field));
+assert.equal(simulator.raceInputs([{no:1,name:'A',win_probability:1}]),null);
 console.log('PASS: adaptive count, Python/browser parity, coverage cap, cost and loss classification',counts);

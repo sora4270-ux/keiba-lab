@@ -95,19 +95,29 @@ def trio_odds_index(archive):
     return combination_odds_indexes(archive)[0]
 
 
+def position_weights(form, market, config=None):
+    config = config or {}
+    if market is not None and len(market) == len(form):
+        fitted = config.get("trio_market_calibration")
+        if fitted:
+            return [mix_market(form, market, weight, power) for weight, power in fitted]
+        second_w = float(config.get("place_market_weight", .65) or .65)
+        third_w = float(config.get("show_market_weight", .50) or .50)
+        return mix_market(form, market, second_w, 1.), mix_market(form, market, third_w, 1.)
+    return form, form
+
+
+def mix_market(form, market, weight, power):
+    adjusted = normalize([p ** power for p in market])
+    return [(1-weight)*f + weight*m for f, m in zip(form, adjusted)]
+
+
 def ticket_ranking(horses, win, form, market, config=None):
     """Rank 3-way tickets using distinct conditional second/third weights."""
-    config = config or {}
     n = len(horses)
     if n < 3 or len(win) != n or len(form) != n:
         raise ValueError("Incomplete race probability input")
-    if market is not None and len(market) == n:
-        second_w = float(config.get("place_market_weight", .65) or .65)
-        third_w = float(config.get("show_market_weight", .50) or .50)
-        second = normalize([(1-second_w)*form[i] + second_w*market[i] for i in range(n)])
-        third = normalize([(1-third_w)*form[i] + third_w*market[i] for i in range(n)])
-    else:
-        second, third = form, form
+    second, third = position_weights(form, market, config)
     ordered, trios = [], {}
     for i, j, k in itertools.permutations(range(n), 3):
         prob = win[i] * second[j] / max(1e-12, 1-second[i])
@@ -219,7 +229,7 @@ def value_selection(ranked_trios, official_quotes, observed_at, threshold=1.15):
     }
 
 
-def calibration_for_podium(records, now):
+def calibration_for_podium(records, now, trio_form_alpha=None):
     """Fit position-specific market weights using settled, pre-lock races only."""
     observations = []
     for r in records:
@@ -228,22 +238,24 @@ def calibration_for_podium(records, now):
             if settled >= now:
                 continue
             snap = r.get("market_at_lock") or {}
-            if dt.datetime.fromisoformat(snap["updated_at"]) >= dt.datetime.fromisoformat(r["cutoff_at"]):
-                continue
             observed = dt.datetime.fromisoformat(snap["updated_at"])
             locked = dt.datetime.fromisoformat(r["locked_at"])
-            if observed > locked or locked - observed > dt.timedelta(minutes=15):
+            cutoff = dt.datetime.fromisoformat(r["cutoff_at"])
+            if not observed <= locked < cutoff < settled or locked - observed > dt.timedelta(minutes=15):
                 continue
             rows = r["ranking"]
             ids = [x["no"] for x in rows]
-            if len(ids) < 3 or len(r["result"]) < 3 or len(set(r["result"])) < 3:
+            if len(ids) < 3 or len(r["result"]) != 3 or len(set(r["result"])) != 3:
                 continue
-            form = normalize([float(x["form_probability"]) ** float(r.get("calibration", {}).get("form_alpha", 1)) for x in rows])
+            raw_form = [float(x["form_probability"]) for x in rows]
+            if not all(math.isfinite(p) and p > 0 for p in raw_form):
+                continue
+            form = normalize([p ** float(r.get("calibration", {}).get("form_alpha", 1)) for p in raw_form])
             market = market_probabilities(ids, {x["no"]: x for x in snap["horses"]})
             if not form or not market:
                 continue
             indices = [ids.index(n) for n in r["result"]]
-            observations.append((settled, form, market, indices))
+            observations.append((settled, form, market, indices, raw_form))
         except (KeyError, TypeError, ValueError, IndexError, OverflowError):
             continue
     defaults = (.65, .50)
@@ -253,18 +265,36 @@ def calibration_for_podium(records, now):
 
     def loss(weight, position, prior):
         total = 0
-        for _, form, market, ids in recent:
+        for _, form, market, ids, _ in recent:
             probs = normalize([(1-weight)*f + weight*m for f, m in zip(form, market)])
             excluded = ids[:position]
             conditional = probs[ids[position]] / max(1e-12, 1-sum(probs[j] for j in excluded))
             total -= math.log(max(conditional, 1e-12))
         return total / len(recent) + .02*(weight-prior)**2
     weights = [.3, .5, .65, .8, 1.0]
-    return {
+    config = {
         "place_market_weight": min(weights, key=lambda w: loss(w, 1, defaults[0])),
         "show_market_weight": min(weights, key=lambda w: loss(w, 2, defaults[1])),
         "podium_training_races": len(observations)
     }
+    if trio_form_alpha is not None:
+        # Freeze separate, regularized 2nd/3rd market calibration for the
+        # unordered ticket model. Use the same form scaling as the next race.
+        train = [(normalize([p ** trio_form_alpha for p in raw]), market, ids)
+                 for _, _, market, ids, raw in recent]
+        grid = list(itertools.product((.5, .65, .8, .9, .95, 1.), (.75, .9, 1., 1.1, 1.25, 1.4)))
+        losses = [[], []]
+        for weight, power in grid:
+            totals = [0., 0.]
+            for form, market, finish in train:
+                probs = mix_market(form, market, weight, power)
+                first, second, third = finish
+                totals[0] -= math.log(probs[second] / (1 - probs[first]))
+                totals[1] -= math.log(probs[third] / (1 - probs[first] - probs[second]))
+            for i, total in enumerate(totals):
+                losses[i].append(total / len(train) + .02*(weight-defaults[i])**2 + .035*(power-1)**2)
+        config["trio_market_calibration"] = [grid[min(range(len(grid)), key=stage.__getitem__)] for stage in losses]
+    return config
 
 
 def archived_trio_tickets(record):

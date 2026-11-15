@@ -11,4 +11,12 @@ class QualityTest(unittest.TestCase):
         rows=[self.record(t) for t in ['2026-11-08T11:45:00+09:00','2026-11-08T11:44:59+09:00','2026-11-08T12:01:00+09:00']]
         self.assertEqual(learn_parameters(rows,now)['market_training_races'],1)
         self.assertEqual(calibration_for_podium(rows,now)['podium_training_races'],1)
+    def test_new_trio_calibration_requires_settled_prelock_records(self):
+        now = dt.datetime.fromisoformat('2026-11-08T14:00:00+09:00')
+        usable = self.record('2026-11-08T11:55:00+09:00')
+        stale = self.record('2026-11-08T11:40:00+09:00')
+        future = {**usable, 'settled_at': '2026-11-08T15:00:00+09:00'}
+        self.assertNotIn('trio_market_calibration',
+                         learn_parameters([usable]*59 + [stale, future], now))
+        self.assertEqual(len(learn_parameters([usable]*60, now)['trio_market_calibration']), 2)
 if __name__=='__main__': unittest.main()

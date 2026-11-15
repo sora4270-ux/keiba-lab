@@ -214,6 +214,18 @@ async function run() {
     assert.equal(raceSearch.origin,'https://x.com');
     assert.match(raceSearch.searchParams.get('q'),/^東京11R 予想 since:/);
     assert.ok((await page.locator('#jra-list').innerText()).includes('単勝オッズ'),'JRA odds/popularity detail available');
+    await page.emulateMedia({reducedMotion:'reduce'});
+    const simulation=page.locator('#race-simulation');
+    await page.locator('#jra-list [data-race-simulation]').click();
+    assert.equal(await simulation.isVisible(),true);
+    assert.equal(await simulation.locator('[data-sim-track] .sim-lane').count(),4);
+    assert.equal(await simulation.locator('[data-sim-stats] tr').count(),4);
+    await simulation.locator('[data-sim-choice]').selectOption('1');
+    await simulation.locator('[data-sim-start]').click();
+    await simulation.getByRole('status').filter({hasText:'応援馬'}).waitFor();
+    assert.equal(await simulation.locator('[data-sim-finish] li').count(),4);
+    await simulation.getByRole('button',{name:'閉じる'}).click();
+    assert.equal(await simulation.isVisible(),false);
     assert.ok((await page.locator('#jra-import-count').innerText()).includes('予想可能 0R'),'duplicate prediction disabled');
 
     // License-enabled backend JSON is rendered without requiring a manual CSV import.

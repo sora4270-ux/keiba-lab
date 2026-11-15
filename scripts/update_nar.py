@@ -20,7 +20,7 @@ from zoneinfo import ZoneInfo
 from odds_encoding import detect_odds_csv_encoding
 from value_strategy_v5 import build_shadow_plan
 from trio_strategy import (diversified_trifecta_tickets, combination_odds_indexes, ticket_ranking,
-                           value_selection, calibration_for_podium, trifecta_plan)
+                           value_selection, calibration_for_podium, position_weights, trifecta_plan)
 
 JST = ZoneInfo("Asia/Tokyo")
 BASE_URL = "https://www.keiba.go.jp/KeibaWeb/DataDownload/RaceDataDownload?type=daily"
@@ -317,7 +317,7 @@ def learn_parameters(records, now):
                         for p, m, i in prelock) / len(prelock)
                     + .01 * (w-.8)**2)
         weight = min([.5, .6, .7, .8, .9], key=market_loss)
-    podium = calibration_for_podium([r for r in records if not r.get("result_alternatives")], now)
+    podium = calibration_for_podium([r for r in records if not r.get("result_alternatives")], now, alpha)
     return {"form_alpha": alpha, "market_weight": weight, **podium,
             "form_training_races": n, "market_training_races": len(prelock)}
 
@@ -335,7 +335,9 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
     w = cfg["market_weight"] if market_p else 0.
     probs = [(1-w)*p + w*market_p[i] if market_p else p for i, p in enumerate(form)]
     ranked = sorted(range(len(horses)), key=lambda i: (-probs[i], horses[i]["no"]))
-    ordered, podium_trios = ticket_ranking(horses, probs, form, market_p, cfg)
+    order_config = {**cfg, "trio_market_calibration": None}
+    ordered, podium_trios = ticket_ranking(horses, probs, form, market_p, order_config)
+    place, show = position_weights(form, market_p, cfg)
     podium = {horse["no"]: 0. for horse in horses}
     for probability, ticket in ordered:
         for no in ticket:
@@ -345,13 +347,20 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
     ranked[1:] = sorted(ranked[1:], key=lambda i: (-podium[horses[i]["no"]], -probs[i], horses[i]["no"]))
     ranking = [{"no": horses[i]["no"], "name": horses[i]["name"],
                 "win_probability": round(probs[i], 6),
+                "place_weight": round(place[i], 10), "show_weight": round(show[i], 10),
                 "podium_probability": round(podium[horses[i]["no"]], 6),
                 "form_probability": round(original_form[i], 6)} for i in ranked]
     five = sorted(row["no"] for row in ranking[:5])
     trio_box = [list(combo) for combo in itertools.combinations(five, 3)]
     # The verified win market is needed to rank combinations outside the top five.
-    field_trios = ([list(ticket) for ticket, _ in podium_trios[:len(trio_box)]]
-                   if market_p and len(podium_trios) > len(trio_box) else [])
+    field_trios = []
+    previous_trios = []
+    if market_p and len(podium_trios) > len(trio_box):
+        field_trios = [list(ticket) for ticket, _ in podium_trios[:len(trio_box)]]
+        if cfg.get("trio_market_calibration"):
+            _, adjusted_trios = ticket_ranking(horses, probs, form, market_p, cfg)
+            previous_trios = field_trios
+            field_trios = [list(ticket) for ticket, _ in adjusted_trios[:len(trio_box)]]
     plan = trifecta_plan(five, ordered)
     tickets = plan.pop("tickets")
     if market_p:
@@ -380,7 +389,8 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
         "model": "form_market_v5_adaptive" if market_p else "form_v5_adaptive_no_odds",
         "calibration": {k: cfg.get(k) for k in ("form_alpha", "market_weight",
                   "form_training_races", "market_training_races", "place_market_weight",
-                  "show_market_weight", "podium_training_races")},
+                  "show_market_weight", "podium_training_races", "trio_market_calibration")},
+        "simulation_model": "stage_weights_v1",
         "top3": ranking[:3], "top5": ranking[:5], "ranking": ranking,
         "tickets": tickets, "trio_tickets": field_trios or trio_box,
         "trifecta_diversified_tickets": diversified_trifecta_tickets(ordered, len(tickets)) if market_p else [],
@@ -391,6 +401,8 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
     }
     if field_trios:
         output["trio_box_tickets"] = trio_box
+    if previous_trios:
+        output["trio_uncalibrated_tickets"] = previous_trios
     if trifecta_market:
         quotes = {"-".join(map(str, ticket)): trifecta_market[tuple(ticket)]
                   for ticket in tickets if tuple(ticket) in trifecta_market}
