@@ -1423,7 +1423,7 @@ function trifectaAllocationHtml(r,tickets,autoEvidence=null){
  const autoHold=autoEvidence!==null&&(!autoEvidence.passed||!marketReady);
  const holdText=autoHold?'自動配分は見送り ／ 仮想購入 0円':'';
  const {summary,html}=autoHold?{summary:holdText,html:''}:trifectaAllocationContent(tickets,quotes,defaultBudget,confidence);
- const evidence=autoEvidence===null?'':'<p class="tiny muted">前日までの直近最大60レースで資金配分を検証。対象 '+autoEvidence.n+'R ／ 回収率 '+roiLabel(autoEvidence)+'。自動配分は30レース以上かつ回収率100%以上で有効になります。'+(autoHold?'設定額で仮想試算できます。':'')+'</p>';
+ const evidence=autoEvidence===null?'':'<p class="tiny muted">同じ競馬場（'+esc(r.venue)+'）で前日までの直近最大60レースを検証。対象 '+autoEvidence.n+'R ／ 回収率 '+roiLabel(autoEvidence)+'。自動配分は30レース以上かつ回収率100%以上で有効になります。'+(autoHold?'設定額で仮想試算できます。':'')+'</p>';
  return '<details class="stake-summary" data-trifecta-allocation="'+esc(JSON.stringify({tickets,quotes,confidence,holdText}))+'">'+
   '<summary><b>三連単の資金配分（仮想）</b> · <span data-allocation-summary>'+esc(summary)+'</span></summary>'+
   '<div class="venue-toolbar"><label class="field">1レースの予算上限（円）<input type="number" inputmode="numeric" min="0" step="1" value="'+defaultBudget+'" data-allocation-budget></label>'+
@@ -1651,8 +1651,8 @@ function trifectaAllocationReview(records,limit=Infinity){
  }
  return {equal:roiStatistics(equal),recovery:roiStatistics(recovery)};
 }
-function trifectaAutoEvidence(records,date){
- const prior=records.filter(r=>r.date<date&&r.result&&Number.isFinite(Date.parse(r.settled_at))&&r.settled_at.slice(0,10)<date)
+function trifectaAutoEvidence(records,date,venue){
+ const prior=records.filter(r=>r.venue===venue&&r.date<date&&r.result&&Number.isFinite(Date.parse(r.settled_at))&&r.settled_at.slice(0,10)<date)
   .sort((a,b)=>Date.parse(b.settled_at)-Date.parse(a.settled_at));
  const {recovery}=trifectaAllocationReview(prior,60);
  return {...recovery,passed:recovery.n>=30&&recovery.returned>=recovery.spent};
@@ -1664,6 +1664,24 @@ function trifectaAllocationReviewHtml(records){
  return '<details><summary>三連単の資金配分を比較（'+equal.n+'/'+records.length+'R）</summary>'+
   '<p class="tiny">1レースの上限1万円にモデル推定的中確率を掛けた予算を使用。締切前の全候補の三連単オッズと確定払戻が揃ったレースで、同じ買い目・同じ購入額を比較します。100円単位の端数は均等配分では保存順に加えます。取消・除外による返還は集計外です。</p>'+
   '<p>仮想購入額（各方式） '+amount(equal.spent)+'<br>均等配分 '+label(equal)+'<br>オッズに応じた配分 '+label(recovery)+'</p></details>';
+}
+function venueBetReviewHtml(records){
+ const byVenue=new Map();
+ for(const r of records){
+  const venue=r.venue||'未分類';
+  if(!byVenue.has(venue))byVenue.set(venue,[]);
+  byVenue.get(venue).push(r);
+ }
+ if(byVenue.size<2)return '';
+ const cell=({hits,settled,priced,stats})=>hits+'/'+settled+'R ／ '+roiLabel(stats)+
+  '<br><small>収支 '+(priced?roiSigned(stats.profit):'—')+' ／ 払戻確認 '+priced+'/'+settled+'R</small>';
+ const rows=[...byVenue.entries()].sort(([a],[b])=>a.localeCompare(b,'ja')).map(([venue,races])=>
+  '<tr><th scope="row">'+esc(venue)+'</th><td>'+cell(reviewMetrics(races,'trio'))+
+  '</td><td>'+cell(reviewMetrics(races,'trifecta'))+'</td></tr>');
+ return '<details open><summary>競馬場別の的中・仮想回収率</summary>'+
+  '<div class="scroll"><table class="intel-all-table"><thead><tr><th scope="col">競馬場</th>'+
+  '<th scope="col">三連複</th><th scope="col">三連単</th></tr></thead><tbody>'+
+  rows.join('')+'</tbody></table></div></details>';
 }
 function dailyReviewHtml(records){
  const rs=records.filter(r=>Array.isArray(r.result)&&r.result.length===3);
@@ -1698,7 +1716,7 @@ function dailyReviewHtml(records){
  const missedRanks=rs.filter(r=>resultReview(r)==='候補5頭から漏れ').map(rankedFinish).filter(Number.isFinite);
  const coverageHtml=missedRanks.length?'<br>候補漏れの内訳（3着以内の予想順位を確認できた '+missedRanks.length+'R）：6位までで全頭 '+missedRanks.filter(rank=>rank<=6).length+'R ／ 7位までで全頭 '+missedRanks.filter(rank=>rank<=7).length+'R。候補範囲の比較で、買い目の的中数とは別です。':'';
  const modelCounts={};for(const r of rs){const model=String(r.model||'旧モデル');modelCounts[model]=(modelCounts[model]||0)+1;}
- return '<b>選択条件の反省：'+rs.length+'R</b><br>三連単 的中 '+(counts['的中']||0)+'R ／ 候補5頭から漏れ '+(counts['候補5頭から漏れ']||0)+'R ／ 候補内の着順違い '+(counts['候補内の着順違い']||0)+'R'+(counts['旧方式・分類対象外']?' ／ 旧方式 '+counts['旧方式・分類対象外']+'R':'')+['三連単の買い目にいない馬あり','3頭は登場・同じ組なし','3頭組あり・着順違い'].filter(k=>counts[k]).map(k=>' ／ '+k+' '+counts[k]+'R').join('')+coverageHtml+boxHtml+'<br>参考成績（1点100円の仮想購入、取消・除外の返還は集計外）：<br>'+returns+'<br>予想時の全頭単勝オッズ不足 '+missing+'R ／ 時刻不明・古いオッズ '+stale+'R ／ 候補網羅度40%未満 '+low+'R'+(cohortHtml?'<br>'+cohortHtml:'')+'<br><span class="tiny">モデル別件数：'+Object.entries(modelCounts).map(([m,n])=>esc(m)+' '+n+'R').join(' ／ ')+'</span><br>候補漏れは点数追加だけでは解消しません。的中率と回収率を分けて評価し、払戻未取得は収支計算から除外します。注意判定は従来からの40%基準と予想時のオッズのみを使用し、結果から買い目を選び直しません。'+budgetReviewHtml(rs)+trioFullFieldReviewHtml(rs)+trioCalibrationReviewHtml(rs)+recentTrioReviewHtml(rs)+trioBudgetComparisonHtml(rs)+diversifiedTrifectaReviewHtml(rs)+trifectaAllocationReviewHtml(rs);
+ return '<b>選択条件の反省：'+rs.length+'R</b><br>三連単 的中 '+(counts['的中']||0)+'R ／ 候補5頭から漏れ '+(counts['候補5頭から漏れ']||0)+'R ／ 候補内の着順違い '+(counts['候補内の着順違い']||0)+'R'+(counts['旧方式・分類対象外']?' ／ 旧方式 '+counts['旧方式・分類対象外']+'R':'')+['三連単の買い目にいない馬あり','3頭は登場・同じ組なし','3頭組あり・着順違い'].filter(k=>counts[k]).map(k=>' ／ '+k+' '+counts[k]+'R').join('')+coverageHtml+boxHtml+'<br>参考成績（1点100円の仮想購入、取消・除外の返還は集計外）：<br>'+returns+'<br>予想時の全頭単勝オッズ不足 '+missing+'R ／ 時刻不明・古いオッズ '+stale+'R ／ 候補網羅度40%未満 '+low+'R'+(cohortHtml?'<br>'+cohortHtml:'')+'<br><span class="tiny">モデル別件数：'+Object.entries(modelCounts).map(([m,n])=>esc(m)+' '+n+'R').join(' ／ ')+'</span><br>候補漏れは点数追加だけでは解消しません。的中率と回収率を分けて評価し、払戻未取得は収支計算から除外します。注意判定は従来からの40%基準と予想時のオッズのみを使用し、結果から買い目を選び直しません。'+venueBetReviewHtml(rs)+budgetReviewHtml(rs)+trioFullFieldReviewHtml(rs)+trioCalibrationReviewHtml(rs)+recentTrioReviewHtml(rs)+trioBudgetComparisonHtml(rs)+diversifiedTrifectaReviewHtml(rs)+trifectaAllocationReviewHtml(rs);
 }
 function narPct(v){return typeof v==='number'&&Number.isFinite(v)?v.toFixed(1)+'%':'—';}
 function narReferenceWager(r,key,stakes){
@@ -1892,7 +1910,7 @@ function narRender(data,localCopy=false){
  const futureUnpredicted=unpredicted.filter(r=>Date.parse(r.start_at)>Date.now());
  const pastUnpredicted=unpredicted.filter(r=>Date.parse(r.start_at)<=Date.now());
  const front=[...upcoming,...futureUnpredicted].sort((a,b)=>Date.parse(a.start_at)-Date.parse(b.start_at));
- const evidenceByDay=new Map();
+ const evidenceByVenueDate=new Map();
  const shown=mode==='results'?finished.slice(0,60):[...front.slice(0,40),...pending.slice(0,10),...pastUnpredicted.sort((a,b)=>Date.parse(b.start_at)-Date.parse(a.start_at)).slice(0,10),...finished.slice(0,30)];
  $('nar-count').textContent=mode==='results'?'確定結果 '+finished.length+'R ／ 予想確定 '+viewed.length+'R':'開催情報 '+(viewed.length+viewedPreviews.length+unpredicted.length)+'R ／ 事前予想 '+viewedPreviews.length+'R ／ 確定予想 '+viewed.length+'R ／ 未予想 '+unpredicted.length+'R';
  if(!shown.length){
@@ -1944,7 +1962,10 @@ function narRender(data,localCopy=false){
   const trioComparison=boxTrio?.length?betSectionHtml('三連複・上位5頭BOX（比較用）',boxTrio,false,r.id):
    fieldTrio?.length?betSectionHtml('三連複・全出走馬（当時の検証用）',fieldTrio,false,r.id):'';
   const upcomingAllocation=!r.result&&Date.parse(r.start_at)>Date.now();
-  if(upcomingAllocation&&!evidenceByDay.has(r.date))evidenceByDay.set(r.date,trifectaAutoEvidence(arr,r.date));
+  const evidenceKey=JSON.stringify([r.date,r.venue]);
+  if(upcomingAllocation&&!evidenceByVenueDate.has(evidenceKey)){
+   evidenceByVenueDate.set(evidenceKey,trifectaAutoEvidence(arr,r.date,r.venue));
+  }
   const alternative=r.trifecta_diversified_tickets;
   const alternativeHtml=Array.isArray(alternative)&&alternative.length?
    betSectionHtml('三連単の検証候補（3頭の組を広げる方式）',alternative,true,r.id):'';
@@ -1952,7 +1973,7 @@ function narRender(data,localCopy=false){
   const timestamps='<p class="tiny muted">'+stampLabel+esc(String(r.locked_at||r.predicted_at||'').replace('T',' ').slice(0,16))+
    finalizeLabel+' ／ 締切 '+esc(frozenCutoffLabel(r))+' ／ '+esc(modelTag)+esc(staleNote)+'</p>';
   const details=confidenceDetail(confidence)+timestamps+'<p class="tiny muted">'+marketLabel+'</p>'+raceInsightHtml(r,'NAR')+
-   trifectaAllocationHtml(r,tickets,upcomingAllocation?evidenceByDay.get(r.date):null)+
+   trifectaAllocationHtml(r,tickets,upcomingAllocation?evidenceByVenueDate.get(evidenceKey):null)+
    budgetTicketsHtml(trio,tickets,r.ranking||top,fieldTrio,alternative,boxTrio)+
    forecastQualityHtml(r)+purchaseDetailHtml(r)+trifectaPlanHtml(r)+
    podiumHtml+trioComparison+valueHtml+v5ShadowHtml(r)+resultReviewHtml(r)+alternativeHtml+recentTrioHtml(r);

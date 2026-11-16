@@ -90,12 +90,19 @@ assert.match(api.trifectaAllocationContent(r.tickets,partial.trifecta_market_at_
 assert.match(api.trifectaAllocationContent(r.tickets,allocationInput.trifecta_market_at_lock.odds,1099,null).html,/配分予算 1000円/);
 const late={...allocationInput,trifecta_market_at_lock:{...allocationInput.trifecta_market_at_lock,updated_at:r.cutoff_at}};
 assert.equal(api.trifectaAllocationReview([late]).recovery.n,0);
-const prior={...allocationInput,date:'2026-11-08',settled_at:'2026-11-08T12:30:00+09:00',
+const prior={...allocationInput,venue:'大井',date:'2026-11-08',settled_at:'2026-11-08T12:30:00+09:00',
  payouts:{trifecta:300}};
-assert.equal(api.trifectaAutoEvidence(Array(29).fill(prior),'2026-11-09').passed,false);
-assert.equal(api.trifectaAutoEvidence(Array(30).fill(prior),'2026-11-09').passed,true);
-assert.equal(api.trifectaAutoEvidence(Array(61).fill(prior),'2026-11-09').n,60);
-assert.equal(api.trifectaAutoEvidence(Array(30).fill(prior),'2026-11-08').n,0);
+assert.equal(api.trifectaAutoEvidence(Array(29).fill(prior),'2026-11-09','大井').passed,false);
+assert.equal(api.trifectaAutoEvidence(Array(30).fill(prior),'2026-11-09','大井').passed,true);
+assert.equal(api.trifectaAutoEvidence(Array(61).fill(prior),'2026-11-09','大井').n,60);
+assert.equal(api.trifectaAutoEvidence(Array(30).fill(prior),'2026-11-08','大井').n,0);
+const mixedVenues=[...Array(29).fill(prior),{...prior,venue:'帯広ば'}];
+assert.equal(api.trifectaAutoEvidence(mixedVenues,'2026-11-09','大井').passed,false);
+assert.equal(api.trifectaAutoEvidence(mixedVenues,'2026-11-09','帯広ば').n,1);
+const venueReview=api.dailyReviewHtml([{...r,venue:'大井'},{...r,venue:'帯広ば',payouts:{}}]);
+assert.match(venueReview,/競馬場別の的中・仮想回収率/);
+assert.match(venueReview,/大井<\/th><td>1\/1R ／ 50\.0%/);
+assert.match(venueReview,/帯広ば<\/th><td>1\/1R ／ —<br><small>収支 — ／ 払戻確認 0\/1R/);
 const deadHeat={...r,result_alternatives:r.tickets,payouts_by_ticket:{trifecta:{'1-2-3':140,'1-3-2':250}}};
 assert.equal(api.narReferenceWager(deadHeat,'trifecta',[300,200]).returned,920);
 const nov14=data.races.filter(r=>r.date==='2026-11-14'&&r.result);
@@ -109,8 +116,8 @@ const nov15=data.races.filter(r=>r.date==='2026-11-15'&&r.result);
 if(nov15.length===56){
  assert.equal(api.reviewMetrics(nov15,'trio').hits,21);
  assert.equal(api.reviewMetrics(nov15,'trifecta').stats.returned,51020);
- const evidence=api.trifectaAutoEvidence(data.races,'2026-11-16');
- assert.equal(evidence.n,60);
+ const evidence=api.trifectaAutoEvidence(data.races,'2026-11-16','大井');
+ assert.ok(evidence.n<=60);
  assert.equal(evidence.passed,false);
  console.log('Nov 16 allocation evidence:',evidence);
 }
