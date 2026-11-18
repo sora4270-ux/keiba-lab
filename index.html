@@ -261,6 +261,7 @@
    <button type="button" class="quick-link" data-jump="jra" data-display="results"><strong>📊 中央・結果</strong><small>確定着順と収支</small></button>
   </div>
   <p id="quick-live-summary" class="quick-live-summary" role="status" aria-live="polite">地方競馬の最新データを確認しています…</p>
+  <p id="nar-refresh-health" class="quick-live-summary" role="status" aria-live="polite">更新処理の稼働記録を確認しています…</p>
   <div id="quick-next-race" class="quick-next" aria-live="polite"><span>次の発走予定を確認しています…</span></div>
   <div class="quick-bottom"><button type="button" id="quick-refresh" class="btn sm">↻ 最新データを再取得</button><span>中央競馬の自動取得は許諾済みデータが接続された場合に利用できます。</span></div>
  </section>
@@ -2040,6 +2041,34 @@ function narRender(data,localCopy=false){
    forecastDetails('予想の根拠・オッズ・予算・検証',details,r.id)+'</div>';
  }).join(''));
 }
+function narHealthText(record,now=Date.now()){
+ if(record?.schema_version!==1||!['success','failed'].includes(record.status)||
+    !Number.isFinite(Date.parse(record.completed_at))||!Number.isFinite(Date.parse(record.last_attempt_at))||
+    !Number.isInteger(record.consecutive_failures)||record.consecutive_failures<0)
+  return '更新処理：稼働記録は未計測です。';
+ const stamp=value=>Number.isFinite(Date.parse(value))?new Date(value).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}):'未記録';
+ const jst=new Date(now+9*3600000),hour=jst.getUTCHours();
+ const open=Date.UTC(jst.getUTCFullYear(),jst.getUTCMonth(),jst.getUTCDate(),6)-9*3600000;
+ const stale=hour>=6&&hour<23&&now-Math.max(Date.parse(record.completed_at),open)>30*60000;
+ let state=record.status==='failed'?'取得失敗・連続 '+record.consecutive_failures+'回':
+  record.content_changed?'取得成功・データ変更あり':'取得成功・データ変更なし';
+ if(stale)state+=' ／ ⚠ 稼働記録が30分以上届いていません';
+ else if(hour<6||hour>=23)state+=' ／ 定期取得の時間外（6〜23時）';
+ if(record.status==='success'&&record.odds_status!=='available')state+=' ／ オッズは'+(record.odds_status==='empty'?'配信内に有効データなし':'未取得・未確認');
+ return '更新処理：'+state+'。最終取得試行：'+stamp(record.last_attempt_at)+' ／ 最終成功：'+stamp(record.last_success_at)+
+  (record.last_failure_at?' ／ 最終失敗：'+stamp(record.last_failure_at):'')+'。予想データの変更時刻とは別の記録です。';
+}
+async function narHealthRefresh(){
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
+ try{
+  const url=NAR_AUTO_URL.replace('nar_predictions.json','nar_health.json');
+  const response=await fetch(url+'?v='+Date.now(),{cache:'no-store',credentials:'omit',signal:controller.signal});
+  if(!response.ok)throw Error('health unavailable');
+  $('nar-refresh-health').textContent=narHealthText(await response.json());
+ }catch(e){
+  $('nar-refresh-health').textContent='更新処理：稼働記録を取得できません。処理の成功・失敗は未確認です。';
+ }finally{clearTimeout(timer);}
+}
 let narFetching=false,narLastPollAt=0;
 async function narRefresh(silent=false){
  if(narFetching)return;
@@ -2059,7 +2088,7 @@ async function narRefresh(silent=false){
   let cached;try{cached=JSON.parse(localStorage.getItem('keiba_lab_nar_auto_preview')||'null');}catch(e){}
   if(cached&&Array.isArray(cached.races)){narRender(cached,true);$('nar-status').textContent+=' ／ 最新版の取得失敗：'+e.message;}
   else{$('nar-status').textContent='まだ自動予想データを取得できません：'+e.message+'。GitHub Actionsの稼働状況を確認してください。';$('quick-live-summary').textContent='地方競馬データの取得に失敗しました。更新ボタンで再取得できます。';$('nar-races').innerHTML='<div class="empty">自動予想の初回生成待ちです。地方競馬の公式データ取得が成功すると表示されます。</div>';$('quick-next-race').innerHTML='<div><strong>開催情報が取得できていません</strong><small>地方競馬の更新ボタンから再確認できます。</small></div>';}
- }finally{btn.disabled=false;narFetching=false;}
+ }finally{await narHealthRefresh();btn.disabled=false;narFetching=false;}
 }
 $('nar-refresh').addEventListener('click',()=>narRefresh(false));
 $('quick-refresh').addEventListener('click',()=>narRefresh(false));
