@@ -67,10 +67,14 @@ async function run() {
     await page.waitForFunction(()=>document.querySelector('#nar-refresh-health').textContent.includes('データ変更なし'));
     assert.ok(await page.locator('#nar-refresh-health').isVisible());
     healthFixture={...healthFixture,status:'failed',consecutive_failures:2};
-    await page.evaluate(()=>narHealthRefresh());
+    await page.waitForFunction(()=>!document.querySelector('#nar-refresh').disabled);
+    await page.locator('#quick-refresh').click();
+    await page.waitForFunction(()=>document.querySelector('#nar-refresh-health').textContent.includes('取得失敗・連続 2回'));
     assert.match(await page.locator('#nar-refresh-health').innerText(),/取得失敗・連続 2回/);
     healthFixture={...healthFixture,status:'success',consecutive_failures:0,content_changed:true};
-    await page.evaluate(()=>narHealthRefresh());
+    await page.waitForFunction(()=>!document.querySelector('#nar-refresh').disabled);
+    await page.locator('#quick-refresh').click();
+    await page.waitForFunction(()=>document.querySelector('#nar-refresh-health').textContent.includes('取得成功・データ変更あり'));
     assert.match(await page.locator('#nar-refresh-health').innerText(),/取得成功・データ変更あり/);
 
     assert.equal(await page.locator('.mobile-dock [data-jump="nar"][data-display="predictions"]').getAttribute('aria-current'),'page','NAR prediction is the initial active menu');
