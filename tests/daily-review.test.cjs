@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs');
 const html=fs.readFileSync('index.html','utf8');
 const slice=(a,b)=>html.slice(html.indexOf(a),html.indexOf(b,html.indexOf(a)));
 const source=slice('function savedTrioList(r){','function refreshBudgetTickets(')+slice('function trifectaRecoveryPlan(', 'function trifectaAllocationHtml(')+slice('function resultReview(r){','function narPct(v){')+slice('function narPct(','function narPeriodRaces(records,period){')+slice('function roiStatistics(bets){','function recordResult(rec,top,payouts={})');
-const api=new Function('esc','amount',source+';return {forecastQuality,forecastQualityHtml,reviewMetrics,dailyReviewHtml,budgetTicketsHtml,trifectaAllocationReview,trifectaAutoEvidence,trifectaAllocationContent,narReferenceWager,trioResultReview};')(x=>String(x),x=>String(x)+'円');
+const api=new Function('esc','amount',source+';return {forecastQuality,forecastQualityHtml,reviewMetrics,dailyReviewHtml,budgetTicketsHtml,trifectaAllocationReview,trifectaAutoEvidence,trifectaAllocationContent,narReferenceWager,trioResultReview,trifectaCoverageReviewHtml};')(x=>String(x),x=>String(x)+'円');
 const r={ranking:[1,2,3].map(no=>({no})),top5:[1,2,3].map(no=>({no})),top3:[1,2,3].map(no=>({no})),tickets:[[1,2,3],[1,3,2]],trio_tickets:[[1,2,3]],result:[1,2,3],payouts:{trio:50,trifecta:100},predicted_at:'2026-11-08T12:00:00+09:00',cutoff_at:'2026-11-08T12:05:00+09:00',market_at_lock:{updated_at:'2026-11-08T11:59:00+09:00',horses:[1,2,3].map(no=>({no,odds:3}))},trifecta_plan:{candidate_mass:.5}};
 assert.equal(api.forecastQuality(r).cautious,false);
 assert.equal(api.forecastQuality({...r,trifecta_plan:{candidate_mass:.399}}).lowCoverage,true);
@@ -138,3 +138,31 @@ if(nov17.length===36){
  assert.equal(api.reviewMetrics(nov17,'trio').stats.returned,21960);
  assert.equal(api.reviewMetrics(nov17,'trifecta').stats.returned,42070);
 }
+
+// Missing saved tickets are unrecorded, rather than losing predictions.
+const noTickets={...r,tickets:[],trio_tickets:[]};
+assert.equal(api.reviewMetrics([r,noTickets],'trifecta').settled,1);
+assert.equal(api.reviewMetrics([r,noTickets],'trifecta').unrecorded,1);
+assert.equal(api.reviewMetrics([r,noTickets],'trio').settled,1);
+assert.match(api.dailyReviewHtml([r,noTickets]),/買い目未記録 1R（的中率の対象外）/);
+const coverage={...r,trifecta_plan:{count:2,covered_mass:.6}};
+const missed={...coverage,result:[4,5,6],payouts:{}};
+const frozen=JSON.stringify([coverage,missed]);
+const audit=api.trifectaCoverageReviewHtml([coverage,missed]);
+assert.match(audit,/全体<\/th><td>2R<\/td><td>60\.0%<\/td><td>1\/2R（50\.0%）<\/td><td>-10\.0pt/);
+assert.match(audit,/払戻確認 1R/);
+assert.equal(JSON.stringify([coverage,missed]),frozen);
+for(const mass of [null,undefined,NaN,-.1,1.01,'0.5']){
+ assert.equal(api.trifectaCoverageReviewHtml([{...coverage,trifecta_plan:{count:2,covered_mass:mass}}]),'');
+}
+assert.equal(api.trifectaCoverageReviewHtml([{...coverage,trifecta_plan:{count:3,covered_mass:.6}}]),'');
+assert.equal(api.trifectaCoverageReviewHtml([{...coverage,result:null}]),'');
+const nov18=data.races.filter(r=>r.date==='2026-11-18');
+if(nov18.length===36){
+ assert.equal(api.reviewMetrics(nov18,'trio').hits,15);
+ assert.equal(api.reviewMetrics(nov18,'trio').stats.returned,22890);
+ assert.equal(api.reviewMetrics(nov18,'trifecta').hits,6);
+ assert.equal(api.reviewMetrics(nov18,'trifecta').stats.spent,70400);
+ assert.match(api.dailyReviewHtml(nov18),/三連単の推定的中確率と実績（36\/36R）/);
+}
+console.log('PASS: missing tickets excluded; stored coverage compared with realized hits');

@@ -1477,6 +1477,7 @@ function v5ShadowHtml(r){
 }
 function resultReview(r){
  if(!Array.isArray(r.result)||r.result.length!==3)return null;
+ if(!r.tickets?.length)return '買い目未記録';
  if(narTicketHit(r,r.tickets||[],false))return '的中';
  if(r.trifecta_plan?.policy==='adaptive_full_field_v1'){
   const tickets=r.tickets||[];
@@ -1521,12 +1522,13 @@ function forecastQualityHtml(r){
  return q.cautious?'<p class="hint"><b>参考買い目の注意：見送りを検討</b><br>'+reasons.map(esc).join(' ／ ')+'。候補の追加購入で解決できるとは限りません。予想時点の情報で判定し、保存買い目・参考購入額は変更しません。</p>':'';
 }
 function reviewMetrics(records,key){
- const settled=records.filter(r=>Array.isArray(r.result)&&r.result.length===3);
+ const completed=records.filter(r=>Array.isArray(r.result)&&r.result.length===3);
+ const settled=completed.filter(r=>(key==='trio'?savedTrioList(r):r.tickets||[]).length>0);
  const wagers=settled.map(r=>narReferenceWager(r,key)).filter(Boolean);
  const stats=roiStatistics(wagers);
  // Counts are derived from saved tickets, never a mutable hits flag.
  const hit=(r)=>key==='trio'?narTicketHit(r,savedTrioList(r),true):narTicketHit(r,r.tickets||[],false);
- return {stats,settled:settled.length,priced:wagers.length,hits:settled.filter(hit).length,
+ return {stats,settled:settled.length,unrecorded:completed.length-settled.length,priced:wagers.length,hits:settled.filter(hit).length,
   losingHits:settled.filter(r=>hit(r)&&narReferenceWager(r,key)?.profit<0).length};
 }
 function budgetReviewHtml(records){
@@ -1741,13 +1743,39 @@ function narConfidenceReviewHtml(records){
   '<div class="scroll"><table class="intel-all-table"><thead><tr><th scope="col">信頼度</th><th scope="col">本命1着</th>'+
   '<th scope="col">単勝の仮想回収率</th><th scope="col">払戻確認</th></tr></thead><tbody>'+rows.join('')+'</tbody></table></div></details>';
 }
+function trifectaCoverageReviewHtml(records){
+ // Compare only probabilities stored with the exact original ticket set.
+ // Budget subsets and alternative strategies must not reuse this coverage.
+ const eligible=records.filter(r=>Array.isArray(r.result)&&r.result.length===3&&
+  r.tickets?.length>0&&r.trifecta_plan?.count===r.tickets.length&&
+  Number.isFinite(r.trifecta_plan?.covered_mass)&&r.trifecta_plan.covered_mass>=0&&r.trifecta_plan.covered_mass<=1);
+ if(!eligible.length)return '';
+ const bands=[['40%未満',p=>p<.4],['40〜60%未満',p=>p>=.4&&p<.6],['60%以上',p=>p>=.6]];
+ const rows=[['全体',()=>true],...bands].map(([label,test])=>{
+  const group=eligible.filter(r=>test(r.trifecta_plan.covered_mass));
+  if(!group.length)return '';
+  const predicted=group.reduce((sum,r)=>sum+r.trifecta_plan.covered_mass,0)/group.length;
+  const x=reviewMetrics(group,'trifecta'),actual=x.hits/group.length;
+  const gap=(actual-predicted)*100;
+  return '<tr><th scope="row">'+label+'</th><td>'+group.length+'R</td><td>'+narPct(predicted*100)+
+   '</td><td>'+x.hits+'/'+group.length+'R（'+narPct(actual*100)+'）</td><td>'+(gap>0?'+':'')+gap.toFixed(1)+
+   'pt</td><td>'+roiLabel(x.stats)+'（払戻確認 '+x.priced+'R）</td></tr>';
+ }).join('');
+ return '<details open><summary>三連単の推定的中確率と実績（'+eligible.length+'/'+records.length+'R）</summary>'+
+  '<p class="tiny">発走前に保存した買い目全体の推定確率の平均と、実際の的中率を比較。差は実績−推定です。'+
+  '本命の信頼度S・A・B・Cとは別の指標です。少数の結果で確率や買い目を調整せず、継続して検証します。'+
+  '推定確率未記録・保存点数不一致は対象外。払戻未取得でも的中率の照合には含めます。</p>'+
+  '<div class="scroll"><table class="intel-all-table"><thead><tr><th scope="col">推定確率帯</th><th scope="col">対象</th>'+
+  '<th scope="col">平均推定</th><th scope="col">実際の的中</th><th scope="col">差</th><th scope="col">仮想回収率</th>'+
+  '</tr></thead><tbody>'+rows+'</tbody></table></div></details>';
+}
 function dailyReviewHtml(records){
  const rs=records.filter(r=>Array.isArray(r.result)&&r.result.length===3);
  if(!rs.length)return '<b>選択条件の反省</b>：結果確定後に集計します。';
  const counts={};for(const r of rs){const k=resultReview(r);counts[k]=(counts[k]||0)+1;}
  const returns=['trio','trifecta'].map(key=>{
   const x=reviewMetrics(rs,key),s=x.stats;
-  return (key==='trio'?'三連複':'三連単')+' 的中 '+x.hits+'/'+x.settled+'R ／ '+roiLabel(s)+'（購入 '+amount(s.spent)+'／払戻 '+amount(s.returned)+'／収支 '+roiSigned(s.profit)+'）／ 的中でも赤字 '+x.losingHits+'R ／ 払戻確認 '+x.priced+'/'+x.settled+'R';
+  return (key==='trio'?'三連複':'三連単')+' 的中 '+x.hits+'/'+x.settled+'R ／ '+roiLabel(s)+'（購入 '+amount(s.spent)+'／払戻 '+amount(s.returned)+'／収支 '+roiSigned(s.profit)+'）／ 的中でも赤字 '+x.losingHits+'R ／ 払戻確認 '+x.priced+'/'+x.settled+'R'+(x.unrecorded?' ／ 買い目未記録 '+x.unrecorded+'R（的中率の対象外）':'');
  }).join('<br>');
  const quality=rs.map(forecastQuality),missing=quality.filter(q=>q.missingMarket).length,stale=quality.filter(q=>q.staleMarket).length,low=quality.filter(q=>q.lowCoverage).length;
  const cohorts=[
@@ -1774,7 +1802,7 @@ function dailyReviewHtml(records){
  const missedRanks=rs.filter(r=>resultReview(r)==='候補5頭から漏れ').map(rankedFinish).filter(Number.isFinite);
  const coverageHtml=missedRanks.length?'<br>候補漏れの内訳（3着以内の予想順位を確認できた '+missedRanks.length+'R）：6位までで全頭 '+missedRanks.filter(rank=>rank<=6).length+'R ／ 7位までで全頭 '+missedRanks.filter(rank=>rank<=7).length+'R。候補範囲の比較で、買い目の的中数とは別です。':'';
  const modelCounts={};for(const r of rs){const model=String(r.model||'旧モデル');modelCounts[model]=(modelCounts[model]||0)+1;}
- return '<b>選択条件の反省：'+rs.length+'R</b><br>三連単 的中 '+(counts['的中']||0)+'R ／ 候補5頭から漏れ '+(counts['候補5頭から漏れ']||0)+'R ／ 候補内の着順違い '+(counts['候補内の着順違い']||0)+'R'+(counts['旧方式・分類対象外']?' ／ 旧方式 '+counts['旧方式・分類対象外']+'R':'')+['三連単の買い目にいない馬あり','3頭は登場・同じ組なし','3頭組あり・着順違い'].filter(k=>counts[k]).map(k=>' ／ '+k+' '+counts[k]+'R').join('')+coverageHtml+boxHtml+'<br>参考成績（1点100円の仮想購入、取消・除外の返還は集計外）：<br>'+returns+'<br>予想時の全頭単勝オッズ不足 '+missing+'R ／ 時刻不明・古いオッズ '+stale+'R ／ 候補網羅度40%未満 '+low+'R'+(cohortHtml?'<br>'+cohortHtml:'')+'<br><span class="tiny">モデル別件数：'+Object.entries(modelCounts).map(([m,n])=>esc(m)+' '+n+'R').join(' ／ ')+'</span><br>候補漏れは点数追加だけでは解消しません。的中率と回収率を分けて評価し、払戻未取得は収支計算から除外します。注意判定は従来からの40%基準と予想時のオッズのみを使用し、結果から買い目を選び直しません。'+narHitDiagnosisHtml(rs)+narConfidenceReviewHtml(rs)+venueBetReviewHtml(rs)+budgetReviewHtml(rs)+trioFullFieldReviewHtml(rs)+trioCalibrationReviewHtml(rs)+recentTrioReviewHtml(rs)+trioBudgetComparisonHtml(rs)+diversifiedTrifectaReviewHtml(rs)+trifectaAllocationReviewHtml(rs);
+ return '<b>選択条件の反省：'+rs.length+'R</b><br>三連単 的中 '+(counts['的中']||0)+'R ／ 候補5頭から漏れ '+(counts['候補5頭から漏れ']||0)+'R ／ 候補内の着順違い '+(counts['候補内の着順違い']||0)+'R'+(counts['旧方式・分類対象外']?' ／ 旧方式 '+counts['旧方式・分類対象外']+'R':'')+['買い目未記録','三連単の買い目にいない馬あり','3頭は登場・同じ組なし','3頭組あり・着順違い'].filter(k=>counts[k]).map(k=>' ／ '+k+' '+counts[k]+'R').join('')+coverageHtml+boxHtml+'<br>参考成績（1点100円の仮想購入、取消・除外の返還は集計外）：<br>'+returns+'<br>予想時の全頭単勝オッズ不足 '+missing+'R ／ 時刻不明・古いオッズ '+stale+'R ／ 候補網羅度40%未満 '+low+'R'+(cohortHtml?'<br>'+cohortHtml:'')+'<br><span class="tiny">モデル別件数：'+Object.entries(modelCounts).map(([m,n])=>esc(m)+' '+n+'R').join(' ／ ')+'</span><br>候補漏れは点数追加だけでは解消しません。的中率と回収率を分けて評価し、払戻未取得は収支計算から除外します。注意判定は従来からの40%基準と予想時のオッズのみを使用し、結果から買い目を選び直しません。'+trifectaCoverageReviewHtml(rs)+narHitDiagnosisHtml(rs)+narConfidenceReviewHtml(rs)+venueBetReviewHtml(rs)+budgetReviewHtml(rs)+trioFullFieldReviewHtml(rs)+trioCalibrationReviewHtml(rs)+recentTrioReviewHtml(rs)+trioBudgetComparisonHtml(rs)+diversifiedTrifectaReviewHtml(rs)+trifectaAllocationReviewHtml(rs);
 }
 function narPct(v){return typeof v==='number'&&Number.isFinite(v)?v.toFixed(1)+'%':'—';}
 function narReferenceWager(r,key,stakes){
