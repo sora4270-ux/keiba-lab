@@ -33,4 +33,4 @@ jobs:
           python scripts/update_jra.py --selftest
           python scripts/trio_strategy.py --selftest
       - name: Browser logic and ledger checks
-        run: node --test tests/adaptive-trifecta.test.cjs tests/daily-review.test.cjs tests/forecast-lock.test.cjs tests/jra-auto.test.cjs tests/race-intel.test.cjs tests/roi.test.cjs tests/view-switch.test.cjs
+        run: node --test tests/adaptive-trifecta.test.cjs tests/daily-review.test.cjs tests/forecast-lock.test.cjs tests/jra-auto.test.cjs tests/race-intel.test.cjs tests/roi.test.cjs tests/view-switch.test.cjs tests/refresh-health.test.cjs

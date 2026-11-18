@@ -38,6 +38,8 @@ async function run() {
     await page.route('**/data/auto/nar_predictions.json*',route=>route.fulfill({
       status:200,contentType:'application/json',body:JSON.stringify(mock)
     }));
+    let healthFixture={schema_version:1,status:'success',completed_at:new Date().toISOString(),last_attempt_at:new Date().toISOString(),last_success_at:new Date().toISOString(),consecutive_failures:0,content_changed:false,odds_status:'available'};
+    await page.route('**/data/auto/nar_health.json*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(healthFixture)}));
     let licensedJraFixture={schema_version:1,status:'not_configured',updated_at:null,races:[],drafts:[],schedule:[],summary:{}};
     await page.route('**/data/auto/jra_predictions.json*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(licensedJraFixture)}));
     let xWidgetLoads=0;
@@ -62,6 +64,19 @@ async function run() {
     assert.ok((await page.locator('#quick-live-summary').innerText()).includes('開催情報 2R'),'summary includes schedule');
     assert.ok((await page.locator('#quick-next-race').innerText()).includes('発走まで約'),'next-race countdown shown');
     assert.ok(await page.locator('#quick-refresh').isVisible(),'manual refresh is available');
+    await page.waitForFunction(()=>document.querySelector('#nar-refresh-health').textContent.includes('データ変更なし'));
+    assert.ok(await page.locator('#nar-refresh-health').isVisible());
+    healthFixture={...healthFixture,status:'failed',consecutive_failures:2};
+    await page.waitForFunction(()=>!document.querySelector('#nar-refresh').disabled);
+    await page.locator('#quick-refresh').click();
+    await page.waitForFunction(()=>document.querySelector('#nar-refresh-health').textContent.includes('取得失敗・連続 2回'));
+    assert.match(await page.locator('#nar-refresh-health').innerText(),/取得失敗・連続 2回/);
+    healthFixture={...healthFixture,status:'success',consecutive_failures:0,content_changed:true};
+    await page.waitForFunction(()=>!document.querySelector('#nar-refresh').disabled);
+    await page.locator('#quick-refresh').click();
+    await page.waitForFunction(()=>document.querySelector('#nar-refresh-health').textContent.includes('取得成功・データ変更あり'));
+    assert.match(await page.locator('#nar-refresh-health').innerText(),/取得成功・データ変更あり/);
+
     assert.equal(await page.locator('.mobile-dock [data-jump="nar"][data-display="predictions"]').getAttribute('aria-current'),'page','NAR prediction is the initial active menu');
     assert.equal(await page.locator('.mobile-dock button').count(),5,'mobile bottom navigation');
     assert.ok(await page.locator('.mobile-dock').isVisible(),'bottom navigation visible on phone');

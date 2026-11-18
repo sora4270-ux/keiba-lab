@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'scripts/update_nar.py'
+      - 'scripts/refresh_nar.py'
+      - 'tests/refresh_health_test.py'
       - 'scripts/recent_form.py'
       - 'scripts/odds_encoding.py'
       - 'scripts/trio_strategy.py'
@@ -79,6 +81,7 @@ jobs:
           NODE
       - name: Self-test (no external services)
         run: |
+          python -m unittest discover -s tests -p 'refresh_health_test.py'
           python scripts/update_nar.py --selftest
           python -m unittest discover -s tests -p 'odds_encoding_test.py'
           python scripts/trio_strategy.py --selftest
@@ -109,7 +112,7 @@ jobs:
           if [[ "$EVENT_NAME" == schedule ]]; then
             attempts=12
           fi
-          last_status=0
+          had_failure=0
           for ((i=0; i<attempts; i++)); do
             hour=$(TZ=Asia/Tokyo date +%H)
             if [[ "$EVENT_NAME" == schedule ]] && ((10#$hour < 6 || 10#$hour >= 23)); then
@@ -118,21 +121,19 @@ jobs:
             started=$SECONDS
             # A queued schedule may have checked out an older data commit.
             git pull --rebase
-            if python scripts/update_nar.py; then
-              last_status=0
-              git add data/auto/nar_predictions.json
-              if ! git diff --cached --quiet; then
-                git commit -m "Update NAR pre-race forecasts and confirmed hit rates"
-                git pull --rebase
-                git push
-              fi
-            else
-              last_status=$?
-              echo "::warning::NAR refresh failed (exit ${last_status})."
+            if ! python scripts/refresh_nar.py; then
+              had_failure=1
+              echo "::warning::NAR refresh failed; publishing failure status."
+            fi
+            git add data/auto/nar_predictions.json data/auto/nar_health.json
+            if ! git diff --cached --quiet; then
+              git commit -m "Update NAR forecasts and refresh health"
+              git pull --rebase
+              git push
             fi
             if ((i+1 < attempts)); then
               pause=$((300 - (SECONDS - started)))
               if ((pause > 0)); then sleep "$pause"; fi
             fi
           done
-          exit "$last_status"
+          exit "$had_failure"

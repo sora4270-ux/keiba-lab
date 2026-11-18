@@ -8,6 +8,12 @@ on:
       - 'race-intel.js'
       - 'tests/mobile-ui-smoke.cjs'
       - '.github/workflows/mobile-ui-smoke.yml'
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'sw.js'
+      - 'tests/mobile-ui-smoke.cjs'
+      - '.github/workflows/mobile-ui-smoke.yml'
   workflow_dispatch:
 
 permissions:
