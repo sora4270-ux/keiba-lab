@@ -10,6 +10,10 @@ on:
         description: "End date YYYY-MM-DD"
         required: true
         default: "2026-10-31"
+      confidence_cutoffs:
+        description: "Optional fixed cutoffs from earlier month, e.g. 0.02511,0.05710,0.11511"
+        required: false
+        default: ""
       max_races:
         description: "Maximum races (1..2000)"
         required: true
@@ -32,7 +36,11 @@ jobs:
           START: ${{ inputs.start }}
           END: ${{ inputs.end }}
           MAX_RACES: ${{ inputs.max_races }}
-        run: python scripts/replay_nar_monthly.py --start "$START" --end "$END" --max-races "$MAX_RACES" --output nar-monthly-replay.json
+          CONFIDENCE_CUTOFFS: ${{ inputs.confidence_cutoffs }}
+        run: |
+          args=(--start "$START" --end "$END" --max-races "$MAX_RACES" --output nar-monthly-replay.json)
+          if [ -n "$CONFIDENCE_CUTOFFS" ]; then args+=(--confidence-cutoffs "$CONFIDENCE_CUTOFFS"); fi
+          python scripts/replay_nar_monthly.py "${args[@]}"
       - name: Save backtest report
         if: always()
         uses: actions/upload-artifact@v4
