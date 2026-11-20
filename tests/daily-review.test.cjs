@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs');
 const html=fs.readFileSync('index.html','utf8');
 const slice=(a,b)=>html.slice(html.indexOf(a),html.indexOf(b,html.indexOf(a)));
-const source=slice('function savedTrioList(r){','function refreshBudgetTickets(')+slice('function trifectaRecoveryPlan(', 'function trifectaAllocationHtml(')+slice('function resultReview(r){','function narPct(v){')+slice('function narPct(','function narPeriodRaces(records,period){')+slice('function roiStatistics(bets){','function recordResult(rec,top,payouts={})');
+const source=slice('function forecastMarks(', 'function compactBetsHtml(')+slice('function savedTrioList(r){','function refreshBudgetTickets(')+slice('function trifectaRecoveryPlan(', 'function trifectaAllocationHtml(')+slice('function resultReview(r){','function narPct(v){')+slice('function narPct(','function narPeriodRaces(records,period){')+slice('function roiStatistics(bets){','function recordResult(rec,top,payouts={})');
 const api=new Function('esc','amount',source+';return {forecastQuality,forecastQualityHtml,reviewMetrics,dailyReviewHtml,budgetTicketsHtml,trifectaAllocationReview,trifectaAutoEvidence,trifectaAllocationContent,narReferenceWager,trioResultReview,trifectaCoverageReviewHtml};')(x=>String(x),x=>String(x)+'円');
 const r={ranking:[1,2,3].map(no=>({no})),top5:[1,2,3].map(no=>({no})),top3:[1,2,3].map(no=>({no})),tickets:[[1,2,3],[1,3,2]],trio_tickets:[[1,2,3]],result:[1,2,3],payouts:{trio:50,trifecta:100},predicted_at:'2026-11-08T12:00:00+09:00',cutoff_at:'2026-11-08T12:05:00+09:00',market_at_lock:{updated_at:'2026-11-08T11:59:00+09:00',horses:[1,2,3].map(no=>({no,odds:3}))},trifecta_plan:{candidate_mass:.5}};
 assert.equal(api.forecastQuality(r).cautious,false);

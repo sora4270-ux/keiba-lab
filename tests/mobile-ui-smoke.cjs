@@ -99,12 +99,15 @@ async function run() {
     narRace.tickets=adaptive.tickets.map(t=>[t.a+1,t.b+1,t.c+1]);
     // The NAR exporter rounds the saved probability to six decimal places.
     narRace.trifecta_plan={...adaptive.plan,covered_mass:Number(adaptive.plan.covered_mass.toFixed(6))};
-    narRace.top5=narRace.top3;
+    narRace.top5=[...narRace.top3,{no:4,name:'架空馬D',win_probability:0.05},{no:5,name:'架空馬E',win_probability:0.03}];
     narRace.trifecta_market_at_lock={updated_at:narRace.predicted_at,odds:{'1-2-3':4}};
     mock.drafts=[narRace];
     await page.locator('#nar-refresh').click();
     await page.waitForFunction(()=>document.querySelector('#nar-odds-status')?.textContent?.includes('取得 1/1R'),null,{timeout:10000});
     const mainBets=page.locator('#nar-races .forecast-bets');
+    assert.equal(await page.locator('#nar-races .nar-pick').count(),5,'all five pre-race marks are shown');
+    assert.match(await page.locator('#nar-races .nar-line').innerText(),/☆ 注/);
+    assert.match(await page.locator('#nar-races .nar-line').innerText(),/△ 連下/);
     assert.equal(await page.locator('#nar-races .confidence-tag').textContent(),'信頼度 B','NAR grade is capped without pre-race odds evidence');
     assert.deepEqual(await mainBets.locator('dt').allTextContents(),['単勝','複勝','馬連','馬単','ワイド']);
     const trio=mainBets.locator('.bet-section').nth(0);
@@ -166,6 +169,10 @@ async function run() {
     assert.equal(await page.locator('[data-mode-select="nar-view-mode"] [data-mode="results"]').getAttribute('aria-pressed'),'true');
     assert.ok(await page.locator('#nar-results-summary').isVisible(),'statistics on results mode');
     const review = page.locator('#nar-review');
+    assert.match(await review.innerText(),/予想印別の成績/);
+    await page.locator('#nar-races .forecast-details > summary').click();
+    assert.match(await page.locator('#nar-races .forecast-details').innerText(),/保存時の予想印/);
+    assert.equal(await page.locator('#nar-races .nar-pick').count(),5,'results retain all saved marks');
     assert.ok((await review.innerText()).includes('購入 600円'),'review derives spending from frozen count');
     await review.getByText('1レースの予算別成績（1R）').click();
     assert.ok(await review.getByRole('row').filter({hasText:'500円'}).isVisible(),'budget comparison opens on mobile');
