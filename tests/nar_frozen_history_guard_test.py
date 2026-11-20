@@ -23,6 +23,12 @@ class FrozenHistoryGuardTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "invalid race IDs"):
             verify_history_preserved({"races": [{"foo": 1}]}, {"races": []})
 
+    def test_history_over_5000_records_must_not_be_truncated(self):
+        previous = {"races": [{"id": str(i)} for i in range(5001)]}
+        with self.assertRaisesRegex(RuntimeError, "drop 1"):
+            verify_history_preserved(previous, {"races": previous["races"][:5000]})
+        verify_history_preserved(previous, {"races": previous["races"]})
+
     def test_first_run_allowed(self):
         verify_history_preserved({}, {"races": []})
 
