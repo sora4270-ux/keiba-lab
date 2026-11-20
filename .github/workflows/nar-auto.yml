@@ -26,7 +26,9 @@ on:
   schedule:
     # Start away from the top of the hour. Each scheduled runner polls repeatedly
     # so forecasts do not need a fresh GitHub schedule event for every poll.
-    - cron: '7,37 21-23,0-13 * * *'
+    # Run hourly: each job polls for up to 60 minutes. A 30-minute cron
+    # queues overlapping jobs behind the shared concurrency lock.
+    - cron: '7 21-23,0-13 * * *'
   workflow_dispatch:
 permissions:
   contents: write
