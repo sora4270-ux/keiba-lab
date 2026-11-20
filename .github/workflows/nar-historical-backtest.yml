@@ -1,0 +1,30 @@
+name: NAR historical feature backtest
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 16 * * *'
+permissions:
+  contents: read
+jobs:
+  historical-backtest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Unit tests for leakage and feature scoring
+        run: |
+          python -m unittest discover -s tests -p 'nar_observed_features_test.py'
+          python -m unittest discover -s tests -p 'nar_historical_backtest_test.py'
+      - name: Compare frozen NAR forecasts
+        run: |
+          python scripts/backtest_nar_features.py --output nar-backtest-report.json
+      - name: Publish run artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nar-backtest-report
+          path: nar-backtest-report.json
+          if-no-files-found: warn
+          retention-days: 30
