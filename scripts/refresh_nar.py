@@ -21,17 +21,31 @@ def run_refresh(data=DATA, health=HEALTH, run=subprocess.run, clock=timestamp):
     except (OSError, ValueError):
         previous = {}
     before = data.read_bytes() if data.exists() else None
+    history_problem = None
+    if before is not None:
+        if not before.strip():
+            history_problem = 'empty_forecast_history'
+        else:
+            try:
+                existing = json.loads(before)
+                if not isinstance(existing, dict) or not isinstance(existing.get('races'), list):
+                    history_problem = 'invalid_forecast_history'
+            except (UnicodeDecodeError, ValueError):
+                history_problem = 'invalid_forecast_history'
     attempt = clock()
     code, error = 1, None
     try:
-        result = run([sys.executable, 'scripts/update_nar.py'], check=False, timeout=900)
-        code = result.returncode
-        if code:
-            error = 'refresh_failed'
+        if history_problem:
+            error = history_problem
         else:
-            payload = json.loads(data.read_text(encoding='utf-8'))
-            if payload.get('schema_version') != 1 or not isinstance(payload.get('races'), list):
-                raise ValueError('Invalid forecast output')
+            result = run([sys.executable, 'scripts/update_nar.py'], check=False, timeout=900)
+            code = result.returncode
+            if code:
+                error = 'refresh_failed'
+            else:
+                payload = json.loads(data.read_text(encoding='utf-8'))
+                if payload.get('schema_version') != 1 or not isinstance(payload.get('races'), list):
+                    raise ValueError('Invalid forecast output')
     except subprocess.TimeoutExpired:
         error = 'timeout'
     except (OSError, ValueError):
