@@ -1286,8 +1286,8 @@ function compactBetsHtml(rows,top,trio,trifecta,raceId){
    (tickets.length?'<small>'+tickets.length+'点</small>':'')+'</dd></div>';
  });
  return forecastExtraCandidatesHtml(rows,top,trio,trifecta)+'<div class="forecast-bets" aria-label="券種別の参考買い目"><dl class="forecast-short">'+blocks.join('')+'</dl>'+
-  (wideTickets.length===10?'<details class="bet-section"><summary>ワイド・予想上位5頭BOX 10点（1,000円）</summary>'+betListHtml(wideTickets,false)+'</details>':'')+
-  betSectionHtml('三連複',trio,false,raceId)+betSectionHtml('三連単',trifecta,true,raceId)+'</div>';
+  betSectionHtml('三連複',trio,false,raceId)+betSectionHtml('三連単',trifecta,true,raceId)+
+  (wideTickets.length===10?'<details class="bet-section"><summary>ワイド・予想上位5頭BOX 10点（1,000円）</summary>'+betListHtml(wideTickets,false)+'</details>':'')+'</div>';
 }
 function forecastDetails(label,contents,id){
  return '<details class="forecast-details" data-bet-section="'+esc(JSON.stringify([id,label]))+'"><summary>'+
