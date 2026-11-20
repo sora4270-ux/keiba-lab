@@ -1116,6 +1116,25 @@ def selftest():
     print("PASS: early provisional forecasts, T-15 cutoff, late safe finalization, frozen picks and results")
 
 
+def verify_history_preserved(previous, updated):
+    """Do not persist a refresh that drops or duplicates frozen race IDs."""
+    before = previous.get("races", [])
+    after = updated.get("races", [])
+    if not isinstance(before, list) or not isinstance(after, list):
+        raise RuntimeError("NAR frozen forecast history has invalid races schema")
+    def ids(rows):
+        values = [row.get("id") if isinstance(row, dict) else None for row in rows]
+        if any(not isinstance(value, str) or not value for value in values):
+            raise RuntimeError("NAR frozen forecast history contains invalid race IDs")
+        if len(values) != len(set(values)):
+            raise RuntimeError("NAR frozen forecast history contains duplicate race IDs")
+        return set(values)
+    missing = ids(before) - ids(after)
+    if missing:
+        raise RuntimeError(
+            f"NAR refresh would drop {len(missing)} frozen race records; refusing to overwrite")
+
+
 def load_persisted_history(path):
     """Refuse to overwrite a blank or malformed frozen-prediction ledger."""
     if not path.exists():
@@ -1163,6 +1182,7 @@ def main():
         print(f"NAR公式オッズ未取得（予想・結果は続行）: {exc}", file=sys.stderr)
     now = dt.datetime.now(JST)
     out, added, settled_count, payout_count = update_data(races, now, previous, payback_index(tables), odds_index, trio_index, trifecta_index)
+    verify_history_preserved(previous, out)
     out["odds_feed"] = {"date": now.date().isoformat(), "status": odds_status}
     print(f"NAR single-win feed: {odds_status}; {len(odds_index)} races with quotes")
     serialized = json.dumps(out, ensure_ascii=False, separators=(",", ":")) + "\n"
