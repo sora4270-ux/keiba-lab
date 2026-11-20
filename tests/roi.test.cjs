@@ -14,7 +14,7 @@ const source=[
   snippet('function payoutValue(r,key){','function recordResult(rec,top,payouts={})'),
   snippet('function savedTrioList(r){','function trioTokens(tickets){'),
   snippet('function narReferenceWager(','function narPeriodRaces(records,period){')
-].join('\n')+'\n({resultMatches,payoutValue,referenceWager,roiStatistics,roiLabel,completeBasket,savedTrioList,narReferenceWager,narWideBoxTickets,narWideBoxWager})';
+].join('\n')+'\n({resultMatches,payoutValue,referenceWager,roiStatistics,roiLabel,completeBasket,savedTrioList,narReferenceWager,narWideBoxTickets,narWideBoxWager,narWideStrategyWager})';
 const api=vm.runInNewContext(source,{console});
 
 const payouts={win:200,quinella:500,exacta:750,trio:2000,trifecta:10000};
@@ -89,6 +89,13 @@ assert.equal(wide.spent,1000);
 assert.equal(wide.returned,1580);
 assert.equal(wide.profit,580);
 assert.equal(wide.hits.length,3);
+for(const mode of ['box','axis','select']){
+ const wager=api.narWideStrategyWager(wideRecord,mode);
+ assert.equal(wager.spent,1000);
+ assert.equal(wager.returned,mode==='box'?1580:mode==='axis'?2250:mode==='select'?1440);
+}
+assert.equal(api.narWideStrategyWager({...wideRecord,wide_payouts:{'1-2':360}},'axis'),null);
+assert.equal(api.narWideStrategyWager({...wideRecord,result:null},'select'),null);
 const oneWide={...wideRecord,result:[1,2,7],wide_payouts:{
   '1-2':360,'1-7':750,'2-7':520
 }};
