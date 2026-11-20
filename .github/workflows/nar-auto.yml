@@ -82,6 +82,8 @@ jobs:
       - name: Self-test (no external services)
         run: |
           python -m unittest discover -s tests -p 'refresh_health_test.py'
+          python -m unittest discover -s tests -p 'nar_history_integrity_test.py'
+          python -m unittest discover -s tests -p 'nar_history_inspection_test.py'
           python scripts/update_nar.py --selftest
           python -m unittest discover -s tests -p 'odds_encoding_test.py'
           python scripts/trio_strategy.py --selftest
@@ -121,10 +123,14 @@ jobs:
             started=$SECONDS
             # A queued schedule may have checked out an older data commit.
             git pull --rebase
+            echo "NAR history metadata before refresh:"
+            python scripts/inspect_nar_history.py
             if ! python scripts/refresh_nar.py; then
               had_failure=1
               echo "::warning::NAR refresh failed; publishing failure status."
             fi
+            echo "NAR history metadata after refresh:"
+            python scripts/inspect_nar_history.py
             git add data/auto/nar_predictions.json data/auto/nar_health.json
             if ! git diff --cached --quiet; then
               git commit -m "Update NAR forecasts and refresh health"
