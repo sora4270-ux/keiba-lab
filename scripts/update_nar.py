@@ -486,6 +486,42 @@ def official_payouts(paybacks, race, result):
     return amounts
 
 
+
+def official_wide_payouts(paybacks, race, orders):
+    """Verified 100-yen wide dividends per winning unordered pair.
+
+    NAR payback.csv positions are zero-based. Each official row can hold
+    three wide combinations; dead heats may create multiple rows.
+    Incomplete or conflicting data are unknown, never a zero-yen return.
+    """
+    key = (race["venue"], race["date"].replace("-", ""), race["race_no"])
+    rows = paybacks.get(key, [])
+    expected = {
+        tuple(sorted(pair))
+        for order in orders if isinstance(order, list) and len(order) == 3
+        for pair in itertools.combinations(order, 2)
+    }
+    if not rows or len(expected) < 3:
+        return None
+    found = {}
+    for raw, _ in rows:
+        for a_pos, b_pos, pay_pos in ((32, 33, 34), (36, 37, 38), (40, 41, 42)):
+            if len(raw) <= pay_pos:
+                continue
+            a, b, pay = as_int(raw[a_pos]), as_int(raw[b_pos]), as_int(raw[pay_pos])
+            if a is None or b is None or a == b or pay is None or not 0 < pay <= 100000000:
+                continue
+            pair = tuple(sorted((a, b)))
+            if pair not in expected:
+                continue
+            if pair in found and found[pair] != pay:
+                return None
+            found[pair] = pay
+    if not expected.issubset(found):
+        return None
+    return {"-".join(map(str, pair)): found[pair] for pair in sorted(expected)}
+
+
 def settled_orders(horses):
     ranked = {i: [] for i in (1, 2, 3)}
     for horse in horses:
@@ -713,6 +749,11 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
                     record["finish_order"] = finish_order
                     result_details_updated += 1
             verified = official_payouts(paybacks, race, record["result"])
+            wide = official_wide_payouts(
+                paybacks, race, record.get("result_alternatives") or [record["result"]])
+            if wide is not None and wide != record.get("wide_payouts"):
+                record["wide_payouts"] = wide
+                payout_updated += 1
             if record.get("result_alternatives"):
                 by_ticket = {}
                 for actual in record["result_alternatives"]:
@@ -880,6 +921,7 @@ def selftest():
     payrow = [""] * 54
     payrow[0], payrow[1], payrow[2] = "門別", "20261102", "1"
     for pos, value in {4:1, 5:430, 24:1, 25:2, 26:810, 28:1, 29:2, 30:1420,
+                       32:1, 33:2, 34:360, 36:1, 37:3, 38:540, 40:2, 41:3, 42:680,
                        44:1, 45:2, 46:3, 47:2750, 49:1, 50:2, 51:3, 52:14820}.items():
         payrow[pos] = str(value)
     paybacks = payback_index({"payback": [(payrow, {})]})
@@ -887,12 +929,19 @@ def selftest():
     assert (a, s, p) == (0, 0, 1)
     assert enriched["races"][0]["payouts"] == {
         "win": 430, "quinella": 810, "exacta": 1420, "trio": 2750, "trifecta": 14820}
+    assert enriched["races"][0]["wide_payouts"] == {
+        "1-2": 360, "1-3": 540, "2-3": 680}
+    incomplete = payrow.copy()
+    incomplete[42] = ""
+    assert official_wide_payouts(
+        payback_index({"payback": [(incomplete, {})]}), races[0], [[1, 2, 3]]) is None
     assert update_data(races, late, enriched, paybacks)[3] == 0
     tied_race = {**races[0], "horses": [
         {**h, "rank": 3 if h["no"] == 4 else h["rank"]} for h in races[0]["horses"]
     ]}
     second_payrow = payrow.copy()
-    for pos, value in {46:4, 47:3100, 51:4, 52:16300}.items():
+    for pos, value in {36:1, 37:4, 38:590, 40:2, 41:4, 42:740,
+                       46:4, 47:3100, 51:4, 52:16300}.items():
         second_payrow[pos] = str(value)
     tie_paybacks = payback_index({"payback": [(payrow, {}), (second_payrow, {})]})
     frozen = {**pre, "result": None, "payouts": {}, "tickets": [[1, 2, 4]], "trio_tickets": [[1, 2, 4]]}
@@ -905,6 +954,8 @@ def selftest():
         "trio": {"1-2-3": 2750, "1-2-4": 3100},
         "trifecta": {"1-2-3": 14820, "1-2-4": 16300},
     }
+    assert tied_record["wide_payouts"] == {
+        "1-2": 360, "1-3": 540, "1-4": 590, "2-3": 680, "2-4": 740}
     assert tied["summary"]["trio_multi"] == 100
     assert update_data([tied_race], late, tied, tie_paybacks)[2:] == (0, 0)
     old = dict(pre)
