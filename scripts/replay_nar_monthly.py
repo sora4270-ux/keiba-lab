@@ -8,6 +8,7 @@ import argparse
 import collections
 import datetime as dt
 import json
+import math
 from pathlib import Path
 from urllib.parse import urlencode
 
@@ -163,6 +164,30 @@ def replay(monthly_tables, start, end, max_races=1000):
     confidence_bins = collections.defaultdict(list)
     for row in test:
         confidence_bins[confidence(row["score_margin"])].append(row)
+    # Wilson 95% intervals and S-vs-rest comparison on unseen days.
+    def wilson(successes, total):
+        if not total:
+            return None
+        z = 1.96
+        p = successes / total
+        denominator = 1 + z*z/total
+        center = (p + z*z/(2*total))/denominator
+        half = z*math.sqrt(p*(1-p)/total + z*z/(4*total*total))/denominator
+        return [round(100*(center-half), 2), round(100*(center+half), 2)]
+    s_rows = confidence_bins["S"]
+    other_rows = [r for r in test if confidence(r["score_margin"]) != "S"]
+    s_stats = summarize(s_rows)
+    other_stats = summarize(other_rows)
+    report["confidence_validation"] = {
+        "scope": "holdout_only",
+        "s_vs_other": {
+            "S": {**s_stats, "win_rate_wilson95": wilson(s_stats["wins"], s_stats["races"])},
+            "non_S": {**other_stats, "win_rate_wilson95": wilson(other_stats["wins"], other_stats["races"])},
+            "win_rate_difference_pp": round(s_stats["win_rate"]-other_stats["win_rate"], 2)
+                if s_stats["races"] and other_stats["races"] else None
+        },
+        "caution": "Descriptive confidence intervals; overlap and subgroup selection limit inference. Verify on independent months."
+    }
     report["confidence_diagnostics"] = {
         "scope": "holdout_only_recent_form_diagnostic",
         "method": "Top1 minus top2 score margin; quartile thresholds from training days only",
