@@ -65,7 +65,12 @@ def main():
     source = Path(args.input)
     if not source.exists():
         raise SystemExit("No historical prediction file; cannot claim a backtest result.")
-    payload = json.loads(source.read_text(encoding="utf-8"))
+    raw = source.read_text(encoding="utf-8").strip()
+    if not raw:
+        print("NAR historical prediction file is empty; zero records available.")
+        payload = {"races": []}
+    else:
+        payload = json.loads(raw)
     records = payload.get("races", [])
     if not isinstance(records, list):
         raise SystemExit("Invalid race list")
