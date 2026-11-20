@@ -17,14 +17,16 @@ def coverage(forecasts, tables, month):
     selected = [{"race_id": r["race_id"], "horse_no": r["horse_no"],
                  "bet_type": "win"} for r in checked if r["race_id"]]
     official, skipped = extract(selected, tables, expected_month=month)
-    payouts = {(r["race_id"], r["horse_no"]): r for r in official}
+    payouts = {(r["race_id"], r["horse_no"]): r for r in official}\n    counts = collections.Counter((r["race_id"], r["horse_no"]) for r in checked)
     statuses = collections.Counter()
     complete = 0
     for row in checked:
         if row["race_id"][4:10] != month.replace("-", ""):
             continue
         key = (row["race_id"], row["horse_no"])
-        if row["audit_status"] != "timestamp_checks_passed_not_authenticated":
+        if counts[key] > 1:
+            statuses["duplicate_frozen_selection"] += 1
+        elif row["audit_status"] != "timestamp_checks_passed_not_authenticated":
             statuses["prelock_" + row["audit_status"]] += 1
         elif key not in payouts:
             statuses["official_payout_unavailable"] += 1

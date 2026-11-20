@@ -4,6 +4,7 @@ import argparse
 import csv
 import datetime as dt
 import json
+import math
 from pathlib import Path
 
 FIELDS = ("race_id", "horse_no", "decision_time", "odds_observed_time",
@@ -42,7 +43,7 @@ def check(record):
             row["audit_status"] = "invalid_temporal_order"
         elif decision - observed > dt.timedelta(minutes=15):
             row["audit_status"] = "stale_odds"
-        elif not row["odds"] or float(row["odds"]) <= 0:
+        elif not row["odds"] or not math.isfinite(float(row["odds"])) or float(row["odds"]) < 1:
             row["audit_status"] = "missing_odds"
         elif not row["race_id"].startswith("nar-") or not row["horse_no"]:
             row["audit_status"] = "invalid_identity"
