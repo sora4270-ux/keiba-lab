@@ -2,6 +2,7 @@
 import datetime as dt
 import json
 from pathlib import Path
+from inspect_nar_history import inspect
 import subprocess
 import sys
 
@@ -52,6 +53,7 @@ def run_refresh(data=DATA, health=HEALTH, run=subprocess.run, clock=timestamp):
         error = 'invalid_output_or_execution'
     success = code == 0 and error is None
     completed = clock()
+    history_meta = inspect(data)
     record = {
         'schema_version': 1,
         'last_attempt_at': attempt,
@@ -64,6 +66,8 @@ def run_refresh(data=DATA, health=HEALTH, run=subprocess.run, clock=timestamp):
         'odds_status': payload.get('odds_feed', {}).get('status', 'unknown') if success else 'unknown',
         # Never publish exception strings, request URLs, or credentials.
         'error_code': error,
+        'history_status': history_meta['status'],
+        'frozen_forecast_count': history_meta['frozen_count'],
     }
     health.parent.mkdir(parents=True, exist_ok=True)
     temp = health.with_suffix('.tmp')
