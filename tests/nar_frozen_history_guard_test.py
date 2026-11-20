@@ -29,6 +29,23 @@ class FrozenHistoryGuardTests(unittest.TestCase):
             verify_history_preserved(previous, {"races": previous["races"][:5000]})
         verify_history_preserved(previous, {"races": previous["races"]})
 
+    def test_frozen_ranking_change_rejected(self):
+        old = {"races": [{"id": "race", "ranking": [{"no": 1}]}]}
+        new = {"races": [{"id": "race", "ranking": [{"no": 2}]}]}
+        with self.assertRaisesRegex(RuntimeError, "frozen ranking"):
+            verify_history_preserved(old, new)
+
+    def test_frozen_tickets_change_rejected(self):
+        old = {"races": [{"id": "race", "tickets": [[1, 2, 3]]}]}
+        new = {"races": [{"id": "race", "tickets": [[1, 2, 4]]}]}
+        with self.assertRaisesRegex(RuntimeError, "frozen tickets"):
+            verify_history_preserved(old, new)
+
+    def test_result_settlement_allowed(self):
+        old = {"races": [{"id": "race", "ranking": [{"no": 1}], "result": None}]}
+        new = {"races": [{"id": "race", "ranking": [{"no": 1}], "result": [1, 2, 3]}]}
+        verify_history_preserved(old, new)
+
     def test_first_run_allowed(self):
         verify_history_preserved({}, {"races": []})
 
