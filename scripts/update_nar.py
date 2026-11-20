@@ -4,6 +4,7 @@ Uses NAR's public daily CSV download for *derived forecasts*, not raw-data mirro
 Initial model is an explicitly untrained, shrinkage-based form heuristic.
 """
 import csv
+import copy
 import datetime as dt
 import io
 import itertools
@@ -656,12 +657,12 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
     old = previous.get("races", [])
     if not isinstance(old, list):
         raise ValueError("保存された予想履歴の形式が不正です")
-    entries = {p["id"]: p for p in old if isinstance(p, dict) and p.get("id")}
+    entries = {p["id"]: copy.deepcopy(p) for p in old if isinstance(p, dict) and p.get("id")}
     old_drafts = previous.get("drafts", [])
     if not isinstance(old_drafts, list):
         raise ValueError("事前予想の保存形式が不正です")
     drafts = {
-        p["id"]: p for p in old_drafts
+        p["id"]: copy.deepcopy(p) for p in old_drafts
         if isinstance(p, dict) and isinstance(p.get("id"), str)
         and p["id"] not in entries
     }
