@@ -1140,8 +1140,15 @@ def verify_history_preserved(previous, updated):
     updated_by_id = {row["id"]: row for row in after}
     # Result, settlement and verified payouts may arrive later, but the
     # originally frozen forecast and ticket selections must never change.
-    frozen_fields = ("ranking", "top3", "top5", "tickets", "trio_tickets",
-                     "trifecta_plan", "predicted_at", "locked_at", "cutoff_at")
+    frozen_fields = (
+        "id", "date", "venue", "race_no", "name", "start_at",
+        "predicted_at", "locked_at", "cutoff_at", "model", "calibration",
+        "simulation_model", "feature_validation", "top3", "top5", "ranking",
+        "tickets", "trio_tickets", "trio_box_tickets",
+        "trio_uncalibrated_tickets", "trifecta_diversified_tickets",
+        "trifecta_plan", "trio_value", "strategy_v5", "recent_trio",
+        "market_at_lock",
+    )
     for row in before:
         current = updated_by_id[row["id"]]
         for field in frozen_fields:
