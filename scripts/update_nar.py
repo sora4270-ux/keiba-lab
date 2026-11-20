@@ -1116,6 +1116,22 @@ def selftest():
     print("PASS: early provisional forecasts, T-15 cutoff, late safe finalization, frozen picks and results")
 
 
+def load_persisted_history(path):
+    """Refuse to overwrite a blank or malformed frozen-prediction ledger."""
+    if not path.exists():
+        return {}
+    raw = path.read_text(encoding="utf-8")
+    if not raw.strip():
+        raise RuntimeError(f"NAR forecast history is empty: {path}; refusing to overwrite.")
+    try:
+        previous = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"NAR forecast history is invalid JSON: {path}; refusing to overwrite.") from exc
+    if not isinstance(previous, dict) or not isinstance(previous.get("races"), list):
+        raise RuntimeError(f"NAR forecast history has invalid schema: {path}; refusing to overwrite.")
+    return previous
+
+
 def main():
     if "--selftest" in sys.argv:
         selftest()
@@ -1135,25 +1151,7 @@ def main():
         features = monthly_features(today, vintage)
         for race in upcoming:
             race["recent_features"] = [features.get(h["history_key"]) for h in race["horses"]]
-    # Never silently reset a persisted forecast ledger if its contents are empty
-    # or corrupt: that could destroy immutable pre-race selections on next write.
-    if DATA_PATH.exists():
-        raw_history = DATA_PATH.read_text(encoding="utf-8")
-        if not raw_history.strip():
-            raise RuntimeError(
-                f"NAR forecast history is empty: {DATA_PATH}. "
-                "Restore a valid snapshot before updating; refusing to overwrite.")
-        try:
-            previous = json.loads(raw_history)
-        except json.JSONDecodeError as exc:
-            raise RuntimeError(
-                f"NAR forecast history is invalid JSON: {DATA_PATH}; refusing to overwrite."
-            ) from exc
-        if not isinstance(previous, dict) or not isinstance(previous.get("races"), list):
-            raise RuntimeError(
-                f"NAR forecast history has invalid schema: {DATA_PATH}; refusing to overwrite.")
-    else:
-        previous = {}
+    previous = load_persisted_history(DATA_PATH)
     odds_index, trio_index, trifecta_index = {}, {}, {}
     odds_status = "unavailable"
     try:

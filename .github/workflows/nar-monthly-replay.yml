@@ -29,6 +29,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Validate frozen prediction history integrity
+        run: python -m unittest discover -s tests -p 'nar_history_integrity_test.py'
       - name: Validate historical replay
         run: python -m unittest discover -s tests -p 'nar_monthly_replay_test.py'
       - name: Validate ROI calculator and reject unsafe inputs
