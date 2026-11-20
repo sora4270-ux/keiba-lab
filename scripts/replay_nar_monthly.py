@@ -101,6 +101,7 @@ def replay(monthly_tables, start, end, max_races=1000):
         selected_finish = next(rank for no, rank, _ in runners if no == top)
         selected_history = next(f[1] for no, _, f in runners if no == top)
         paired.append({"day": day, "venue": venue,
+                       "score_margin": ranked[0][0] - ranked[1][0],
                        "distance": target_distance,
                        "base_finish": selected_finish,
                        "base_history_count": selected_history,
@@ -149,6 +150,28 @@ def replay(monthly_tables, start, end, max_races=1000):
         for r in test:
             bins[field(r)].append(r)
         return {str(k): summarize(v) for k, v in sorted(bins.items())}
+    # Quartile boundaries are learned ONLY from older training days.
+    margins = sorted(r["score_margin"] for r in train)
+    cutoffs = [margins[min(len(margins)-1, int(len(margins)*q))]
+               for q in (.25, .50, .75)] if margins else []
+    def confidence(margin):
+        if not cutoffs: return "unrated"
+        if margin > cutoffs[2]: return "S"
+        if margin > cutoffs[1]: return "A"
+        if margin > cutoffs[0]: return "B"
+        return "C"
+    confidence_bins = collections.defaultdict(list)
+    for row in test:
+        confidence_bins[confidence(row["score_margin"])].append(row)
+    report["confidence_diagnostics"] = {
+        "scope": "holdout_only_recent_form_diagnostic",
+        "method": "Top1 minus top2 score margin; quartile thresholds from training days only",
+        "training_margin_cutoffs": cutoffs,
+        "holdout_by_grade": {grade: summarize(confidence_bins[grade])
+                             for grade in ("S", "A", "B", "C", "unrated")
+                             if confidence_bins[grade]},
+        "warning": "Grades are relative rankings, not calibrated probabilities or betting advice."
+    }
     report["error_diagnostics"] = {
         "scope": "holdout_only_no_production_changes",
         "finish_distribution": {str(k): sum(r["base_finish"] == k for r in test)
