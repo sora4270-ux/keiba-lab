@@ -28,7 +28,7 @@ def replay(monthly_tables, start, end, max_races=1000):
             key = row_key(item, ())
             if key:
                 horse_rows[key].append(item)
-    keys = sorted(k for k in race_rows if start <= k[1] <= end)
+    keys = sorted((k for k in race_rows if start <= k[1] <= end), key=lambda k: (k[1], k[0], k[2]))
     keys = keys[:max_races]
     history = {}
     # Historical form extraction processes only races strictly before each target date.
