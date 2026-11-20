@@ -42,6 +42,12 @@ def replay(monthly_tables, start, end, max_races=1000):
               "recent_form_win": 0, "recent_form_top3": 0, "baseline_unavailable": True,
               "data_policy": "Prior-day results only; no final odds, future cumulative statistics, or same-day results."}
     paired = []
+    # Race distances are read from the archive, but only historical ratings
+    # strictly earlier than the target date are eligible as horse features.
+    distances = {}
+    for race_key, (_, fields) in race_rows.items():
+        value = fields.get("距離", "")
+        distances[race_key] = int(value) if value.isdecimal() else 0
     processed = set()
     for venue, day, race_no in keys:
         date = dt.datetime.strptime(day, "%Y%m%d").date()
@@ -57,6 +63,24 @@ def replay(monthly_tables, start, end, max_races=1000):
             ident = horse_key(fields)
             if no and ident and finish and finish > 0:
                 runners.append((no, finish, features.get(ident)))
+        target_distance = distances.get((venue, day, race_no), 0)
+        distance_scores = {}
+        for no, _, f in runners:
+            if f is None or not target_distance:
+                continue
+            # Find the horse identity from this race without using its result.
+            horse = next((horse_key(fields) for raw, fields in horse_rows[(venue, day, race_no)]
+                          if as_int(cell(raw, fields, "馬番", idx=5)) == no), None)
+            runs = history.get(horse, {})
+            eligible_runs = sorted(
+                ((race_key, rating) for race_key, rating in runs.items()
+                 if race_key[1] < day and rating is not None
+                 and abs(distances.get(race_key, 0) - target_distance) <= 200),
+                key=lambda item: (item[0][1], int(item[0][2])), reverse=True)[:3]
+            if eligible_runs:
+                weights = (3, 2, 1)
+                distance_scores[no] = (.5 + sum(w*rating for w, (_, rating)
+                    in zip(weights, eligible_runs))) / (1 + sum(weights[:len(eligible_runs)]))
         ranked = sorted(((f[0], no) for no, _, f in runners if f is not None),
                         key=lambda x: (-x[0], x[1]))
         winners = [no for no, rank, _ in runners if rank == 1]
@@ -70,9 +94,14 @@ def replay(monthly_tables, start, end, max_races=1000):
             ((f[0] - 0.025 * (3 - min(3, f[1])), no)
              for no, _, f in runners if f is not None),
             key=lambda x: (-x[0], x[1]))
+        distance_adjusted = sorted(
+            ((.7*f[0] + .3*distance_scores.get(no, f[0]), no)
+             for no, _, f in runners if f is not None),
+            key=lambda x: (-x[0], x[1]))
         paired.append({"day": day, "winner": winners[0],
                        "podium": podium, "base": top,
-                       "coverage_adjusted": adjusted[0][1]})
+                       "coverage_adjusted": adjusted[0][1],
+                       "distance_adjusted": distance_adjusted[0][1]})
         report["eligible"] += 1
         report["recent_form_win"] += top == winners[0]
         report["recent_form_top3"] += top in podium
@@ -91,12 +120,13 @@ def replay(monthly_tables, start, end, max_races=1000):
                 "top3_rate": round(100*podium/count, 2) if count else None}
     train = [r for r in paired if r["day"] <= boundary] if boundary else []
     test = [r for r in paired if r["day"] > boundary] if boundary else []
-    variants = ("base", "coverage_adjusted")
+    variants = ("base", "coverage_adjusted", "distance_adjusted")
     selected = max(variants, key=lambda name: (
         metrics(train, name)["wins"], metrics(train, name)["top3"],
         name == "base")) if train else "base"
     report["holdout"] = {
         "split": "chronological_by_day_70_30",
+        "distance_rule": "Within 200m, prior-day races only; 70% base + 30% distance form; no matching form falls back to base.",
         "last_training_day": boundary,
         "selected_on_training_only": selected,
         "training": {name: metrics(train, name) for name in variants},
