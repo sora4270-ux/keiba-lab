@@ -32,6 +32,12 @@ def reconcile(predictions, payouts):
         if key in payout_index:
             duplicate_keys.add(key)
         payout_index[key] = p
+    prediction_counts = collections.Counter(
+        tuple(str(p.get(k, "")).strip() for k in ("race_id", "horse_no", "bet_type"))
+        for p in predictions
+        if all(str(p.get(k, "")).strip() for k in PREDICTION_FIELDS)
+    )
+    ambiguous_predictions = {key for key, count in prediction_counts.items() if count > 1}
     selected = []
     reasons = collections.Counter()
     seen = set()
@@ -40,7 +46,7 @@ def reconcile(predictions, payouts):
             reasons["missing_prediction_field"] += 1
             continue
         key = tuple(prediction[k].strip() for k in ("race_id", "horse_no", "bet_type"))
-        if key in seen:
+        if key in ambiguous_predictions:
             reasons["duplicate_prediction"] += 1
             continue
         seen.add(key)

@@ -52,6 +52,12 @@ class ReconciliationTests(unittest.TestCase):
         self.assertEqual(result["reconciliation"]["excluded"]["ambiguous_payout"], 1)
         self.assertEqual(result["reconciliation"]["excluded"]["unverified_payout"], 1)
 
+    def test_duplicate_predictions_reject_both_rows(self):
+        result = reconcile([prediction(), prediction()], [payout()])
+        self.assertEqual(result["accepted"], 0)
+        self.assertEqual(result["reconciliation"]["excluded"]["duplicate_prediction"], 2)
+        self.assertIsNone(result["by_grade"]["S"]["win"]["roi_percent"])
+
     def test_future_odds_still_rejected(self):
         result = reconcile([prediction(odds_observed_time="2026-10-01T12:01:00+09:00")],
                            [payout()])
