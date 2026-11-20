@@ -24,6 +24,9 @@ class ReplayTests(unittest.TestCase):
         self.assertEqual(result["skipped"],1)
         self.assertEqual(result["recent_form_win"],2)
         self.assertTrue(result["baseline_unavailable"])
+        self.assertIsNone(result["roi_readiness"]["win_roi_percent"])
+        self.assertIsNone(result["roi_readiness"]["place_roi_percent"])
+        self.assertEqual(result["roi_readiness"]["eligible_races"], result["eligible"])
         self.assertEqual(result["holdout"]["training"]["base"]["races"] + result["holdout"]["test"]["base"]["races"], 2)
         self.assertEqual(result["holdout"]["training"]["distance_adjusted"]["races"] + result["holdout"]["test"]["distance_adjusted"]["races"], 2)
         comparison = result["confidence_validation"]["s_vs_other"]
