@@ -326,6 +326,31 @@ def learn_parameters(records, now):
             "form_training_races": n, "market_training_races": len(prelock)}
 
 
+def observed_feature_shadow(race):
+    """Pre-race, leakage-safe feature baseline. Never modifies production ranking."""
+    rows = []
+    features = race.get("recent_features", [])
+    for i, horse in enumerate(race["horses"]):
+        recent = features[i] if i < len(features) else None
+        factors = {}
+        if recent and len(recent) >= 2 and recent[1] > 0:
+            factors["recent_time_corner"] = round(float(recent[0]), 5)
+        for source, label in (("distance", "distance"), ("venue", "venue"),
+                              ("jockey", "jockey"), ("overall", "overall")):
+            stat = horse.get(source)
+            if stat and len(stat) == 2 and stat[1] > 0:
+                factors[label] = round((stat[0] + 1) / (stat[1] + 10), 5)
+        # An equal-weight, missing-aware diagnostic, not a calibrated probability.
+        score = round(sum(factors.values()) / len(factors), 5) if factors else None
+        rows.append({"no": horse["no"], "score": score, "factors": factors,
+                     "coverage": len(factors)})
+    ranked = sorted((r for r in rows if r["score"] is not None),
+                    key=lambda r: (-r["score"], r["no"]))
+    return {"version": "observed_features_v1", "ranking": rows,
+            "top_no": ranked[0]["no"] if len(ranked) >= 3 else None,
+            "missing": ["running_style", "track_condition", "carried_weight"],
+            "note": "近走時計差・4角位置、距離・競馬場・騎手・全成績を利用。脚質・馬場・斤量は未取得のため評価対象外。学習済み確率ではない。"}
+
 def forecast(race, timestamp, market=None, calibration=None, trio_market=None, market_observed_at=None, trifecta_market=None):
     deadline = race["start"] - FORECAST_LOCK_BEFORE_START
     if timestamp >= deadline:
@@ -395,6 +420,7 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
                   "form_training_races", "market_training_races", "place_market_weight",
                   "show_market_weight", "podium_training_races", "trio_market_calibration")},
         "simulation_model": "stage_weights_v1",
+        "feature_validation": observed_feature_shadow(race),
         "top3": ranking[:3], "top5": ranking[:5], "ranking": ranking,
         "tickets": tickets, "trio_tickets": field_trios or trio_box,
         "trifecta_diversified_tickets": diversified_trifecta_tickets(ordered, len(tickets)) if market_p else [],

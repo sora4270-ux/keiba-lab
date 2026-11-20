@@ -278,6 +278,7 @@
    <div class="view-mode"><div class="field"><label for="nar-view-mode">表示内容を選択</label><select id="nar-view-mode"><option value="predictions">レース予想</option><option value="results">レース結果</option></select></div><div class="mode-choices" data-mode-select="nar-view-mode" role="group" aria-label="地方競馬の表示内容"><button type="button" class="mode-choice" data-mode="predictions" aria-pressed="true">🏇 レース予想</button><button type="button" class="mode-choice" data-mode="results" aria-pressed="false">🎯 レース結果</button></div><span class="hint-copy">予想は事前公開→発走15分前締切→確定保存。結果表示・的中率には確定予想のみを使います。</span></div>
    <div id="nar-results-summary" hidden>
    <div id="nar-kpis" class="metric-grid" aria-label="自動予想の的中率"></div>
+    <div class="hrow" style="margin-top:16px"><h3 style="margin:0">実測特徴量の予想検証（地方競馬のみ）</h3></div><div id="nar-feature-validation" class="roi-mini" aria-live="polite"></div><p class="roi-hint">近走の走破時計差と4角位置、距離・競馬場・騎手・全成績を発走前に保存し、現行予想と同一レースで1着的中率を比較。脚質・馬場状態・斤量は信頼できる事前入力がないため未採点。未取得のレースは除外し、結果を見てから予想を作り直しません。</p>
     <div class="hrow" style="margin-top:16px"><h3 style="margin:0">参考回収率・収支</h3><label class="field" for="nar-roi-period"><span class="tiny muted">集計期間</span><select class="roi-select" id="nar-roi-period"><option value="all">全期間</option><option value="today">本日</option><option value="7d">直近7日間</option><option value="30d">直近30日間</option></select></label></div>
     <p class="roi-hint">各点100円で仮想購入した場合の参考回収率です。三連複は保存された候補全点で計算。券種別・全5券種の合計を表示します。</p>
     <div id="nar-roi-total" class="roi-overview" aria-label="地方競馬の参考回収率と収支"></div><div id="nar-purchase-total" class="stake-banner"></div>
@@ -2138,6 +2139,16 @@ function narRender(data,localCopy=false){
  $('nar-kpis').innerHTML='<div class="metric"><small>予想記録</small><strong>'+Number(ss.predicted??arr.length).toLocaleString('ja-JP')+'件</strong><small>結果照合 '+den+'件 ／ 結果待ち '+Number(ss.pending||0)+'件</small></div>'+cards.map(([key,label])=>'<div class="metric"><small>'+label+'</small><strong>'+narPct(ss[key])+'</strong><small>母数：照合済み '+(key==='trio_multi'?Number(ss.trio_multi_settled||0):den)+'レース</small></div>').join('');
  const period=$("nar-roi-period").value;
  const roiRaces=settledOnly(narPeriodRaces(viewed,period));
+ const paired=roiRaces.filter(r=>Number.isInteger(r?.feature_validation?.top_no)&&
+  Array.isArray(r.ranking)&&r.ranking.length>0&&Number.isInteger(Number(r.ranking[0].no))&&
+  Array.isArray(r.result)&&r.result.length===3&&!r.result_alternatives?.length);
+ const featureHits=paired.filter(r=>Number(r.feature_validation.top_no)===Number(r.result[0])).length;
+ const modelHits=paired.filter(r=>Number(r.ranking[0].no)===Number(r.result[0])).length;
+ const rate=(n,d)=>d?(100*n/d).toFixed(1)+'%':'—';
+ $("nar-feature-validation").innerHTML=paired.length?
+  '<b>同一条件での比較 '+paired.length+'R</b> ／ 現行モデルの本命1着 '+modelHits+'R（'+rate(modelHits,paired.length)+'） ／ 実測特徴量の参考順位1着 '+featureHits+'R（'+rate(featureHits,paired.length)+'）'+
+  '<p class="tiny muted">事前保存済み特徴量があり、同着のない確定結果のみ。特徴量側は等重みの未学習ベースラインで、現行モデルの予想を変更しません。</p>':
+  '比較可能な発走前特徴量・確定結果がまだありません。データが蓄積され次第、同一レースで比較します。';
  const basket=completeBasket(roiRaces,narReferenceWager);
  $("nar-roi-total").innerHTML=roiOverview(basket.stats,"5券種の払戻が揃った "+basket.races+"レースを集計");$("nar-purchase-total").innerHTML=purchaseBanner(narPeriodRaces(viewed,period),venue==="all"?"対象期間の地方競馬":venue+"の対象期間");
  const roiBetTypes=[["win","単勝（本命1点）"],["quinella","馬連（1点）"],["exacta","馬単（1点）"],["trio_main","三連複・本線1点"],["trio","三連複・保存候補全点"],["trio_value","三連複・オッズ条件付き参考"],["trio_v5","三連複・v5検証用"],["trifecta","三連単・候補全点"]];
