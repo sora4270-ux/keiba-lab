@@ -55,7 +55,12 @@ def main():
     year, month = args.month.split("-")
     if not year.isdigit() or not month.isdigit() or not 1 <= int(month) <= 12:
         parser.error("Invalid month")
-    forecasts = json.loads(Path(args.input).read_text(encoding="utf-8"))
+    raw = Path(args.input).read_text(encoding="utf-8")
+    if not raw.strip():
+        parser.error("Frozen NAR prediction history is empty; cannot audit coverage")
+    forecasts = json.loads(raw)
+    if not isinstance(forecasts, dict) or not isinstance(forecasts.get("races"), list):
+        parser.error("Frozen NAR prediction history must contain a races list")
     url = BASE_URL.split("?", 1)[0] + "?" + urlencode(
         {"type": "monthly", "k_year": int(year), "k_month": month})
     tables = load_zip_tables(fetch_daily_zip(url))
