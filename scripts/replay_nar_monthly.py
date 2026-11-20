@@ -101,7 +101,7 @@ def replay(monthly_tables, start, end, max_races=1000, frozen_cutoffs=None):
             key=lambda x: (-x[0], x[1]))
         selected_finish = next(rank for no, rank, _ in runners if no == top)
         selected_history = next(f[1] for no, _, f in runners if no == top)
-        paired.append({"day": day, "venue": venue,
+        paired.append({"day": day, "venue": venue, "race_no": race_no,
                        "score_margin": ranked[0][0] - ranked[1][0],
                        "distance": target_distance,
                        "base_finish": selected_finish,
@@ -202,6 +202,17 @@ def replay(monthly_tables, start, end, max_races=1000, frozen_cutoffs=None):
             frozen_bins[frozen_grade(row["score_margin"])].append(row)
         frozen_s = summarize(frozen_bins["S"])
         frozen_other = summarize([r for r in paired if frozen_grade(r["score_margin"]) != "S"])
+        report["historical_selection_audit"] = {
+            "status": "retrospective_not_timestamped_prebet_predictions",
+            "scope": "prior_day_form_features_only; no recorded prebet odds or decision timestamps",
+            "selections": [
+                {"race_id": f"nar-{r['day']}-{r['venue']}-{r['race_no']:02d}",
+                 "horse_no": r["base"], "grade": frozen_grade(r["score_margin"]),
+                 "bet_type": "win"}
+                for r in paired
+            ],
+            "warning": "Not valid as ROI bet input: no historical decision/odds timestamps. Do not fabricate them."
+        }
         report["frozen_confidence_validation"] = {
             "cutoffs": list(frozen_cutoffs),
             "scope": "all_eligible_races_external_prior_month_thresholds",
