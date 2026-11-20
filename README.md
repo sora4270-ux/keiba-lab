@@ -1,3 +1,12 @@
+# NAR月次公式データの過去レース再現（2026-11-21）
+
+- `python scripts/replay_nar_monthly.py --start 2026-10-01 --end 2026-10-31 --max-races 1000` で地方競馬の公式月次CSVを取得し、各レースの**前日まで**の結果から近走時計差・4角位置を再構成して、1着率と3着以内率を集計します。`nar-monthly-replay.json` に保存。
+- GitHub Actionsの「NAR monthly historical replay」から手動実行可能。最大120日・2000レース。月次アーカイブが取得できない場合は失敗と表示し、数値を捏造しません。
+- 月次CSVの累積成績や最終オッズは当時の状態とは限らないため利用しません。この再現は**近走フォーム単独の診断**であり、現行の本番モデルとの同条件比較ではありません。距離・馬場・斤量の独立した寄与もまだ検証できません。
+- 回帰テスト：`python -m unittest discover -s tests -p 'nar_monthly_replay_test.py'`。
+
+---
+
 # 地方競馬・過去レースの時系列バックテスト（2026-11-21）
 
 - `python scripts/backtest_nar_features.py` で保存済みNAR確定予想と結果を同一レースで比較し、現行モデルと実測特徴量ベースラインの1着・3着以内率を `data/auto/nar_backtest.json` に出力します。

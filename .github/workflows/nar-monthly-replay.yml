@@ -1,0 +1,43 @@
+name: NAR monthly historical replay
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: "Start date YYYY-MM-DD"
+        required: true
+        default: "2026-10-01"
+      end:
+        description: "End date YYYY-MM-DD"
+        required: true
+        default: "2026-10-31"
+      max_races:
+        description: "Maximum races (1..2000)"
+        required: true
+        default: "1000"
+permissions:
+  contents: read
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate historical replay
+        run: python -m unittest discover -s tests -p 'nar_monthly_replay_test.py'
+      - name: Replay NAR monthly archives
+        env:
+          START: ${{ inputs.start }}
+          END: ${{ inputs.end }}
+          MAX_RACES: ${{ inputs.max_races }}
+        run: python scripts/replay_nar_monthly.py --start "$START" --end "$END" --max-races "$MAX_RACES" --output nar-monthly-replay.json
+      - name: Save backtest report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nar-monthly-replay
+          path: nar-monthly-replay.json
+          if-no-files-found: warn
+          retention-days: 30
