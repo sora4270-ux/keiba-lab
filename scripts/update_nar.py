@@ -1135,7 +1135,25 @@ def main():
         features = monthly_features(today, vintage)
         for race in upcoming:
             race["recent_features"] = [features.get(h["history_key"]) for h in race["horses"]]
-    previous = json.loads(DATA_PATH.read_text(encoding="utf-8")) if DATA_PATH.exists() else {}
+    # Never silently reset a persisted forecast ledger if its contents are empty
+    # or corrupt: that could destroy immutable pre-race selections on next write.
+    if DATA_PATH.exists():
+        raw_history = DATA_PATH.read_text(encoding="utf-8")
+        if not raw_history.strip():
+            raise RuntimeError(
+                f"NAR forecast history is empty: {DATA_PATH}. "
+                "Restore a valid snapshot before updating; refusing to overwrite.")
+        try:
+            previous = json.loads(raw_history)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                f"NAR forecast history is invalid JSON: {DATA_PATH}; refusing to overwrite."
+            ) from exc
+        if not isinstance(previous, dict) or not isinstance(previous.get("races"), list):
+            raise RuntimeError(
+                f"NAR forecast history has invalid schema: {DATA_PATH}; refusing to overwrite.")
+    else:
+        previous = {}
     odds_index, trio_index, trifecta_index = {}, {}, {}
     odds_status = "unavailable"
     try:
