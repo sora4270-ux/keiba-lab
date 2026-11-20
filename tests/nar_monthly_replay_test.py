@@ -53,6 +53,12 @@ class ReplayTests(unittest.TestCase):
         tables=[sample("20261101"),sample("20261102"),sample("20261103")]
         result=replay(tables,"20261101","20261103",
                       frozen_cutoffs=[0.02511,0.05710,0.11511])
+        audit=result["historical_selection_audit"]
+        self.assertEqual(len(audit["selections"]), result["eligible"])
+        self.assertEqual(audit["selections"][0]["race_id"], "nar-20261102-園田-01")
+        self.assertNotIn("odds_observed_time", audit["selections"][0])
+        self.assertNotIn("decision_time", audit["selections"][0])
+        self.assertEqual(audit["status"], "retrospective_not_timestamped_prebet_predictions")
         frozen=result["frozen_confidence_validation"]
         self.assertEqual(sum(v["races"] for v in frozen["by_grade"].values()),
                          result["eligible"])
