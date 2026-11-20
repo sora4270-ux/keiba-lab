@@ -12,11 +12,8 @@ FIELDS = ("race_id", "horse_no", "decision_time", "odds_observed_time",
 
 def audit(data):
     rows = []
-    for record in data.get("predictions", []):
+    for record in data.get("races", []):
         rows.append(check(record))
-    # The published schema can also be a mapping keyed by race ID.
-    if isinstance(data.get("predictions"), dict):
-        rows = [check(r) for r in data["predictions"].values()]
     return rows
 
 
