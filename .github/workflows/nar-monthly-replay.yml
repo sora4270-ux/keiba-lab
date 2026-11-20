@@ -37,6 +37,8 @@ jobs:
         run: python -m unittest discover -s tests -p 'nar_roi_reconciliation_test.py'
       - name: Validate official NAR win payout extraction
         run: python -m unittest discover -s tests -p 'nar_official_win_export_test.py'
+      - name: Validate ROI coverage audit
+        run: python -m unittest discover -s tests -p 'nar_roi_coverage_audit_test.py'
       - name: Replay NAR monthly archives
         env:
           START: ${{ inputs.start }}

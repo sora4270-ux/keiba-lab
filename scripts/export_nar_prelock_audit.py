@@ -59,7 +59,12 @@ def main():
     parser.add_argument("--input", default="data/auto/nar_predictions.json")
     parser.add_argument("--output", default="nar-prelock-audit.csv")
     args = parser.parse_args()
-    data = json.loads(Path(args.input).read_text(encoding="utf-8"))
+    raw = Path(args.input).read_text(encoding="utf-8")
+    if not raw.strip():
+        parser.error("Frozen NAR prediction history is empty; no audit rows available")
+    data = json.loads(raw)
+    if not isinstance(data, dict) or not isinstance(data.get("races"), list):
+        parser.error("Frozen NAR prediction history must contain a races list")
     rows = audit(data)
     with open(args.output, "w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=FIELDS)
