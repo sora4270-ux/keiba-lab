@@ -287,7 +287,7 @@
     <p class="roi-hint">発走前に保存された予想上位5頭の全10組を各100円、1レース1,000円で仮想購入。公式ワイド払戻が3組（同着時は該当全組）確認できたレースだけ集計します。従来の5券種合計に加えない独立した比較成績です。</p>
     <div id="nar-wide-roi" class="roi-overview" aria-label="ワイド上位5頭BOXの参考収支・回収率"></div>
     <p id="nar-wide-coverage" class="roi-hint"></p>
-    <h4 style="margin:18px 0 6px">ワイド3方式・同額1,000円の仮想収支比較</h4><div class="scroll"><table class="ledger-table"><thead><tr><th>方式</th><th>集計R</th><th>的中R</th><th>購入</th><th>払戻</th><th>収支</th><th>回収率</th></tr></thead><tbody id="nar-wide-strategy-rows"></tbody></table></div><p class="roi-hint">5頭BOX：10点×100円／◎軸流し：4点×250円／上位3頭厳選：◎○400円・◎▲300円・○▲300円。発走前保存順位と公式払戻のあるレースのみ。期待値や勝率の未検証推定は行いません。</p>
+    <h4 style="margin:18px 0 6px">ワイド3方式・同額1,000円の仮想収支比較</h4><div class="scroll"><table class="ledger-table"><thead><tr><th>方式</th><th>集計R</th><th>的中R</th><th>購入</th><th>払戻</th><th>収支</th><th>回収率</th><th>最大連敗</th><th>最大ドローダウン</th></tr></thead><tbody id="nar-wide-strategy-rows"></tbody></table></div><p class="roi-hint">5頭BOX：10点×100円／◎軸流し：4点×250円／上位3頭厳選：◎○400円・◎▲300円・○▲300円。発走前保存順位と公式払戻のあるレースのみ。最大連敗・最大ドローダウンは日時順の仮想収支から算出。対象期間・競馬場・レース番号のフィルターに連動します。期待値や勝率の未検証推定は行いません。</p>
     <details><summary>ワイドBOXのレース別収支を確認</summary><div class="scroll"><table class="ledger-table"><thead><tr><th>レース</th><th>予想上位5頭</th><th>実際の1〜3着</th><th>的中した組</th><th>購入</th><th>払戻</th><th>収支</th></tr></thead><tbody id="nar-wide-rows"></tbody></table></div></details>
     <details class="venue-breakdown"><summary>地方競馬場別の的中率・回収率を一覧で比較</summary><div class="scroll" id="nar-venue-breakdown"></div><p class="section-note">取得済み記録から集計。5券種回収率は5券種の払戻が揃ったレースのみ対象です。</p></details>
    </div>
@@ -1948,6 +1948,18 @@ function narWideBoxWager(r){
  const returned=hits.reduce((total,key)=>total+r.wide_payouts[key],0);
  return {spent:1000,returned,profit:returned-1000,hits};
 }
+function wideRiskMetrics(wagers){
+ let balance=0,peak=0,maxDrawdown=0,lossStreak=0,maxLossStreak=0;
+ for(const wager of wagers){
+  if(!wager||!Number.isFinite(wager.profit))continue;
+  balance+=wager.profit;
+  peak=Math.max(peak,balance);
+  maxDrawdown=Math.max(maxDrawdown,peak-balance);
+  lossStreak=wager.profit<0?lossStreak+1:0;
+  maxLossStreak=Math.max(maxLossStreak,lossStreak);
+ }
+ return {maxDrawdown,maxLossStreak};
+}
 function narWideStrategyWager(r,mode){
  const numbers=wideBoxNumbers(r?.top5).length===5?wideBoxNumbers(r.top5):wideBoxNumbers(r?.ranking);
  if(numbers.length!==5||!Array.isArray(r?.result)||r.result.length!==3||!r.wide_payouts)return null;
@@ -2141,9 +2153,9 @@ function narRender(data,localCopy=false){
  const wideHitRaces=wideRecords.filter(x=>x.bet.hits.length>0).length;
  const wideModes=[['box','5頭BOX'],['axis','◎軸1頭流し'],['select','上位3頭厳選']];
  $("nar-wide-strategy-rows").innerHTML=wideModes.map(([mode,label])=>{
-  const wagers=roiRaces.map(r=>narWideStrategyWager(r,mode)).filter(Boolean);
-  const stats=roiStatistics(wagers),hitRaces=wagers.filter(w=>w.hits.length>0).length;
-  return '<tr><td>'+esc(label)+'</td><td>'+wagers.length+'</td><td>'+hitRaces+'</td><td>'+amount(stats.spent)+'</td><td>'+amount(stats.returned)+'</td><td class="'+(stats.profit>=0?'hit':'miss')+'">'+roiSigned(stats.profit)+'</td><td>'+(stats.spent?(100*stats.returned/stats.spent).toFixed(1)+'%':'—')+'</td></tr>';
+  const wagers=roiRaces.slice().sort((a,b)=>String(a.start_at||a.date).localeCompare(String(b.start_at||b.date))||String(a.id||a.race_no).localeCompare(String(b.id||b.race_no))).map(r=>narWideStrategyWager(r,mode)).filter(Boolean);
+  const stats=roiStatistics(wagers),hitRaces=wagers.filter(w=>w.hits.length>0).length,risk=wideRiskMetrics(wagers);
+  return '<tr><td>'+esc(label)+'</td><td>'+wagers.length+'</td><td>'+hitRaces+'</td><td>'+amount(stats.spent)+'</td><td>'+amount(stats.returned)+'</td><td class="'+(stats.profit>=0?'hit':'miss')+'">'+roiSigned(stats.profit)+'</td><td>'+(stats.spent?(100*stats.returned/stats.spent).toFixed(1)+'%':'—')+'</td><td>'+risk.maxLossStreak+'R</td><td>'+amount(risk.maxDrawdown)+'</td></tr>';
  }).join('');
 
  $("nar-wide-roi").innerHTML=roiOverview(wideStatistics,"上位5頭BOX（10点×100円）／ 公式払戻照合 "+wideRecords.length+"R ／ 1点以上的中 "+wideHitRaces+"R");
