@@ -42,6 +42,23 @@ class FrozenHistoryGuardTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "frozen tickets"):
             verify_history_preserved(old, new)
 
+    def test_frozen_strategy_v5_change_rejected(self):
+        old = {"races": [{"id": "race", "strategy_v5": {"tickets": [[1, 2, 3]]}}]}
+        new = {"races": [{"id": "race", "strategy_v5": {"tickets": [[1, 2, 4]]}}]}
+        with self.assertRaisesRegex(RuntimeError, "frozen strategy_v5"):
+            verify_history_preserved(old, new)
+
+    def test_frozen_market_snapshot_change_rejected(self):
+        old = {"races": [{"id": "race", "market_at_lock": {"updated_at": "before"}}]}
+        new = {"races": [{"id": "race", "market_at_lock": {"updated_at": "after"}}]}
+        with self.assertRaisesRegex(RuntimeError, "frozen market_at_lock"):
+            verify_history_preserved(old, new)
+
+    def test_mutable_display_market_allowed(self):
+        old = {"races": [{"id": "race", "market": {"horses": []}}]}
+        new = {"races": [{"id": "race", "market": {"horses": [{"no": 1}]}}]}
+        verify_history_preserved(old, new)
+
     def test_result_settlement_allowed(self):
         old = {"races": [{"id": "race", "ranking": [{"no": 1}], "result": None}]}
         new = {"races": [{"id": "race", "ranking": [{"no": 1}], "result": [1, 2, 3]}]}
