@@ -804,7 +804,10 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
             if wide_changed:
                 payout_updated += 1
 
-    predictions = sorted(entries.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)[:5000]
+    # Frozen forecasts are an audit ledger. Truncating to 5000 would silently
+    # erase older records and conflict with verify_history_preserved().
+    # Retain all records; migrate to an archive before imposing a storage cap.
+    predictions = sorted(entries.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)
     # Keep draft storage bounded, but not at the expense of upcoming races.
     previews = sorted(drafts.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)[:500]
     method = "本命は勝率、相手は3着内確率で選び、三連複は上位5頭BOX。三連単は従来の可変点数で、全頭の単勝オッズがある場合は全出走馬から着順の推定確率順に選びます。v5検証用に5〜7頭と公式3連複オッズを比較し見送りを含む別枠の参考買い目を保存。発走15分前まで更新、既存の予想・買い目を変更しません。"
