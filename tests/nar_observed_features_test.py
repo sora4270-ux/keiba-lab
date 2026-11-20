@@ -12,7 +12,9 @@ class ObservedFeatureValidationTests(unittest.TestCase):
             {"no":3,"distance":None,"venue":None,"jockey":None,"overall":None},
         ],"recent_features":[(.8,3),(.4,2),None]}
         result=observed_feature_shadow(race)
-        self.assertEqual(result["top_no"],1)
+        # Only two runners have valid scores: abstention is intentional.
+        self.assertIsNone(result["top_no"])
+        self.assertEqual(result["ranking"][0]["no"], 1)
         self.assertEqual(result["ranking"][0]["coverage"],5)
         self.assertIsNone(result["ranking"][2]["score"])
         self.assertIn("carried_weight",result["missing"])
