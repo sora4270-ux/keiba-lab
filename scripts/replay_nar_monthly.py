@@ -41,6 +41,7 @@ def replay(monthly_tables, start, end, max_races=1000):
               "requested_max_races": max_races, "eligible": 0, "skipped": 0,
               "recent_form_win": 0, "recent_form_top3": 0, "baseline_unavailable": True,
               "data_policy": "Prior-day results only; no final odds, future cumulative statistics, or same-day results."}
+    paired = []
     processed = set()
     for venue, day, race_no in keys:
         date = dt.datetime.strptime(day, "%Y%m%d").date()
@@ -64,12 +65,44 @@ def replay(monthly_tables, start, end, max_races=1000):
             report["skipped"] += 1
             continue
         top = ranked[0][1]
+        # A predeclared alternative penalizes sparse historical observations.
+        adjusted = sorted(
+            ((f[0] - 0.025 * (3 - min(3, f[1])), no)
+             for no, _, f in runners if f is not None),
+            key=lambda x: (-x[0], x[1]))
+        paired.append({"day": day, "winner": winners[0],
+                       "podium": podium, "base": top,
+                       "coverage_adjusted": adjusted[0][1]})
         report["eligible"] += 1
         report["recent_form_win"] += top == winners[0]
         report["recent_form_top3"] += top in podium
     n = report["eligible"]
     report["recent_form_win_rate"] = round(100*report["recent_form_win"]/n, 2) if n else None
     report["recent_form_top3_rate"] = round(100*report["recent_form_top3"]/n, 2) if n else None
+    # Split by date to avoid evaluating a candidate on its tuning sample.
+    days = sorted({r["day"] for r in paired})
+    boundary = days[max(0, int(len(days)*0.7)-1)] if days else None
+    def metrics(rows, choice):
+        count = len(rows)
+        wins = sum(r[choice] == r["winner"] for r in rows)
+        podium = sum(r[choice] in r["podium"] for r in rows)
+        return {"races": count, "wins": wins, "top3": podium,
+                "win_rate": round(100*wins/count, 2) if count else None,
+                "top3_rate": round(100*podium/count, 2) if count else None}
+    train = [r for r in paired if r["day"] <= boundary] if boundary else []
+    test = [r for r in paired if r["day"] > boundary] if boundary else []
+    variants = ("base", "coverage_adjusted")
+    selected = max(variants, key=lambda name: (
+        metrics(train, name)["wins"], metrics(train, name)["top3"],
+        name == "base")) if train else "base"
+    report["holdout"] = {
+        "split": "chronological_by_day_70_30",
+        "last_training_day": boundary,
+        "selected_on_training_only": selected,
+        "training": {name: metrics(train, name) for name in variants},
+        "test": {name: metrics(test, name) for name in variants},
+        "selection_note": "Diagnostic only; production predictions unchanged."
+    }
     return report
 
 
