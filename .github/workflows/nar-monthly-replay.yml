@@ -33,6 +33,8 @@ jobs:
         run: python -m unittest discover -s tests -p 'nar_monthly_replay_test.py'
       - name: Validate ROI calculator and reject unsafe inputs
         run: python -m unittest discover -s tests -p 'nar_roi_test.py'
+      - name: Validate prediction-payout reconciliation
+        run: python -m unittest discover -s tests -p 'nar_roi_reconciliation_test.py'
       - name: Replay NAR monthly archives
         env:
           START: ${{ inputs.start }}
