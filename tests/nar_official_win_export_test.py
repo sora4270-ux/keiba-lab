@@ -32,6 +32,13 @@ class OfficialWinExportTests(unittest.TestCase):
         self.assertEqual(official_win_market({"payback": [record(), record(no="4")]}), {})
         self.assertEqual(official_win_market({"payback": [record(), record(amount="300")]}), {})
 
+    def test_requested_month_is_enforced(self):
+        rows, skipped = extract([{"race_id": "nar-20261001-大井-01",
+                                  "horse_no": "3", "bet_type": "win"}],
+                                {"payback": [record()]}, expected_month="2026-09")
+        self.assertEqual(rows, [])
+        self.assertEqual(skipped["outside_requested_month"], 1)
+
     def test_place_is_not_guessed(self):
         rows, skipped = extract([{"race_id": "nar-20261001-大井-01",
                                   "horse_no": "3", "bet_type": "place"}],
