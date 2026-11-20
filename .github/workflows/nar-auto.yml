@@ -18,6 +18,10 @@ on:
       - 'tests/view-switch.test.cjs'
       - 'tests/value_strategy_v5_test.py'
       - 'tests/odds_encoding_test.py'
+      - 'scripts/inspect_nar_history.py'
+      - 'tests/nar_history_integrity_test.py'
+      - 'tests/nar_history_inspection_test.py'
+      - 'tests/nar_frozen_history_guard_test.py'
       - 'race-intel.js'
   schedule:
     # Start away from the top of the hour. Each scheduled runner polls repeatedly
