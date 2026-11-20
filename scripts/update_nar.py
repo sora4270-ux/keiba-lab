@@ -1210,7 +1210,22 @@ def main():
     serialized = json.dumps(out, ensure_ascii=False, separators=(",", ":")) + "\n"
     if not DATA_PATH.exists() or DATA_PATH.read_text(encoding="utf-8") != serialized:
         DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-        DATA_PATH.write_text(serialized, encoding="utf-8")
+        # Never truncate the live forecast ledger before the replacement is
+        # complete. Use a temp file in the same directory for atomic rename.
+        temp_name = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w", encoding="utf-8", dir=DATA_PATH.parent,
+                prefix=".nar_predictions-", suffix=".tmp", delete=False
+            ) as handle:
+                temp_name = handle.name
+                handle.write(serialized)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temp_name, DATA_PATH)
+        finally:
+            if temp_name is not None and os.path.exists(temp_name):
+                os.unlink(temp_name)
     print(f"NAR calendar entries: {len(out['schedule'])}; NAR races: {len(races)}, preliminary: {len(out['drafts'])}, newly frozen: {added}, newly settled: {settled_count}, market/payout updates: {payout_count}; total frozen: {out['summary']['predicted']}, settled: {out['summary']['settled']}")
 
 
