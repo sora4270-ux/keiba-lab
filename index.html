@@ -1277,7 +1277,43 @@ function forecastExtraCandidatesHtml(rows,top,trio,trifecta){
  const names=new Map((rows||[]).map(h=>[Number(h.no),h.name||'']));
  return '<p class="pick-extra"><b>買い目に含む追加候補（印外）</b>：'+extra.map(no=>esc(no)+'番 '+esc(names.get(no)||'')).join(' ／ ')+'</p>';
 }
-function compactBetsHtml(rows,top,trio,trifecta,raceId,showWideBox=false){
+function betDecisionGuide(rows,top,market=null){
+ const ranking=Array.isArray(rows)?rows:[],selected=Array.isArray(top)?top:[];
+ const confidence=predictionConfidence(ranking,false);
+ const numbers=wideBoxNumbers(selected).length===5?wideBoxNumbers(selected):wideBoxNumbers(ranking);
+ const first=numbers[0],runner=ranking.find(h=>Number(h.no)===first);
+ const probs=ranking.map(h=>Number(h.win_probability));
+ const valid=confidence&&probs.every(p=>Number.isFinite(p)&&p>=0&&p<=1);
+ const snapshot=market?.horses;
+ const quotes=Array.isArray(snapshot)?snapshot:ranking;
+ const observed=quotes.find(h=>Number(h.no)===first);
+ const odd=Number(observed?.odds);
+ const hasOdds=Number.isFinite(odd)&&odd>=1&&odd<=10000;
+ const hasSnapshot=!market||Boolean(market.updated_at);
+ const ev=valid&&runner&&hasOdds&&hasSnapshot?runner.win_probability*odd:null;
+ const grade=confidence?.grade||'C';
+ let recommendation='見送り（確率・予想上位5頭の確認が必要）',tickets=[];
+ if(valid&&numbers.length===5){
+  if(grade==='C')recommendation='見送り（信頼度C）';
+  else if(!runner||!hasOdds)recommendation='見送り（本命の予想確率・単勝オッズ未取得）';
+  else if(market&&(!market.updated_at||!Number.isFinite(Date.parse(market.updated_at))))recommendation='見送り（予想時オッズの取得時刻不明）';
+  else if(ev!==null&&ev<1.05)recommendation='見送り（本命単勝の期待回収倍率が1.05未満）';
+  else if(grade==='S'||grade==='A'){
+   recommendation='ワイド◎軸4点を比較検討（各250円）';
+   tickets=numbers.slice(1).map(n=>[first,n]);
+  }else{
+   recommendation='ワイド上位3頭3点を比較検討（400円・300円・300円）';
+   tickets=[[numbers[0],numbers[1]],[numbers[0],numbers[2]],[numbers[1],numbers[2]]];
+  }
+ }
+ const estimate=ev===null?'未算出（確定前の有効な単勝オッズが必要）':(ev*100).toFixed(1)+'%';
+ const caution='単勝の期待値はモデル推定勝率×単勝オッズの参考値。ワイドの期待値ではありません。ワイド配当未取得時は有利さを判定できません。実際の購入指示ではありません。';
+ return '<div class="roi-mini" aria-label="信頼度と参考買い目の判断"><b>買い方の参考判定：</b>'+esc(recommendation)+
+  '<div class="tiny">信頼度 '+esc(grade)+' ／ ◎単勝の推定期待回収率 '+esc(estimate)+
+  (tickets.length?' ／ 候補 '+esc(tickets.map(t=>t.join('－')).join('、')):'')+'</div>'+
+  '<p class="tiny muted">'+esc(caution)+'</p></div>';
+}
+function compactBetsHtml(rows,top,trio,trifecta,raceId,showWideBox=false,market=null){
  const short=forecastShortBets(rows,top);
  const wideNumbers=wideBoxNumbers(top).length===5?wideBoxNumbers(top):wideBoxNumbers(rows);
  const wideTickets=wideBoxTickets(wideNumbers);
@@ -1286,7 +1322,7 @@ function compactBetsHtml(rows,top,trio,trifecta,raceId,showWideBox=false){
   return '<div><dt>'+label+'</dt><dd>'+ (tickets.length?tickets.map(t=>t.join(separator)).join('、'):'—')+
    (tickets.length?'<small>'+tickets.length+'点</small>':'')+'</dd></div>';
  });
- return forecastExtraCandidatesHtml(rows,top,trio,trifecta)+'<div class="forecast-bets" aria-label="券種別の参考買い目"><dl class="forecast-short">'+blocks.join('')+'</dl>'+
+ return betDecisionGuide(rows,top,market)+forecastExtraCandidatesHtml(rows,top,trio,trifecta)+'<div class="forecast-bets" aria-label="券種別の参考買い目"><dl class="forecast-short">'+blocks.join('')+'</dl>'+
   betSectionHtml('三連複',trio,false,raceId)+betSectionHtml('三連単',trifecta,true,raceId)+
   (showWideBox&&wideTickets.length===10?'<details class="bet-section"><summary>ワイド・予想上位5頭BOX 10点（1,000円）</summary>'+betListHtml(wideTickets,false)+'</details>':'')+'</div>';
 }
@@ -2194,7 +2230,7 @@ function narRender(data,localCopy=false){
   return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="forecast-status">'+confidenceBadge(confidence)+'<span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></span></div>'+
    '<div class="muted tiny">発走 '+esc(String(r.start_at||'').slice(11,16)||'未取得')+
    (marketList.length?'':' ／ 単勝オッズ未取得')+'</div>'+forecastPicksHtml(top,p=>pickOdds(p.no))+
-   compactBetsHtml(r.ranking,top,trio,tickets,r.id,true)+savedSimulationButton(r)+
+   compactBetsHtml(r.ranking,top,trio,tickets,r.id,true,r.market_at_lock)+savedSimulationButton(r)+
    forecastDetails('予想の根拠・オッズ・予算・検証',details,r.id)+'</div>';
  }).join(''));
 }
