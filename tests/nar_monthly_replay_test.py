@@ -26,6 +26,10 @@ class ReplayTests(unittest.TestCase):
         self.assertTrue(result["baseline_unavailable"])
         self.assertEqual(result["holdout"]["training"]["base"]["races"] + result["holdout"]["test"]["base"]["races"], 2)
         self.assertEqual(result["holdout"]["training"]["distance_adjusted"]["races"] + result["holdout"]["test"]["distance_adjusted"]["races"], 2)
+        confidence = result["confidence_diagnostics"]
+        self.assertEqual(sum(v["races"] for v in confidence["holdout_by_grade"].values()),
+                         result["holdout"]["test"]["base"]["races"])
+        self.assertEqual(len(confidence["training_margin_cutoffs"]), 3)
         diagnostics = result["error_diagnostics"]
         self.assertEqual(sum(diagnostics["finish_distribution"].values()),
                          result["holdout"]["test"]["base"]["races"])
@@ -42,6 +46,7 @@ class ReplayTests(unittest.TestCase):
         self.assertEqual(result["eligible"],0)
         self.assertIsNone(result["recent_form_win_rate"])
         self.assertEqual(result["holdout"]["test"]["base"]["races"], 0)
+        self.assertEqual(result["confidence_diagnostics"]["holdout_by_grade"], {})
 
 if __name__=="__main__":
     unittest.main()
