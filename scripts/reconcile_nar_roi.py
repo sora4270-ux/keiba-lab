@@ -58,6 +58,24 @@ def reconcile(predictions, payouts):
                          "official_payout_per_100_yen": payout["official_payout_per_100_yen"],
                          "official_result_verified": payout["official_result_verified"]})
     report = evaluate(selected)
+    # A partial join can disproportionately exclude losing bets. Keep the
+    # matched-sample result as diagnostic only until every prediction is
+    # matched and passes validation.
+    complete = len(predictions) > 0 and report["accepted"] == len(predictions)
+    report["completeness"] = {
+        "status": "complete_unverified_source" if complete else "incomplete_no_roi_claim",
+        "predictions": len(predictions),
+        "accepted": report["accepted"],
+        "coverage_percent": round(100 * report["accepted"] / len(predictions), 2)
+            if predictions else None,
+        "source_authentication": "not_performed"
+    }
+    if not complete:
+        report["matched_sample_by_grade"] = report["by_grade"]
+        for grade_data in report["by_grade"].values():
+            for bet_data in grade_data.values():
+                bet_data["roi_percent"] = None
+        report["status"] = "incomplete_no_roi_claim"
     report["reconciliation"] = {
         "predictions_seen": len(predictions),
         "payout_rows_seen": len(payouts),

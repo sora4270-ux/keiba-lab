@@ -27,12 +27,21 @@ class ReconciliationTests(unittest.TestCase):
                            [payout(), payout(race_id="other",
                                              official_payout_per_100_yen="0")])
         self.assertEqual(result["accepted"], 2)
+        self.assertEqual(result["completeness"]["coverage_percent"], 100.0)
         self.assertEqual(result["by_grade"]["S"]["win"]["roi_percent"], "120.00")
 
     def test_missing_is_not_a_loss(self):
         result = reconcile([prediction()], [])
         self.assertEqual(result["accepted"], 0)
         self.assertEqual(result["reconciliation"]["excluded"]["missing_payout"], 1)
+        self.assertEqual(result["completeness"]["status"], "incomplete_no_roi_claim")
+        self.assertIsNone(result["by_grade"]["S"]["win"]["roi_percent"])
+
+    def test_partial_join_suppresses_roi_even_when_matched_bet_wins(self):
+        result = reconcile([prediction(), prediction(race_id="missing")], [payout()])
+        self.assertEqual(result["accepted"], 1)
+        self.assertEqual(result["completeness"]["coverage_percent"], 50.0)
+        self.assertEqual(result["status"], "incomplete_no_roi_claim")
         self.assertIsNone(result["by_grade"]["S"]["win"]["roi_percent"])
 
     def test_ambiguous_and_unverified_are_excluded(self):
