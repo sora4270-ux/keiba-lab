@@ -24,11 +24,14 @@ class ReplayTests(unittest.TestCase):
         self.assertEqual(result["skipped"],1)
         self.assertEqual(result["recent_form_win"],2)
         self.assertTrue(result["baseline_unavailable"])
+        self.assertEqual(result["holdout"]["training"]["base"]["races"] + result["holdout"]["test"]["base"]["races"], 2)
+        self.assertIn(result["holdout"]["selected_on_training_only"], ("base", "coverage_adjusted"))
 
     def test_no_prior_history(self):
         result=replay([sample("20261101")],"20261101","20261101")
         self.assertEqual(result["eligible"],0)
         self.assertIsNone(result["recent_form_win_rate"])
+        self.assertEqual(result["holdout"]["test"]["base"]["races"], 0)
 
 if __name__=="__main__":
     unittest.main()
