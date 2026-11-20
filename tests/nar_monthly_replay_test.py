@@ -26,6 +26,15 @@ class ReplayTests(unittest.TestCase):
         self.assertTrue(result["baseline_unavailable"])
         self.assertEqual(result["holdout"]["training"]["base"]["races"] + result["holdout"]["test"]["base"]["races"], 2)
         self.assertEqual(result["holdout"]["training"]["distance_adjusted"]["races"] + result["holdout"]["test"]["distance_adjusted"]["races"], 2)
+        diagnostics = result["error_diagnostics"]
+        self.assertEqual(sum(diagnostics["finish_distribution"].values()),
+                         result["holdout"]["test"]["base"]["races"])
+        self.assertEqual(sum(x["races"] for x in diagnostics["by_venue"].values()),
+                         result["holdout"]["test"]["base"]["races"])
+        self.assertEqual(sum(x["races"] for x in diagnostics["by_distance"].values()),
+                         result["holdout"]["test"]["base"]["races"])
+        self.assertEqual(sum(x["races"] for x in diagnostics["by_prior_runs"].values()),
+                         result["holdout"]["test"]["base"]["races"])
         self.assertIn(result["holdout"]["selected_on_training_only"], ("base", "coverage_adjusted", "distance_adjusted"))
 
     def test_no_prior_history(self):
