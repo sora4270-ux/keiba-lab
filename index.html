@@ -1276,7 +1276,7 @@ function forecastExtraCandidatesHtml(rows,top,trio,trifecta){
  const names=new Map((rows||[]).map(h=>[Number(h.no),h.name||'']));
  return '<p class="pick-extra"><b>買い目に含む追加候補（印外）</b>：'+extra.map(no=>esc(no)+'番 '+esc(names.get(no)||'')).join(' ／ ')+'</p>';
 }
-function compactBetsHtml(rows,top,trio,trifecta,raceId){
+function compactBetsHtml(rows,top,trio,trifecta,raceId,showWideBox=false){
  const short=forecastShortBets(rows,top);
  const wideNumbers=wideBoxNumbers(top).length===5?wideBoxNumbers(top):wideBoxNumbers(rows);
  const wideTickets=wideBoxTickets(wideNumbers);
@@ -1287,7 +1287,7 @@ function compactBetsHtml(rows,top,trio,trifecta,raceId){
  });
  return forecastExtraCandidatesHtml(rows,top,trio,trifecta)+'<div class="forecast-bets" aria-label="券種別の参考買い目"><dl class="forecast-short">'+blocks.join('')+'</dl>'+
   betSectionHtml('三連複',trio,false,raceId)+betSectionHtml('三連単',trifecta,true,raceId)+
-  (wideTickets.length===10?'<details class="bet-section"><summary>ワイド・予想上位5頭BOX 10点（1,000円）</summary>'+betListHtml(wideTickets,false)+'</details>':'')+'</div>';
+  (showWideBox&&wideTickets.length===10?'<details class="bet-section"><summary>ワイド・予想上位5頭BOX 10点（1,000円）</summary>'+betListHtml(wideTickets,false)+'</details>':'')+'</div>';
 }
 function forecastDetails(label,contents,id){
  return '<details class="forecast-details" data-bet-section="'+esc(JSON.stringify([id,label]))+'"><summary>'+
@@ -2166,7 +2166,7 @@ function narRender(data,localCopy=false){
   return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="forecast-status">'+confidenceBadge(confidence)+'<span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></span></div>'+
    '<div class="muted tiny">発走 '+esc(String(r.start_at||'').slice(11,16)||'未取得')+
    (marketList.length?'':' ／ 単勝オッズ未取得')+'</div>'+forecastPicksHtml(top,p=>pickOdds(p.no))+
-   compactBetsHtml(r.ranking,top,trio,tickets,r.id)+savedSimulationButton(r)+
+   compactBetsHtml(r.ranking,top,trio,tickets,r.id,true)+savedSimulationButton(r)+
    forecastDetails('予想の根拠・オッズ・予算・検証',details,r.id)+'</div>';
  }).join(''));
 }
