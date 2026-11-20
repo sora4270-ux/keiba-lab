@@ -49,6 +49,27 @@ class RefreshHealthTest(unittest.TestCase):
             self.assertTrue(updated['content_changed'])
             self.assertEqual(updated['odds_status'], 'available')
 
+    def test_empty_history_is_reported_without_running_update(self):
+        with tempfile.TemporaryDirectory() as folder:
+            data, health = Path(folder) / 'predictions.json', Path(folder) / 'health.json'
+            data.write_text('', encoding='utf-8')
+            runner = Mock()
+            self.assertEqual(run_refresh(data, health, runner), 1)
+            runner.assert_not_called()
+            self.assertEqual(json.loads(health.read_text())['error_code'],
+                             'empty_forecast_history')
+            self.assertEqual(data.read_text(), '')
+
+    def test_corrupt_history_is_reported_without_running_update(self):
+        with tempfile.TemporaryDirectory() as folder:
+            data, health = Path(folder) / 'predictions.json', Path(folder) / 'health.json'
+            data.write_text('{broken', encoding='utf-8')
+            runner = Mock()
+            self.assertEqual(run_refresh(data, health, runner), 1)
+            runner.assert_not_called()
+            self.assertEqual(json.loads(health.read_text())['error_code'],
+                             'invalid_forecast_history')
+
     def test_timeout_and_invalid_output(self):
         with tempfile.TemporaryDirectory() as folder:
             data, health = Path(folder) / 'predictions.json', Path(folder) / 'health.json'
