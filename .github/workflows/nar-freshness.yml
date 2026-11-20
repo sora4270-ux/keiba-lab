@@ -1,0 +1,26 @@
+name: NAR freshness watchdog
+on:
+  schedule:
+    - cron: '25 0-14,21-23 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/check_nar_freshness.py'
+      - 'tests/nar_freshness_test.py'
+      - '.github/workflows/nar-freshness.yml'
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test watchdog logic
+        run: python -m unittest discover -s tests -p 'nar_freshness_test.py'
+      - name: Check forecast freshness
+        run: |
+          python scripts/check_nar_freshness.py --max-age-minutes 180
