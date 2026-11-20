@@ -16,7 +16,7 @@ from recent_form import LOOKBACK_DAYS, features_on, history_runs, horse_key
 from update_nar import BASE_URL, fetch_daily_zip, load_zip_tables, row_key, cell, as_int
 
 
-def replay(monthly_tables, start, end, max_races=1000):
+def replay(monthly_tables, start, end, max_races=1000, frozen_cutoffs=None):
     """Only results dated strictly earlier than each target day are features."""
     race_rows = {}
     horse_rows = collections.defaultdict(list)
@@ -188,6 +188,30 @@ def replay(monthly_tables, start, end, max_races=1000):
         },
         "caution": "Descriptive confidence intervals; overlap and subgroup selection limit inference. Verify on independent months."
     }
+    # Optional cutoffs learned from a strictly earlier month, never refitted here.
+    if frozen_cutoffs is not None:
+        if len(frozen_cutoffs) != 3 or any(not math.isfinite(v) or v < 0 for v in frozen_cutoffs) or list(frozen_cutoffs) != sorted(frozen_cutoffs):
+            raise ValueError("Require three finite nonnegative ascending cutoffs")
+        def frozen_grade(margin):
+            if margin > frozen_cutoffs[2]: return "S"
+            if margin > frozen_cutoffs[1]: return "A"
+            if margin > frozen_cutoffs[0]: return "B"
+            return "C"
+        frozen_bins = collections.defaultdict(list)
+        for row in paired:
+            frozen_bins[frozen_grade(row["score_margin"])].append(row)
+        frozen_s = summarize(frozen_bins["S"])
+        frozen_other = summarize([r for r in paired if frozen_grade(r["score_margin"]) != "S"])
+        report["frozen_confidence_validation"] = {
+            "cutoffs": list(frozen_cutoffs),
+            "scope": "all_eligible_races_external_prior_month_thresholds",
+            "by_grade": {grade: summarize(frozen_bins[grade]) for grade in ("S", "A", "B", "C")},
+            "S_vs_non_S": {
+                "S": {**frozen_s, "win_rate_wilson95": wilson(frozen_s["wins"], frozen_s["races"])},
+                "non_S": {**frozen_other, "win_rate_wilson95": wilson(frozen_other["wins"], frozen_other["races"])}
+            },
+            "warning": "Cutoffs must predate the test month; no production changes or ROI claims."
+        }
     report["confidence_diagnostics"] = {
         "scope": "holdout_only_recent_form_diagnostic",
         "method": "Top1 minus top2 score margin; quartile thresholds from training days only",
@@ -225,6 +249,7 @@ def main():
     parser.add_argument("--end", required=True, help="YYYY-MM-DD")
     parser.add_argument("--max-races", type=int, default=1000)
     parser.add_argument("--output", default="nar-monthly-replay.json")
+    parser.add_argument("--confidence-cutoffs", help="Three comma-separated thresholds from an earlier month")
     args = parser.parse_args()
     start = dt.date.fromisoformat(args.start)
     end = dt.date.fromisoformat(args.end)
@@ -242,7 +267,12 @@ def main():
         except Exception as exc:
             raise SystemExit(f"Historical archive unavailable for {month:%Y-%m}: {exc}") from exc
         month = (month.replace(day=28)+dt.timedelta(days=4)).replace(day=1)
-    result = replay(months, start.strftime("%Y%m%d"), end.strftime("%Y%m%d"), args.max_races)
+    try:
+        cutoffs = [float(v) for v in args.confidence_cutoffs.split(",")] if args.confidence_cutoffs else None
+    except ValueError:
+        parser.error("--confidence-cutoffs must contain three numbers")
+    result = replay(months, start.strftime("%Y%m%d"), end.strftime("%Y%m%d"),
+                    args.max_races, frozen_cutoffs=cutoffs)
     Path(args.output).write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print(json.dumps(result,ensure_ascii=False,indent=2))
 
