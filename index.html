@@ -1295,6 +1295,7 @@ function betDecisionGuide(rows,top,market=null){
  let recommendation='見送り（確率・予想上位5頭の確認が必要）',tickets=[];
  if(valid&&numbers.length===5){
   if(grade==='C')recommendation='見送り（信頼度C）';
+  else if(!hasOdds)recommendation='見送り（単勝オッズ未取得）';
   else if(market&&(!market.updated_at||!Number.isFinite(Date.parse(market.updated_at))))recommendation='見送り（予想時オッズの取得時刻不明）';
   else if(ev!==null&&ev<1.05)recommendation='見送り（本命単勝の期待回収倍率が1.05未満）';
   else if(grade==='S'||grade==='A'){
