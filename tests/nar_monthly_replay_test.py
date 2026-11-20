@@ -46,6 +46,18 @@ class ReplayTests(unittest.TestCase):
                          result["holdout"]["test"]["base"]["races"])
         self.assertIn(result["holdout"]["selected_on_training_only"], ("base", "coverage_adjusted", "distance_adjusted"))
 
+    def test_frozen_cutoffs_cover_all_eligible_races(self):
+        tables=[sample("20261101"),sample("20261102"),sample("20261103")]
+        result=replay(tables,"20261101","20261103",
+                      frozen_cutoffs=[0.02511,0.05710,0.11511])
+        frozen=result["frozen_confidence_validation"]
+        self.assertEqual(sum(v["races"] for v in frozen["by_grade"].values()),
+                         result["eligible"])
+        self.assertEqual(frozen["S_vs_non_S"]["S"]["wins"] +
+                         frozen["S_vs_non_S"]["non_S"]["wins"], result["recent_form_win"])
+        with self.assertRaises(ValueError):
+            replay(tables,"20261101","20261103",frozen_cutoffs=[0.1,0.05,0.2])
+
     def test_no_prior_history(self):
         result=replay([sample("20261101")],"20261101","20261101")
         self.assertEqual(result["eligible"],0)
