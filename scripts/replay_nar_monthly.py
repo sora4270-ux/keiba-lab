@@ -212,6 +212,22 @@ def replay(monthly_tables, start, end, max_races=1000, frozen_cutoffs=None):
             },
             "warning": "Cutoffs must predate the test month; no production changes or ROI claims."
         }
+    # ROI is not computable from this result-only replay. Do not infer payouts
+    # from finishing position, and never substitute post-race final odds for
+    # the price available when a bet would have been placed.
+    report["roi_readiness"] = {
+        "status": "unavailable_missing_payout_and_prebet_odds",
+        "eligible_races": report["eligible"],
+        "win_roi_percent": None,
+        "place_roi_percent": None,
+        "required_fields": [
+            "race_identifier", "horse_number", "bet_type",
+            "stake_yen", "official_payout_yen",
+            "prebet_odds_timestamp", "bet_decision_timestamp"
+        ],
+        "evaluation_policy": "Use timestamped odds known at decision time; verify official payouts and refunds; no fabricated ROI.",
+        "confidence_scope": "Frozen grades only when thresholds come from a strictly earlier period."
+    }
     report["confidence_diagnostics"] = {
         "scope": "holdout_only_recent_form_diagnostic",
         "method": "Top1 minus top2 score margin; quartile thresholds from training days only",
