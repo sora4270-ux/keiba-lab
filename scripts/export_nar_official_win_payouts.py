@@ -38,7 +38,7 @@ def official_win_market(tables):
             if key not in conflicts and len(payouts) == 1}
 
 
-def extract(predictions, tables):
+def extract(predictions, tables, expected_month=None):
     markets = official_win_market(tables)
     rows = []
     skipped = {}
@@ -54,6 +54,9 @@ def extract(predictions, tables):
         _, day, venue, race_text = race_id.split("-")
         if len(day) != 8 or not day.isdigit() or not race_text.isdigit():
             skipped["noncanonical_race_id"] = skipped.get("noncanonical_race_id", 0) + 1
+            continue
+        if expected_month is not None and day[:6] != expected_month.replace("-", ""):
+            skipped["outside_requested_month"] = skipped.get("outside_requested_month", 0) + 1
             continue
         market = markets.get((venue, day, int(race_text)))
         if market is None:
@@ -83,7 +86,7 @@ def main():
     tables = load_zip_tables(fetch_daily_zip(url))
     if "payback" not in tables:
         parser.error("Official monthly archive does not include payback.csv")
-    rows, skipped = extract(predictions, tables)
+    rows, skipped = extract(predictions, tables, expected_month=args.month)
     with open(args.output, "w", newline="", encoding="utf-8") as stream:
         writer = csv.DictWriter(stream, fieldnames=("race_id", "horse_no", "bet_type",
                             "official_payout_per_100_yen", "official_result_verified"))
