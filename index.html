@@ -283,6 +283,11 @@
     <div id="nar-roi-total" class="roi-overview" aria-label="地方競馬の参考回収率と収支"></div><div id="nar-purchase-total" class="stake-banner"></div>
     <div id="nar-roi-types" class="metric-stack roi-grid" aria-label="地方競馬の券種別参考回収率"></div>
     <p id="nar-roi-footnote" class="roi-hint"></p>
+    <div class="hrow" style="margin-top:22px"><h3 style="margin:0">ワイド・予想上位5頭BOX（各100円）</h3></div>
+    <p class="roi-hint">発走前に保存された予想上位5頭の全10組を各100円、1レース1,000円で仮想購入。公式ワイド払戻が3組（同着時は該当全組）確認できたレースだけ集計します。従来の5券種合計に加えない独立した比較成績です。</p>
+    <div id="nar-wide-roi" class="roi-overview" aria-label="ワイド上位5頭BOXの参考収支・回収率"></div>
+    <p id="nar-wide-coverage" class="roi-hint"></p>
+    <details><summary>ワイドBOXのレース別収支を確認</summary><div class="scroll"><table class="ledger-table"><thead><tr><th>レース</th><th>予想上位5頭</th><th>実際の1〜3着</th><th>的中した組</th><th>購入</th><th>払戻</th><th>収支</th></tr></thead><tbody id="nar-wide-rows"></tbody></table></div></details>
     <details class="venue-breakdown"><summary>地方競馬場別の的中率・回収率を一覧で比較</summary><div class="scroll" id="nar-venue-breakdown"></div><p class="section-note">取得済み記録から集計。5券種回収率は5券種の払戻が揃ったレースのみ対象です。</p></details>
    </div>
    <div class="hrow"><h3 style="margin:15px 0 8px" id="nar-list-title">レース予想</h3><span id="nar-count" class="muted tiny"></span></div>
@@ -1271,15 +1276,18 @@ function forecastExtraCandidatesHtml(rows,top,trio,trifecta){
  const names=new Map((rows||[]).map(h=>[Number(h.no),h.name||'']));
  return '<p class="pick-extra"><b>買い目に含む追加候補（印外）</b>：'+extra.map(no=>esc(no)+'番 '+esc(names.get(no)||'')).join(' ／ ')+'</p>';
 }
-function compactBetsHtml(rows,top,trio,trifecta,raceId){
+function compactBetsHtml(rows,top,trio,trifecta,raceId,showWideBox=false){
  const short=forecastShortBets(rows,top);
+ const wideNumbers=wideBoxNumbers(top).length===5?wideBoxNumbers(top):wideBoxNumbers(rows);
+ const wideTickets=wideBoxTickets(wideNumbers);
  const blocks=[['win','単勝'],['place','複勝'],['quinella','馬連'],['exacta','馬単'],['wide','ワイド']].map(([key,label])=>{
   const tickets=short[key],separator=key==='exacta'?'→':'－';
   return '<div><dt>'+label+'</dt><dd>'+ (tickets.length?tickets.map(t=>t.join(separator)).join('、'):'—')+
    (tickets.length?'<small>'+tickets.length+'点</small>':'')+'</dd></div>';
  });
  return forecastExtraCandidatesHtml(rows,top,trio,trifecta)+'<div class="forecast-bets" aria-label="券種別の参考買い目"><dl class="forecast-short">'+blocks.join('')+'</dl>'+
-  betSectionHtml('三連複',trio,false,raceId)+betSectionHtml('三連単',trifecta,true,raceId)+'</div>';
+  betSectionHtml('三連複',trio,false,raceId)+betSectionHtml('三連単',trifecta,true,raceId)+
+  (showWideBox&&wideTickets.length===10?'<details class="bet-section"><summary>ワイド・予想上位5頭BOX 10点（1,000円）</summary>'+betListHtml(wideTickets,false)+'</details>':'')+'</div>';
 }
 function forecastDetails(label,contents,id){
  return '<details class="forecast-details" data-bet-section="'+esc(JSON.stringify([id,label]))+'"><summary>'+
@@ -1870,6 +1878,39 @@ function narReferenceWager(r,key,stakes){
  const returned=winners.reduce((sum,t)=>sum+(purchased.get(t)||0)*amounts[t],0);
  return {spent,returned,profit:returned-spent};
 }
+
+function wideBoxNumbers(rows){
+ if(!Array.isArray(rows)||rows.length<5)return [];
+ const numbers=rows.slice(0,5).map(h=>Number(h?.no??h));
+ return numbers.every(no=>Number.isInteger(no)&&no>0&&no<=30)&&new Set(numbers).size===5?numbers:[];
+}
+function wideBoxTickets(numbers){
+ if(!Array.isArray(numbers)||numbers.length!==5)return [];
+ const tickets=[];
+ for(let i=0;i<5;i++)for(let j=i+1;j<5;j++)tickets.push([numbers[i],numbers[j]].sort((a,b)=>a-b));
+ return tickets;
+}
+function narWideBoxTickets(r){
+ const frozen=wideBoxNumbers(r?.top5);
+ const ranked=frozen.length?frozen:wideBoxNumbers(r?.ranking);
+ return wideBoxTickets(ranked);
+}
+function narWideBoxWager(r){
+ if(!Array.isArray(r?.result)||r.result.length!==3)return null;
+ const tickets=narWideBoxTickets(r);
+ if(tickets.length!==10||!r.wide_payouts||typeof r.wide_payouts!=='object')return null;
+ const outcomes=narResultOrders(r);
+ const winners=new Set();
+ for(const order of outcomes){
+  if(!Array.isArray(order)||order.length!==3||new Set(order).size!==3)return null;
+  for(let i=0;i<3;i++)for(let j=i+1;j<3;j++)winners.add(narTicketKey([order[i],order[j]],true));
+ }
+ if(winners.size<3||[...winners].some(key=>!Number.isInteger(r.wide_payouts[key])||r.wide_payouts[key]<0))return null;
+ const chosen=new Set(tickets.map(ticket=>narTicketKey(ticket,true)));
+ const hits=[...winners].filter(key=>chosen.has(key)).sort((a,b)=>a.localeCompare(b,'ja',{numeric:true}));
+ const returned=hits.reduce((total,key)=>total+r.wide_payouts[key],0);
+ return {spent:1000,returned,profit:returned-1000,hits};
+}
 function narPeriodRaces(records,period){
  if(period==="all")return records;
  const today=new Date().toLocaleDateString("sv-SE",{timeZone:"Asia/Tokyo"});
@@ -1912,6 +1953,11 @@ function narPayoutHtml(r,trioMultiHit){
  }).filter(Boolean);
  const basket=completeBasket([r],narReferenceWager);
  if(basket.races)notes.unshift("全5券種合計："+roiLabel(basket.stats)+"（参考収支 "+roiSigned(basket.stats.profit)+"）");
+ if(narWideBoxTickets(r).length===10){
+  const wide=narWideBoxWager(r);
+  notes.push(wide?"ワイド5頭BOX（別集計）："+wide.hits.length+"点的中 ／ 払戻 "+amount(wide.returned)+" ／ 収支 "+roiSigned(wide.profit):
+   "ワイド5頭BOX（別集計）：公式ワイド払戻未取得・収支計算待ち");
+ }
  return '<div class="nar-result"><b>確定払戻（100円あたり）</b><div>'+lines+'</div>'+(notes.length?'<div class="roi-mini">'+notes.join(' ／ ')+'</div>':'')+'</div>';
 }
 function narRender(data,localCopy=false){
@@ -2031,6 +2077,18 @@ function narRender(data,localCopy=false){
   return '<div class="metric-card"><small>'+label+'</small><b>'+roiLabel(x)+'</b><div class="roi-detail">対象 '+x.n+'レース ／ 購入 '+amount(x.spent)+' ／ 払戻 '+amount(x.returned)+'<br>収支 '+roiSigned(x.profit)+'</div></div>';
  }).join("");
  $("nar-roi-footnote").textContent="回収率＝仮想払戻合計÷仮想購入額×100。結果照合済み "+roiRaces.length+"レースのうち、5券種すべての払戻金がある "+basket.races+"レースを全体回収率に使用。券種別は払戻取得済みのレースのみ。全体は各レースで保存した三連複の候補全点を採用し、オッズ条件付き参考買い目は別集計で合計に加算しません。v5検証用は別集計で合計に加算しません。見送りは購入ゼロとして扱います。返還・同着等の特殊ケースはこの簡易集計の対象外。実際の購入実績ではありません。";
+
+ const wideAvailable=roiRaces.filter(r=>narWideBoxTickets(r).length===10);
+ const wideRecords=wideAvailable.map(r=>({race:r,bet:narWideBoxWager(r)})).filter(x=>x.bet);
+ const wideStatistics=roiStatistics(wideRecords.map(x=>x.bet));
+ const wideHitRaces=wideRecords.filter(x=>x.bet.hits.length>0).length;
+ $("nar-wide-roi").innerHTML=roiOverview(wideStatistics,"上位5頭BOX（10点×100円）／ 公式払戻照合 "+wideRecords.length+"R ／ 1点以上的中 "+wideHitRaces+"R");
+ $("nar-wide-coverage").textContent="結果確定済み "+roiRaces.length+"Rのうち、発走前に上位5頭が保存された "+wideAvailable.length+"R ／ ワイド払戻確認 "+wideRecords.length+"R ／ 払戻未取得・未計算 "+(wideAvailable.length-wideRecords.length)+"R。0点的中も払戻確認済みなら購入1,000円・払戻0円として集計。取消・返還レースは未対応。";
+ $("nar-wide-rows").innerHTML=wideRecords.length?wideRecords.slice().sort((a,b)=>String(b.race.start_at||b.race.date).localeCompare(String(a.race.start_at||a.race.date))).slice(0,60).map(x=>{
+  const r=x.race,w=x.bet,top=narWideBoxTickets(r),numbers=[...new Set(top.flat())].join("・");
+  const name=String(r.date||"")+" "+String(r.venue||"")+" "+String(r.race_no||"")+"R";
+  return '<tr><td>'+esc(name)+'</td><td>'+esc(numbers)+'</td><td>'+esc((r.result||[]).join("→"))+'</td><td>'+(w.hits.length?esc(w.hits.join(" ／ ")):"0点")+'</td><td>'+amount(w.spent)+'</td><td>'+amount(w.returned)+'</td><td class="'+(w.profit>=0?"hit":"miss")+'">'+roiSigned(w.profit)+'</td></tr>';
+ }).join(""):'<tr><td colspan="7" class="muted">この条件では公式ワイド払戻を照合できたレースがありません。未取得は負けとして扱いません。</td></tr>';
  const upcoming=[...viewed,...viewedPreviews].filter(r=>!r.result&&Date.parse(r.start_at)>Date.now()).sort((a,b)=>Date.parse(a.start_at)-Date.parse(b.start_at));
  const finished=forecastResultRows(viewed,'results').sort((a,b)=>Date.parse(b.start_at)-Date.parse(a.start_at));
  const pending=[...viewed,...viewedPreviews].filter(r=>!r.result&&Date.parse(r.start_at)<=Date.now()).sort((a,b)=>Date.parse(b.start_at)-Date.parse(a.start_at));
@@ -2108,7 +2166,7 @@ function narRender(data,localCopy=false){
   return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="forecast-status">'+confidenceBadge(confidence)+'<span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></span></div>'+
    '<div class="muted tiny">発走 '+esc(String(r.start_at||'').slice(11,16)||'未取得')+
    (marketList.length?'':' ／ 単勝オッズ未取得')+'</div>'+forecastPicksHtml(top,p=>pickOdds(p.no))+
-   compactBetsHtml(r.ranking,top,trio,tickets,r.id)+savedSimulationButton(r)+
+   compactBetsHtml(r.ranking,top,trio,tickets,r.id,true)+savedSimulationButton(r)+
    forecastDetails('予想の根拠・オッズ・予算・検証',details,r.id)+'</div>';
  }).join(''));
 }

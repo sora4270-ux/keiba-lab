@@ -14,7 +14,7 @@ const source=[
   snippet('function payoutValue(r,key){','function recordResult(rec,top,payouts={})'),
   snippet('function savedTrioList(r){','function trioTokens(tickets){'),
   snippet('function narReferenceWager(','function narPeriodRaces(records,period){')
-].join('\n')+'\n({resultMatches,payoutValue,referenceWager,roiStatistics,roiLabel,completeBasket,savedTrioList,narReferenceWager})';
+].join('\n')+'\n({resultMatches,payoutValue,referenceWager,roiStatistics,roiLabel,completeBasket,savedTrioList,narReferenceWager,narWideBoxTickets,narWideBoxWager})';
 const api=vm.runInNewContext(source,{console});
 
 const payouts={win:200,quinella:500,exacta:750,trio:2000,trifecta:10000};
@@ -79,4 +79,32 @@ for(const race of publicData.races) {
   assert.ok(result.stats.spent>=0 && result.stats.returned>=0);
   if(result.races)assert.ok(Number.isFinite(result.stats.rate));
 }
-console.log('PASS ROI: 100-yen stakes, confirmed payouts, trifecta/trio, missing payouts, 5-type combined return');
+
+const wideRecord={...nar,top5:[1,2,3,4,5].map(no=>({no})),wide_payouts:{
+  '1-2':360,'1-3':540,'2-3':680
+}};
+assert.equal(api.narWideBoxTickets(wideRecord).length,10);
+const wide=api.narWideBoxWager(wideRecord);
+assert.equal(wide.spent,1000);
+assert.equal(wide.returned,1580);
+assert.equal(wide.profit,580);
+assert.equal(wide.hits.length,3);
+const oneWide={...wideRecord,result:[1,2,7],wide_payouts:{
+  '1-2':360,'1-7':750,'2-7':520
+}};
+assert.equal(api.narWideBoxWager(oneWide).returned,360);
+assert.equal(api.narWideBoxWager(oneWide).profit,-640);
+assert.equal(api.narWideBoxWager({...wideRecord,top5:[4,5,6,7,8].map(no=>({no}))}).returned,0);
+assert.equal(api.narWideBoxWager({...wideRecord,wide_payouts:{'1-2':360,'1-3':540}}),null,
+  'Do not treat an unknown winning pair as a zero-yen payout');
+assert.equal(api.narWideBoxWager({...wideRecord,result:null}),null);
+assert.equal(api.narWideBoxWager({...wideRecord,top5:[{no:1},{no:2}]}),null);
+const tiedWide={...wideRecord,result_alternatives:[[1,2,3],[1,2,4]],wide_payouts:{
+  '1-2':360,'1-3':540,'2-3':680,'1-4':590,'2-4':740
+}};
+assert.equal(api.narWideBoxWager(tiedWide).hits.length,5);
+assert.equal(api.narWideBoxWager(tiedWide).returned,2910);
+assert.equal(api.completeBasket([wideRecord],api.narReferenceWager).stats.spent,600,
+  'Wide shadow strategy must remain outside original five-type basket');
+
+console.log('PASS ROI: 100-yen stakes, confirmed payouts, trifecta/trio, missing payouts, 5-type combined return, wide top-5 BOX shadow P/L');
