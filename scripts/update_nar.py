@@ -1136,6 +1136,17 @@ def verify_history_preserved(previous, updated):
     if missing:
         raise RuntimeError(
             f"NAR refresh would drop {len(missing)} frozen race records; refusing to overwrite")
+    updated_by_id = {row["id"]: row for row in after}
+    # Result, settlement and verified payouts may arrive later, but the
+    # originally frozen forecast and ticket selections must never change.
+    frozen_fields = ("ranking", "top3", "top5", "tickets", "trio_tickets",
+                     "trifecta_plan", "predicted_at", "locked_at", "cutoff_at")
+    for row in before:
+        current = updated_by_id[row["id"]]
+        for field in frozen_fields:
+            if field in row and current.get(field) != row[field]:
+                raise RuntimeError(
+                    f"NAR refresh would change frozen {field} for {row['id']}; refusing to overwrite")
 
 
 def load_persisted_history(path):
