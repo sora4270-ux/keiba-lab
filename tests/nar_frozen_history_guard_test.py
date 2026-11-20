@@ -2,7 +2,8 @@ import sys
 import unittest
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from update_nar import verify_history_preserved
+from update_nar import verify_history_preserved, update_data
+import datetime as dt
 
 
 class FrozenHistoryGuardTests(unittest.TestCase):
@@ -45,6 +46,24 @@ class FrozenHistoryGuardTests(unittest.TestCase):
         old = {"races": [{"id": "race", "ranking": [{"no": 1}], "result": None}]}
         new = {"races": [{"id": "race", "ranking": [{"no": 1}], "result": [1, 2, 3]}]}
         verify_history_preserved(old, new)
+
+    def test_update_does_not_mutate_persisted_record(self):
+        now = dt.datetime(2026, 11, 21, 12, tzinfo=dt.timezone(dt.timedelta(hours=9)))
+        previous = {"races": [{"id": "old", "date": "2026-11-20",
+                               "start_at": "2026-11-20T12:00:00+09:00",
+                               "ranking": [{"no": 1}], "tickets": [[1, 2, 3]]}],
+                    "drafts": []}
+        original = previous["races"][0]
+        try:
+            result = update_data([], now, previous)[0]
+        except (KeyError, ValueError, TypeError) as exc:
+            self.fail(f"Existing valid history should survive a no-races update: {exc}")
+        self.assertIsNot(result["races"][0], original)
+        self.assertEqual(previous["races"][0]["ranking"], [{"no": 1}])
+        result["races"][0]["ranking"][0]["no"] = 9
+        self.assertEqual(previous["races"][0]["ranking"], [{"no": 1}])
+        with self.assertRaisesRegex(RuntimeError, "frozen ranking"):
+            verify_history_preserved(previous, result)
 
     def test_first_run_allowed(self):
         verify_history_preserved({}, {"races": []})
