@@ -17,6 +17,7 @@ jobs:
         run: |
           python -m unittest discover -s tests -p 'nar_observed_features_test.py'
           python -m unittest discover -s tests -p 'nar_historical_backtest_test.py'
+          python -m unittest discover -s tests -p 'nar_monthly_replay_test.py'
       - name: Compare frozen NAR forecasts
         run: |
           python scripts/backtest_nar_features.py --output nar-backtest-report.json
