@@ -39,6 +39,18 @@ class CoverageTests(unittest.TestCase):
         self.assertEqual(result["both_present"], 0)
         self.assertEqual(result["by_status"]["official_payout_unavailable"], 1)
 
+    def test_duplicate_frozen_forecasts_do_not_count_as_coverage(self):
+        result = coverage({"races": [record(), record()]}, payback(), "2026-10")
+        self.assertEqual(result["both_present"], 0)
+        self.assertEqual(result["by_status"]["duplicate_frozen_selection"], 2)
+
+    def test_nonfinite_odds_do_not_count_as_coverage(self):
+        bad = record()
+        bad["market_at_lock"]["horses"][0]["odds"] = float("nan")
+        result = coverage({"races": [bad]}, payback(), "2026-10")
+        self.assertEqual(result["both_present"], 0)
+        self.assertEqual(result["by_status"]["prelock_missing_odds"], 1)
+
     def test_month_scoped(self):
         result = coverage({"races": [record()]}, payback(), "2026-09")
         self.assertEqual(result["frozen_forecasts_checked"], 0)
