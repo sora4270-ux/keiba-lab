@@ -287,6 +287,7 @@
     <p class="roi-hint">発走前に保存された予想上位5頭の全10組を各100円、1レース1,000円で仮想購入。公式ワイド払戻が3組（同着時は該当全組）確認できたレースだけ集計します。従来の5券種合計に加えない独立した比較成績です。</p>
     <div id="nar-wide-roi" class="roi-overview" aria-label="ワイド上位5頭BOXの参考収支・回収率"></div>
     <p id="nar-wide-coverage" class="roi-hint"></p>
+    <h4 style="margin:18px 0 6px">ワイド3方式・同額1,000円の仮想収支比較</h4><div class="scroll"><table class="ledger-table"><thead><tr><th>方式</th><th>集計R</th><th>的中R</th><th>購入</th><th>払戻</th><th>収支</th><th>回収率</th></tr></thead><tbody id="nar-wide-strategy-rows"></tbody></table></div><p class="roi-hint">5頭BOX：10点×100円／◎軸流し：4点×250円／上位3頭厳選：◎○400円・◎▲300円・○▲300円。発走前保存順位と公式払戻のあるレースのみ。期待値や勝率の未検証推定は行いません。</p>
     <details><summary>ワイドBOXのレース別収支を確認</summary><div class="scroll"><table class="ledger-table"><thead><tr><th>レース</th><th>予想上位5頭</th><th>実際の1〜3着</th><th>的中した組</th><th>購入</th><th>払戻</th><th>収支</th></tr></thead><tbody id="nar-wide-rows"></tbody></table></div></details>
     <details class="venue-breakdown"><summary>地方競馬場別の的中率・回収率を一覧で比較</summary><div class="scroll" id="nar-venue-breakdown"></div><p class="section-note">取得済み記録から集計。5券種回収率は5券種の払戻が揃ったレースのみ対象です。</p></details>
    </div>
@@ -1911,6 +1912,26 @@ function narWideBoxWager(r){
  const returned=hits.reduce((total,key)=>total+r.wide_payouts[key],0);
  return {spent:1000,returned,profit:returned-1000,hits};
 }
+function narWideStrategyWager(r,mode){
+ const numbers=wideBoxNumbers(r?.top5).length===5?wideBoxNumbers(r.top5):wideBoxNumbers(r?.ranking);
+ if(numbers.length!==5||!Array.isArray(r?.result)||r.result.length!==3||!r.wide_payouts)return null;
+ const all=wideBoxTickets(numbers),selected=mode==='box'?all:mode==='axis'?all.filter(t=>t.includes(numbers[0])):all.filter(t=>t.every(n=>numbers.slice(0,3).includes(n)));
+ const stakes=mode==='box'?selected.map(()=>100):mode==='axis'?selected.map(()=>250):[400,300,300];
+ if(selected.length!==(mode==='box'?10:mode==='axis'?4:3))return null;
+ const outcomes=narResultOrders(r),winning=new Set();
+ for(const order of outcomes){
+  if(!Array.isArray(order)||order.length!==3||new Set(order).size!==3)return null;
+  for(let i=0;i<3;i++)for(let j=i+1;j<3;j++)winning.add(narTicketKey([order[i],order[j]],true));
+ }
+ if(winning.size<3||[...winning].some(k=>!Number.isInteger(r.wide_payouts[k])||r.wide_payouts[k]<0))return null;
+ const hits=[],returned=selected.reduce((sum,t,i)=>{
+  const key=narTicketKey(t,true);
+  if(!winning.has(key))return sum;
+  hits.push(key);
+  return sum+r.wide_payouts[key]*stakes[i]/100;
+ },0);
+ return {spent:1000,returned,profit:returned-1000,hits};
+}
 function narPeriodRaces(records,period){
  if(period==="all")return records;
  const today=new Date().toLocaleDateString("sv-SE",{timeZone:"Asia/Tokyo"});
@@ -2082,6 +2103,13 @@ function narRender(data,localCopy=false){
  const wideRecords=wideAvailable.map(r=>({race:r,bet:narWideBoxWager(r)})).filter(x=>x.bet);
  const wideStatistics=roiStatistics(wideRecords.map(x=>x.bet));
  const wideHitRaces=wideRecords.filter(x=>x.bet.hits.length>0).length;
+ const wideModes=[['box','5頭BOX'],['axis','◎軸1頭流し'],['select','上位3頭厳選']];
+ $("nar-wide-strategy-rows").innerHTML=wideModes.map(([mode,label])=>{
+  const wagers=roiRaces.map(r=>narWideStrategyWager(r,mode)).filter(Boolean);
+  const stats=roiStatistics(wagers),hitRaces=wagers.filter(w=>w.hits.length>0).length;
+  return '<tr><td>'+esc(label)+'</td><td>'+wagers.length+'</td><td>'+hitRaces+'</td><td>'+amount(stats.spent)+'</td><td>'+amount(stats.returned)+'</td><td class="'+(stats.profit>=0?'hit':'miss')+'">'+roiSigned(stats.profit)+'</td><td>'+(stats.spent?(100*stats.returned/stats.spent).toFixed(1)+'%':'—')+'</td></tr>';
+ }).join('');
+
  $("nar-wide-roi").innerHTML=roiOverview(wideStatistics,"上位5頭BOX（10点×100円）／ 公式払戻照合 "+wideRecords.length+"R ／ 1点以上的中 "+wideHitRaces+"R");
  $("nar-wide-coverage").textContent="結果確定済み "+roiRaces.length+"Rのうち、発走前に上位5頭が保存された "+wideAvailable.length+"R ／ ワイド払戻確認 "+wideRecords.length+"R ／ 払戻未取得・未計算 "+(wideAvailable.length-wideRecords.length)+"R。0点的中も払戻確認済みなら購入1,000円・払戻0円として集計。取消・返還レースは未対応。";
  $("nar-wide-rows").innerHTML=wideRecords.length?wideRecords.slice().sort((a,b)=>String(b.race.start_at||b.race.date).localeCompare(String(a.race.start_at||a.race.date))).slice(0,60).map(x=>{
