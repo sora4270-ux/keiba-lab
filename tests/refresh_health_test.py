@@ -29,6 +29,8 @@ class RefreshHealthTest(unittest.TestCase):
             code, first = refresh(Mock(return_value=subprocess.CompletedProcess([], 0)))
             self.assertEqual(code, 0)
             self.assertFalse(first['content_changed'])
+            self.assertEqual(first['frozen_forecast_count'], 1)
+            self.assertEqual(first['history_status'], 'valid')
             self.assertEqual(first['odds_status'], 'unavailable')
             for count in (1, 2):
                 code, failed = refresh(Mock(return_value=subprocess.CompletedProcess([], 1)))
@@ -58,6 +60,8 @@ class RefreshHealthTest(unittest.TestCase):
             runner.assert_not_called()
             self.assertEqual(json.loads(health.read_text())['error_code'],
                              'empty_forecast_history')
+            self.assertEqual(json.loads(health.read_text())['history_status'], 'empty')
+            self.assertIsNone(json.loads(health.read_text())['frozen_forecast_count'])
             self.assertEqual(data.read_text(), '')
 
     def test_corrupt_history_is_reported_without_running_update(self):
