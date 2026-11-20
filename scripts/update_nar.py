@@ -751,9 +751,9 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
             verified = official_payouts(paybacks, race, record["result"])
             wide = official_wide_payouts(
                 paybacks, race, record.get("result_alternatives") or [record["result"]])
-            if wide is not None and wide != record.get("wide_payouts"):
+            wide_changed = wide is not None and wide != record.get("wide_payouts")
+            if wide_changed:
                 record["wide_payouts"] = wide
-                payout_updated += 1
             if record.get("result_alternatives"):
                 by_ticket = {}
                 for actual in record["result_alternatives"]:
@@ -774,6 +774,9 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
                 if any(old_amounts.get(k) != v for k, v in verified.items()):
                     record["payouts"] = {**old_amounts, **verified}
                     payout_updated += 1
+                    wide_changed = False
+            if wide_changed:
+                payout_updated += 1
 
     predictions = sorted(entries.values(), key=lambda x: (x["date"], x["start_at"]), reverse=True)[:5000]
     # Keep draft storage bounded, but not at the expense of upcoming races.
