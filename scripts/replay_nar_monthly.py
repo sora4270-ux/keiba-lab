@@ -98,7 +98,13 @@ def replay(monthly_tables, start, end, max_races=1000):
             ((.7*f[0] + .3*distance_scores.get(no, f[0]), no)
              for no, _, f in runners if f is not None),
             key=lambda x: (-x[0], x[1]))
-        paired.append({"day": day, "winner": winners[0],
+        selected_finish = next(rank for no, rank, _ in runners if no == top)
+        selected_history = next(f[1] for no, _, f in runners if no == top)
+        paired.append({"day": day, "venue": venue,
+                       "distance": target_distance,
+                       "base_finish": selected_finish,
+                       "base_history_count": selected_history,
+                       "winner": winners[0],
                        "podium": podium, "base": top,
                        "coverage_adjusted": adjusted[0][1],
                        "distance_adjusted": distance_adjusted[0][1]})
@@ -124,6 +130,35 @@ def replay(monthly_tables, start, end, max_races=1000):
     selected = max(variants, key=lambda name: (
         metrics(train, name)["wins"], metrics(train, name)["top3"],
         name == "base")) if train else "base"
+    # Diagnose errors only on held-out days; no tuning on these outcomes.
+    def summarize(rows):
+        n = len(rows)
+        wins = sum(r["base"] == r["winner"] for r in rows)
+        top3 = sum(r["base_finish"] <= 3 for r in rows)
+        return {"races": n, "wins": wins, "top3": top3,
+                "win_rate": round(100*wins/n, 2) if n else None,
+                "top3_rate": round(100*top3/n, 2) if n else None}
+    def bucket_distance(m):
+        if m <= 0: return "unknown"
+        if m <= 1200: return "up_to_1200m"
+        if m <= 1600: return "1201_1600m"
+        if m <= 2000: return "1601_2000m"
+        return "over_2000m"
+    def grouped(field):
+        bins = collections.defaultdict(list)
+        for r in test:
+            bins[field(r)].append(r)
+        return {str(k): summarize(v) for k, v in sorted(bins.items())}
+    report["error_diagnostics"] = {
+        "scope": "holdout_only_no_production_changes",
+        "finish_distribution": {str(k): sum(r["base_finish"] == k for r in test)
+                                for k in sorted({r["base_finish"] for r in test})},
+        "by_venue": grouped(lambda r: r["venue"]),
+        "by_distance": grouped(lambda r: bucket_distance(r["distance"])),
+        "by_prior_runs": grouped(lambda r: str(min(3, r["base_history_count"])) +
+                                 ("+" if r["base_history_count"] >= 3 else "")),
+        "interpretation_warning": "Subgroups may be small; no confidence or ROI claim."
+    }
     report["holdout"] = {
         "split": "chronological_by_day_70_30",
         "distance_rule": "Within 200m, prior-day races only; 70% base + 30% distance form; no matching form falls back to base.",
