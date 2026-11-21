@@ -1,0 +1,87 @@
+name: NAR comprehensive test and stake audit
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'scripts/**'
+      - 'tests/**'
+      - '.github/workflows/nar-comprehensive-audit.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'tests/**'
+      - '.github/workflows/nar-comprehensive-audit.yml'
+permissions:
+  contents: read
+jobs:
+  comprehensive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Compile all Python source and tests
+        run: python -m compileall -q scripts tests
+      - name: Run all Python unit tests
+        run: python -m unittest discover -s tests -p '*_test.py' -v
+      - name: Run all Node tests
+        run: node --test tests/*.test.cjs
+      - name: Existing model self-tests
+        run: |
+          python scripts/update_nar.py --selftest
+          python scripts/update_jra.py --selftest
+          python scripts/trio_strategy.py --selftest
+      - name: Download NAR official monthly race archive once
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from urllib.parse import urlencode
+          import sys
+          sys.path.insert(0,"scripts")
+          from update_nar import BASE_URL, fetch_daily_zip
+          url=BASE_URL.split("?",1)[0]+"?"+urlencode({"type":"monthly","k_year":2026,"k_month":"11"})
+          Path("/tmp/nar-monthly-official.zip").write_bytes(fetch_daily_zip(url))
+          PY
+      - name: Independent official-payout same-cohort portfolio comparison
+        run: python scripts/backtest_nar_stake_allocation.py --month 2026-11 --official-zip /tmp/nar-monthly-official.zip --output nar-stake-backtest.json
+      - name: Official NAR monthly field-coverage probe
+        run: python scripts/audit_nar_feature_availability.py --zip /tmp/nar-monthly-official.zip --output nar-feature-availability.json
+      - name: Add auditable summary
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as f:
+              f.write('# NAR comprehensive audit\n\n')
+              for name in ('nar-stake-backtest.json','nar-feature-availability.json'):
+                  path=Path(name)
+                  if not path.exists():
+                      f.write(f'- {name}: UNAVAILABLE (not proven)\n')
+                      continue
+                  x=json.loads(path.read_text(encoding='utf-8'))
+                  f.write(f'- {name}: {x.get("status", "unknown")}\n')
+                  if 'eligible_races' in x:
+                      f.write(f'  - eligible: {x["eligible_races"]}; excluded: {x["excluded"]}\n')
+                      for plan,values in x['plans'].items():
+                          v=values['all']
+                          f.write(f'  - {plan}: {v["races"]} races, stake ¥{v["stake_yen"]}, payout ¥{v["payout_yen"]}, ROI {v["roi_percent"]}%\n')
+                  if 'race_track_condition_present' in x:
+                      f.write(f'  - track: {x["race_track_condition_present"]}/{x["races"]}, weight: {x["carried_weight_present"]}/{x["runner_rows"]}, corner-order: {x["past_race_corner_order_present"]}/{x["races"]}\n')
+              f.write('\nAll stake amounts are hypothetical; payouts were joined to the NAR monthly official file, but frozen predictions are not independently authenticated.\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nar-comprehensive-audit
+          path: |
+            nar-stake-backtest.json
+            nar-feature-availability.json
+          if-no-files-found: warn
+          retention-days: 30
