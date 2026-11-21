@@ -19,6 +19,7 @@ on:
       - 'tests/value_strategy_v5_test.py'
       - 'tests/odds_encoding_test.py'
       - 'scripts/inspect_nar_history.py'
+      - 'scripts/audit_nar_roi_coverage.py'
       - 'tests/nar_history_integrity_test.py'
       - 'tests/nar_history_inspection_test.py'
       - 'tests/nar_frozen_history_guard_test.py'
@@ -59,7 +60,7 @@ jobs:
           PY
           node --check /tmp/keiba-lab-inline.js
           node --check race-intel.js
-          python -m py_compile scripts/update_nar.py scripts/odds_encoding.py scripts/value_strategy_v5.py
+          python -m py_compile scripts/update_nar.py scripts/odds_encoding.py scripts/value_strategy_v5.py scripts/audit_nar_roi_coverage.py
           node - <<'NODE'
           const assert=require('node:assert/strict');
           const fs=require('node:fs');
