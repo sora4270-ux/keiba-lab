@@ -29,13 +29,26 @@ def evaluate(data):
         except (ValueError, TypeError):
             skipped += 1
             continue
-        settled += 1
-        for i, entry in enumerate(ranking[:5]):
+        if any(no <= 0 for no in podium):
+            skipped += 1
+            continue
+        # A corrupt or duplicated saved selection must not inflate hit rates.
+        picks = []
+        for entry in ranking[:5]:
             if not isinstance(entry, dict):
+                picks.append(None)
                 continue
             try:
                 horse = int(entry["no"])
+                picks.append(horse if horse > 0 else None)
             except (KeyError, ValueError, TypeError):
+                picks.append(None)
+        if len([no for no in picks if no is not None]) != len(set(no for no in picks if no is not None)):
+            skipped += 1
+            continue
+        settled += 1
+        for i, horse in enumerate(picks):
+            if horse is None:
                 continue
             row = stats[i]
             row["eligible"] += 1
