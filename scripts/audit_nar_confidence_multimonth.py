@@ -8,6 +8,7 @@ import argparse
 import collections
 import json
 import math
+import datetime as dt
 from pathlib import Path
 from urllib.parse import urlencode
 
@@ -54,6 +55,18 @@ def reliability(records, tables):
             "excluded":dict(sorted(excluded.items()))}
 
 
+def rolling_months(today, count=3):
+    """Current and previous months in JST, without relying on server UTC month."""
+    year, month = today.year, today.month
+    months = []
+    for _ in range(count):
+        months.append(f"{year:04d}-{month:02d}")
+        month -= 1
+        if month == 0:
+            month, year = 12, year - 1
+    return list(reversed(months))
+
+
 def audit_months(records, archives, requested):
     report={"status":"diagnostic_only_no_recalibration","months":{},
             "requested_months":requested,"missing_months":[],
@@ -73,6 +86,10 @@ def audit_months(records, archives, requested):
             report["months"][month]={"status":"no_frozen_predictions","frozen_predictions":0}
             continue
         pair=paired(month_records,tables)
+        if not pair["eligible_races"]:
+            report["missing_months"].append(month)
+            report["months"][month]={"status":"no_officially_eligible_races","frozen_predictions":len(month_records),"excluded":pair["excluded"]}
+            continue
         report["months"][month]={"status":"audited","frozen_predictions":len(month_records),
                                  "paired_wide":pair,"confidence_reliability":reliability(month_records,tables)}
     report["verified_month_count"]=sum(x["status"]=="audited" for x in report["months"].values())
@@ -83,13 +100,17 @@ def audit_months(records, archives, requested):
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--input",type=Path,default=Path("data/auto/nar_predictions.json"))
-    p.add_argument("--months",nargs="+",default=["2026-10","2026-11"])
+    p.add_argument("--months",nargs="+",default=None)
+    p.add_argument("--rolling-count",type=int,default=3)
     p.add_argument("--official-dir",type=Path,default=None)
     p.add_argument("--output",type=Path,default=Path("nar-confidence-multimonth.json"))
     a=p.parse_args()
+    if not 1 <= a.rolling_count <= 12:
+        p.error("--rolling-count must be 1..12")
+    months=a.months or rolling_months(dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).date(),a.rolling_count)
     records=json.loads(a.input.read_text(encoding="utf-8"))["races"]
     archives={}
-    for month in a.months:
+    for month in months:
         year,mo=month.split("-")
         try:
             if a.official_dir:
@@ -100,7 +121,7 @@ def main():
             archives[month]=load_zip_tables(raw)
         except (OSError,ValueError,RuntimeError,KeyError) as exc:
             print("Official archive unavailable",month,type(exc).__name__)
-    report=audit_months(records,archives,a.months)
+    report=audit_months(records,archives,months)
     a.output.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print(json.dumps({"status":report["status"],"verified_month_count":report["verified_month_count"],
                       "missing_months":report["missing_months"],

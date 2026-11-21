@@ -1,8 +1,9 @@
 import sys
+import datetime as dt
 import unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"scripts"))
-from audit_nar_confidence_multimonth import audit_months, reliability
+from audit_nar_confidence_multimonth import audit_months, reliability, rolling_months
 from nar_feature_stake_audit_test import fake
 
 
@@ -41,6 +42,14 @@ class MultiMonthTests(unittest.TestCase):
         r=audit_months([frozen()],{"2026-10":official_table(),"2026-11":official_table()},["2026-10","2026-11"])
         self.assertEqual(r["months"]["2026-10"]["status"],"no_frozen_predictions")
         self.assertFalse(r["multi_month_validated"])
+    def test_rolling_months_cross_year(self):
+        self.assertEqual(rolling_months(dt.date(2027,1,2),3),['2026-11','2026-12','2027-01'])
+    def test_zero_officially_eligible_is_not_audited(self):
+        t=official_table()
+        t['payback'][0][0][4]='2'
+        r=audit_months([frozen()],{'2026-11':t},['2026-11'])
+        self.assertEqual(r['verified_month_count'],0)
+        self.assertEqual(r['months']['2026-11']['status'],'no_officially_eligible_races')
     def test_wrong_official_winner_excluded(self):
         t=official_table()
         row=t["payback"][0][0]
