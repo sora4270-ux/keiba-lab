@@ -17,7 +17,8 @@ def coverage(forecasts, tables, month):
     selected = [{"race_id": r["race_id"], "horse_no": r["horse_no"],
                  "bet_type": "win"} for r in checked if r["race_id"]]
     official, skipped = extract(selected, tables, expected_month=month)
-    payouts = {(r["race_id"], r["horse_no"]): r for r in official}\n    counts = collections.Counter((r["race_id"], r["horse_no"]) for r in checked)
+    payouts = {(r["race_id"], r["horse_no"]): r for r in official}
+    counts = collections.Counter((r["race_id"], r["horse_no"]) for r in checked)
     statuses = collections.Counter()
     complete = 0
     for row in checked:
