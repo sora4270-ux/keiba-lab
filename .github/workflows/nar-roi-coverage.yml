@@ -1,0 +1,45 @@
+name: NAR official win-payout coverage audit
+on:
+  workflow_dispatch:
+    inputs:
+      month:
+        description: "Official archive month (YYYY-MM); use a completed month"
+        required: true
+        default: "2026-10"
+permissions:
+  contents: read
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check audit script syntax
+        run: python -m py_compile scripts/audit_nar_roi_coverage.py scripts/export_nar_official_win_payouts.py scripts/export_nar_prelock_audit.py
+      - name: Fetch official monthly archive and audit payout availability
+        env:
+          AUDIT_MONTH: ${{ inputs.month }}
+        run: python scripts/audit_nar_roi_coverage.py --month "$AUDIT_MONTH" --output nar-roi-coverage.json
+      - name: Summarize coverage and limitations
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          data = json.loads(Path("nar-roi-coverage.json").read_text(encoding="utf-8"))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
+              f.write("# NAR公式単勝払戻データの照合可能率\n\n")
+              f.write(f"対象月: {data['month']} / 確定予想: {data['frozen_forecasts_checked']}件 / 照合可能: {data['both_present']}件 / カバー率: {data['coverage_percent']}%\n\n")
+              f.write("| 区分 | 件数 |\n|---|---:|\n")
+              for name, count in data["by_status"].items():
+                  f.write(f"| {name} | {count} |\n")
+              f.write("\n**これはデータ照合可能率であり、実際の馬券購入成績・回収率ではありません。**\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nar-official-win-payout-coverage
+          path: nar-roi-coverage.json
+          retention-days: 30
