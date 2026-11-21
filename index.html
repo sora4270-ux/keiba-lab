@@ -288,7 +288,7 @@
     <p class="roi-hint">信頼度Sは予想1～5位、A・B・Cは2～6位の全10組を各100円で仮想購入。6位または信頼度が欠ける場合は見送り。公式ワイド払戻が3組（同着時は該当全組）確認できたレースだけ集計します。従来の5券種合計に加えない独立した比較成績です。</p>
     <div id="nar-wide-roi" class="roi-overview" aria-label="ワイド信頼度別BOXの参考収支・回収率"></div>
     <p id="nar-wide-coverage" class="roi-hint"></p>
-    <h4 style="margin:18px 0 6px">ワイド3方式・同額1,000円の仮想収支比較</h4><div class="scroll"><table class="ledger-table"><thead><tr><th>方式</th><th>集計R</th><th>的中R</th><th>購入</th><th>払戻</th><th>収支</th><th>回収率</th><th>最大連敗</th><th>最大ドローダウン</th></tr></thead><tbody id="nar-wide-strategy-rows"></tbody></table></div><p class="roi-hint">5頭BOX：10点×100円／◎軸流し：4点×250円／上位3頭厳選：◎○400円・◎▲300円・○▲300円。発走前保存順位と公式払戻のあるレースのみ。最大連敗・最大ドローダウンは日時順の仮想収支から算出。対象期間・競馬場・レース番号のフィルターに連動します。期待値や勝率の未検証推定は行いません。</p>
+    <h4 style="margin:18px 0 6px">ワイド3方式・同額1,000円の仮想収支比較</h4><div class="scroll"><table class="ledger-table"><thead><tr><th>方式</th><th>集計R</th><th>的中R</th><th>購入</th><th>払戻</th><th>収支</th><th>回収率</th><th>最大連敗</th><th>最大ドローダウン</th></tr></thead><tbody id="nar-wide-strategy-rows"></tbody></table></div><p class="roi-hint">信頼度別BOX・旧5頭BOX：各10点×100円／◎軸流し：4点×250円／上位3頭厳選：◎○400円・◎▲300円・○▲300円。発走前保存順位と公式払戻のあるレースのみ。最大連敗・最大ドローダウンは日時順の仮想収支から算出。対象期間・競馬場・レース番号のフィルターに連動します。期待値や勝率の未検証推定は行いません。</p>
     <details><summary>ワイド信頼度別BOXのレース別収支を確認</summary><div class="scroll"><table class="ledger-table"><thead><tr><th>レース</th><th>信頼度別の対象5頭</th><th>実際の1〜3着</th><th>的中した組</th><th>購入</th><th>払戻</th><th>収支</th></tr></thead><tbody id="nar-wide-rows"></tbody></table></div></details>
     <details class="venue-breakdown"><summary>地方競馬場別の的中率・回収率を一覧で比較</summary><div class="scroll" id="nar-venue-breakdown"></div><p class="section-note">取得済み記録から集計。5券種回収率は5券種の払戻が揃ったレースのみ対象です。</p></details>
    </div>
@@ -1278,9 +1278,9 @@ function forecastExtraCandidatesHtml(rows,top,trio,trifecta){
  const names=new Map((rows||[]).map(h=>[Number(h.no),h.name||'']));
  return '<p class="pick-extra"><b>買い目に含む追加候補（印外）</b>：'+extra.map(no=>esc(no)+'番 '+esc(names.get(no)||'')).join(' ／ ')+'</p>';
 }
-function betDecisionGuide(rows,top,market=null){
+function betDecisionGuide(rows,top,market=null,confidenceOverride=null){
  const ranking=Array.isArray(rows)?rows:[];
- const confidence=predictionConfidence(ranking,false);
+ const confidence=confidenceOverride||predictionConfidence(ranking,Boolean(market)&&(!market.updated_at||!Array.isArray(market.horses)||market.horses.length!==ranking.length));
  const grade=confidence?.grade||'未判定';
  const tickets=confidenceWideTickets(ranking,confidence);
  const valid=tickets.length===10;
@@ -1292,9 +1292,9 @@ function betDecisionGuide(rows,top,market=null){
   (valid?' ／ 組み合わせ '+esc(tickets.map(t=>t.join('－')).join('、')):'')+'</div>'+
   '<p class="tiny muted">'+esc(caution)+'</p></div>';
 }
-function compactBetsHtml(rows,top,trio,trifecta,raceId,showWideBox=false,market=null){
+function compactBetsHtml(rows,top,trio,trifecta,raceId,showWideBox=false,market=null,confidenceOverride=null){
  const short=forecastShortBets(rows,top);
- const confidence=predictionConfidence(rows,false);
+ const confidence=confidenceOverride||predictionConfidence(rows,Boolean(market)&&(!market.updated_at||!Array.isArray(market.horses)||market.horses.length!==rows.length));
  const wideNumbers=confidenceWideNumbers(rows,confidence);
  const wideTickets=wideBoxTickets(wideNumbers);
  const blocks=[['win','単勝'],['place','複勝'],['quinella','馬連'],['exacta','馬単'],['wide','ワイド']].map(([key,label])=>{
@@ -1302,7 +1302,7 @@ function compactBetsHtml(rows,top,trio,trifecta,raceId,showWideBox=false,market=
   return '<div><dt>'+label+'</dt><dd>'+ (tickets.length?tickets.map(t=>t.join(separator)).join('、'):'—')+
    (tickets.length?'<small>'+tickets.length+'点</small>':'')+'</dd></div>';
  });
- return betDecisionGuide(rows,top,market)+forecastExtraCandidatesHtml(rows,top,trio,trifecta)+'<div class="forecast-bets" aria-label="券種別の参考買い目"><dl class="forecast-short">'+blocks.join('')+'</dl>'+
+ return betDecisionGuide(rows,top,market,confidence)+forecastExtraCandidatesHtml(rows,top,trio,trifecta)+'<div class="forecast-bets" aria-label="券種別の参考買い目"><dl class="forecast-short">'+blocks.join('')+'</dl>'+
   betSectionHtml('三連複',trio,false,raceId)+betSectionHtml('三連単',trifecta,true,raceId)+
   (showWideBox?'<details class="bet-section"><summary>ワイド・信頼度別BOX '+wideTickets.length+'点（'+(wideTickets.length*100)+'円）</summary>'+(wideTickets.length===10?betListHtml(wideTickets,false):'<p class="tiny muted">信頼度または6位までの予想が不足・見送り</p>')+'</details>':'')+'</div>';
 }
@@ -2240,7 +2240,7 @@ function narRender(data,localCopy=false){
   return '<div class="nar-race"><div class="nar-race-head"><strong>'+esc(displayDate)+'</strong><span class="forecast-status">'+confidenceBadge(confidence)+'<span class="pill '+(r.result?'':'gray')+'">'+esc(actual)+'</span></span></div>'+
    '<div class="muted tiny">発走 '+esc(String(r.start_at||'').slice(11,16)||'未取得')+
    (marketList.length?'':' ／ 単勝オッズ未取得')+'</div>'+forecastPicksHtml(top,p=>pickOdds(p.no))+
-   compactBetsHtml(r.ranking,top,trio,tickets,r.id,true,r.market_at_lock)+savedSimulationButton(r)+
+   compactBetsHtml(r.ranking,top,trio,tickets,r.id,true,r.market_at_lock,narForecastConfidence(r))+savedSimulationButton(r)+
    forecastDetails('予想の根拠・オッズ・予算・検証',details,r.id)+'</div>';
  }).join(''));
 }
