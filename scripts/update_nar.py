@@ -453,7 +453,8 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
             "candidate_mass": plan["candidate_mass"],
             "covered_mass": round(sum(probability for probability, _ in chosen), 6),
         }
-    # Independent observation time: fresh trifecta CSV quotes must not inherit a missing win-market timestamp.\n    trifecta_shadow = trifecta_value_shadow(ordered, trifecta_market, timestamp, trifecta_observed_at or market_observed_at)
+    # Independent observation time: fresh trifecta CSV quotes must not inherit a missing win-market timestamp.
+    trifecta_shadow = trifecta_value_shadow(ordered, trifecta_market, timestamp, trifecta_observed_at or market_observed_at)
     if banei and not market_p:
         trifecta_shadow = {"policy": "prelock_trifecta_value_shadow_v1", "status": "skip",
                            "tickets": [], "stake_yen": 0, "reason": "banei_market_missing"}
@@ -482,7 +483,9 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
         "trio_value": value,
         "strategy_v5": shadow,
         "trifecta_plan": plan,
-        "trifecta_value_shadow": trifecta_shadow,\n        "trifecta_purchase_decision": {"action": "skip", "reason": "shadow_not_validated",\n                                        "production_tickets_unchanged": True},
+        "trifecta_value_shadow": trifecta_shadow,
+        "trifecta_purchase_decision": {"action": "skip", "reason": "shadow_not_validated",
+                                        "production_tickets_unchanged": True},
         "banei_validation": {"is_banei": banei, "dedicated_model_validated": False,
                              "market_only_baseline": bool(banei and market_p)},
         "result": None, "settled_at": None, "hits": None
@@ -798,7 +801,8 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
                              and dt.timedelta(0) <= now - dt.datetime.fromisoformat(observed) <= MAX_FORECAST_ODDS_AGE
                              and market_probabilities(race["horses"], prior_quotes))
                 proposal = forecast(race, now, prior_quotes if use_prior else market, calibration,
-                                    official_trios, observed if use_prior else None, trifecta_index.get(market_key),\n                                    now.isoformat(timespec="seconds") if trifecta_index.get(market_key) else None)
+                                    official_trios, observed if use_prior else None, trifecta_index.get(market_key),
+                                    now.isoformat(timespec="seconds") if trifecta_index.get(market_key) else None)
                 visible = display_market(race, market, prior, now)
                 if visible:
                     proposal["market"] = visible
@@ -1264,7 +1268,8 @@ def main():
     verify_history_preserved(previous, out)
     out["odds_feed"] = {"date": now.date().isoformat(), "status": odds_status}
     print(f"NAR single-win feed: {odds_status}; {len(odds_index)} races with quotes")
-    serialized = json.dumps(out, ensure_ascii=False, separators=(",", ":")) + "\n"
+    serialized = json.dumps(out, ensure_ascii=False, separators=(",", ":")) + "
+"
     if not DATA_PATH.exists() or DATA_PATH.read_text(encoding="utf-8") != serialized:
         DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
         # Never truncate the live forecast ledger before the replacement is
