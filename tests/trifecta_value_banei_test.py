@@ -32,6 +32,21 @@ class TrifectaValueAndBaneiTest(unittest.TestCase):
         plan = trifecta_value_shadow(self.ordered, {(1, 2, 3): 10}, self.now, self.now.isoformat())
         self.assertEqual(plan["status"], "skip")
 
+    def test_shadow_is_explicitly_non_purchase(self):
+        horses = [
+            {"no": i, "name": str(i), "overall": (1, 10),
+             "distance": (1, 10), "venue": (1, 10), "jockey": (1, 10)}
+            for i in range(1, 7)
+        ]
+        race = {"id": "test-safe", "date": "2026-11-21", "venue": "佐賀",
+                "race_no": 1, "name": "test", "horses": horses,
+                "start": self.now + dt.timedelta(hours=1)}
+        result = forecast(race, self.now)
+        self.assertEqual(result["trifecta_purchase_decision"]["action"], "skip")
+        self.assertTrue(result["trifecta_purchase_decision"]["production_tickets_unchanged"])
+        self.assertEqual(result["feature_validation"]["coverage_counts"]["carried_weight"], 0)
+        self.assertEqual(result["feature_validation"]["coverage_counts"]["running_style"], 0)
+
     def test_banei_detection(self):
         self.assertTrue(is_banei_venue("帯広"))
         self.assertTrue(is_banei_venue("ばんえい十勝"))
