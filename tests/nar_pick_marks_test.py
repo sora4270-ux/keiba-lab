@@ -36,6 +36,18 @@ class MarkAuditTest(unittest.TestCase):
                                       "result": [0, 3, 4]}]})
         self.assertEqual(report["settled_with_valid_result"], 0)
 
+    def test_dead_heat_alternatives_excluded(self):
+        report = evaluate({"races": [{"ranking": [{"no": 2}],
+                                      "result": [2, 3, 4],
+                                      "result_alternatives": [[2, 3, 4], [3, 2, 4]]}]})
+        self.assertEqual(report["settled_with_valid_result"], 0)
+
+    def test_single_consistent_alternative_allowed(self):
+        report = evaluate({"races": [{"ranking": [{"no": 2}],
+                                      "result": [2, 3, 4],
+                                      "result_alternatives": [[2, 3, 4]]}]})
+        self.assertEqual(report["settled_with_valid_result"], 1)
+
     def test_invalid_schema(self):
         with self.assertRaises(ValueError):
             evaluate({"races": None})
