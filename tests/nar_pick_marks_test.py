@@ -25,6 +25,17 @@ class MarkAuditTest(unittest.TestCase):
         self.assertEqual(report["settled_with_valid_result"], 0)
         self.assertIsNone(report["by_rank_mark"][0]["win_rate_percent"])
 
+    def test_duplicate_ranking_excluded(self):
+        report = evaluate({"races": [{"ranking": [{"no": 2}, {"no": 2}],
+                                      "result": [2, 3, 4]}]})
+        self.assertEqual(report["settled_with_valid_result"], 0)
+        self.assertEqual(report["skipped_unsettled_or_invalid"], 1)
+
+    def test_invalid_podium_excluded(self):
+        report = evaluate({"races": [{"ranking": [{"no": 2}],
+                                      "result": [0, 3, 4]}]})
+        self.assertEqual(report["settled_with_valid_result"], 0)
+
     def test_invalid_schema(self):
         with self.assertRaises(ValueError):
             evaluate({"races": None})
