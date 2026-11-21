@@ -11,9 +11,10 @@ def audit(records):
     out = {"total": len(records), "settled": 0, "prelock_trifecta_quotes": 0,
            "missing_prelock_quotes": 0, "old_comparable": {"races": 0, "stake_yen": 0,
            "return_yen": 0, "hits": 0}, "new_shadow": {"recorded": 0, "candidate": 0,
-           "settled_comparable": 0}, "by_venue": {}, "banei": {}, "other": {}}
+           "settled_comparable": 0}, "by_venue": {}, "by_grade": {}, "by_bet_type": {}, "banei": {}, "other": {}, "risk": {"old_max_drawdown_yen": 0, "shadow_max_drawdown_yen": 0}}
     groups = {"banei": collections.Counter(), "other": collections.Counter()}
-    for r in records:
+    old_equity = shadow_equity = old_peak = shadow_peak = 0
+    for r in sorted(records, key=lambda x: (str(x.get("date", "")), str(x.get("start_at", "")), str(x.get("id", "")))):
         result = r.get("result")
         if not isinstance(result, list) or len(result) != 3 or len(set(result)) != 3:
             continue
@@ -63,6 +64,14 @@ def audit(records):
         v["races"] += 1
         v["stake_yen"] += stake
         v["return_yen"] += ret
+        grade = str(r.get("confidence") or r.get("grade") or "unknown")
+        g = out["by_grade"].setdefault(grade, {"races": 0, "stake_yen": 0, "return_yen": 0})
+        g["races"] += 1
+        g["stake_yen"] += stake
+        g["return_yen"] += ret
+        old_equity += ret - stake
+        old_peak = max(old_peak, old_equity)
+        out["risk"]["old_max_drawdown_yen"] = max(out["risk"]["old_max_drawdown_yen"], old_peak-old_equity)
         if isinstance(shadow, dict) and shadow.get("status") in ("skip", "candidate"):
             out["new_shadow"]["settled_comparable"] += 1
             new = out["new_shadow"]
@@ -80,6 +89,9 @@ def audit(records):
                     new["return_yen"] += payout if shadow_hit else 0
                     new["hits"] += int(shadow_hit)
                     new["evaluated_candidates"] = new.get("evaluated_candidates", 0) + 1
+                    shadow_equity += (payout if shadow_hit else 0)-shadow_stake
+                    shadow_peak = max(shadow_peak, shadow_equity)
+                    out["risk"]["shadow_max_drawdown_yen"] = max(out["risk"]["shadow_max_drawdown_yen"], shadow_peak-shadow_equity)
 
     for name, group in groups.items():
         n = group["races"]
@@ -94,10 +106,11 @@ def audit(records):
     old = out["old_comparable"]
     old["roi_percent"] = round(old["return_yen"]*100/old["stake_yen"], 2) if old["stake_yen"] else None
     old["profit_yen"] = old["return_yen"]-old["stake_yen"]
-    for row in out["by_venue"].values():
+    for row in list(out["by_venue"].values()) + list(out["by_grade"].values()):
         row["roi_percent"] = round(row["return_yen"]*100/row["stake_yen"], 2) if row["stake_yen"] else None
-    out["decision"] = ("insufficient_new_shadow_data" if not out["new_shadow"].get("evaluated_candidates", 0)
-                       else "compare_only_after_prelock_shadow_results")
+    out["by_bet_type"]["trifecta"] = {"old": dict(old), "shadow": dict(new)}
+    out["decision"] = ("insufficient_new_shadow_data" if out["new_shadow"].get("evaluated_candidates", 0) < 100
+                       else "review_out_of_sample_results_before_any_adoption")
     out["note"] = ("Old and new strategies are hypothetical 100-yen-per-ticket. New strategy requires settled "
                    "immutable pre-race shadow records; no improvement claim is valid without a sufficient prospective sample. "
                    "Banei results belong to the prior model, not the new provisional baseline.")
@@ -112,7 +125,8 @@ def main():
     raw = json.loads(Path(args.input).read_text(encoding="utf-8"))
     report = audit(raw["races"])
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.output).write_text(json.dumps(report, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
+    Path(args.output).write_text(json.dumps(report, ensure_ascii=False, indent=2)+"
+", encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False, indent=2))
 
 
