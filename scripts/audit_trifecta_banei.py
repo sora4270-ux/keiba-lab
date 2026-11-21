@@ -125,8 +125,7 @@ def main():
     raw = json.loads(Path(args.input).read_text(encoding="utf-8"))
     report = audit(raw["races"])
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.output).write_text(json.dumps(report, ensure_ascii=False, indent=2)+"
-", encoding="utf-8")
+    Path(args.output).write_text(json.dumps(report, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False, indent=2))
 
 
