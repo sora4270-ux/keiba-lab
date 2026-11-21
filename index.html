@@ -1565,10 +1565,14 @@ function forecastQualityHtml(r){
  if(q.missingMarket)reasons.push('予想時の全頭単勝オッズが不足');
  else if(q.staleMarket)reasons.push('予想時オッズの時刻不明・15分超経過');
  if(q.lowCoverage)reasons.push('候補5頭の推定網羅度が40%未満');
+ const shadow=r.trifecta_value_shadow;
+ if(shadow?.status==='skip')reasons.push('三連単・期待値判定は見送り（'+String(shadow.reason||'検証不足')+'）');
+ else if(shadow?.status==='candidate')reasons.push('三連単・検証用候補 '+shadow.tickets.length+'点／仮想'+(shadow.stake_yen||0)+'円（推定値であり推奨購入ではありません）');
+ if(r.banei_validation?.is_banei&&r.banei_validation?.market_only_baseline)reasons.push('ばんえいは単勝オッズのみの暫定モデルを使用');
  if(/帯広|ばんえい/.test(String(r.venue||'')))reasons.push('ばんえい専用の予想モデルは未検証・参考買い目の慎重な判断が必要');
  const missing=r.feature_validation?.missing;
  if(Array.isArray(missing)&&missing.length)reasons.push('事前特徴量の不足：'+missing.join('、'));
- return (q.cautious||/帯広|ばんえい/.test(String(r.venue||''))||(Array.isArray(r.feature_validation?.missing)&&r.feature_validation.missing.length>0))?'<p class="hint"><b>参考買い目の注意：見送りを検討</b><br>'+reasons.map(esc).join(' ／ ')+'。候補の追加購入で解決できるとは限りません。予想時点の情報で判定し、保存買い目・参考購入額は変更しません。</p>':'';
+ return (q.cautious||shadow?.status==='skip'||/帯広|ばんえい/.test(String(r.venue||''))||(Array.isArray(r.feature_validation?.missing)&&r.feature_validation.missing.length>0))?'<p class="hint"><b>参考買い目の注意：見送りを検討</b><br>'+reasons.map(esc).join(' ／ ')+'。候補の追加購入で解決できるとは限りません。予想時点の情報で判定し、保存買い目・参考購入額は変更しません。</p>':'';
 }
 function reviewMetrics(records,key){
  const completed=records.filter(r=>Array.isArray(r.result)&&r.result.length===3);
