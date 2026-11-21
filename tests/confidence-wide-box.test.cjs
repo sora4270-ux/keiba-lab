@@ -18,9 +18,9 @@ assert.deepEqual(confidenceWideTickets([{no:1},{no:2},{no:2},{no:4},{no:5},{no:6
 assert.equal(wideBoxTickets([2,3,4,5,6]).length,10);
 console.log('Confidence wide BOX selection tests passed');
 
-const source=html.slice(html.indexOf('function betDecisionGuide('),html.indexOf('function forecastDetails('));
-assert(source.includes('confidenceOverride'), 'display must accept frozen NAR confidence');
-assert(source.includes('key===\'wide\'?wideTickets'), 'wide card must show confidence-tier tickets');
+const uiSource=html.slice(html.indexOf('function betDecisionGuide('),html.indexOf('function forecastDetails('));
+assert(uiSource.includes('confidenceOverride'), 'display must accept frozen NAR confidence');
+assert(uiSource.includes('key===\'wide\'?wideTickets'), 'wide card must show confidence-tier tickets');
 const nar=html.slice(html.indexOf('function narWideStrategyWager('),html.indexOf('function narPeriodRaces('));
 assert(nar.includes("mode==='confidence'"), 'historical comparison must include confidence BOX');
 const warnings=html.slice(html.indexOf('function forecastQualityHtml('),html.indexOf('function reviewMetrics('));
