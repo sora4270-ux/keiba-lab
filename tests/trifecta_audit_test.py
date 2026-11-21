@@ -34,6 +34,15 @@ class TrifectaAuditTest(unittest.TestCase):
         self.assertIsNone(a["new_shadow"]["roi_percent"])
         self.assertEqual(a["decision"], "insufficient_new_shadow_data")
 
+    def test_risk_and_grade_breakdown(self):
+        loser = self.race({"status": "candidate", "tickets": [[2, 1, 3]], "stake_yen": 100})
+        loser["grade"] = "B"
+        a = audit([loser])
+        self.assertEqual(a["by_grade"]["B"]["stake_yen"], 200)
+        self.assertEqual(a["risk"]["shadow_max_drawdown_yen"], 100)
+        self.assertEqual(a["risk"]["old_max_drawdown_yen"], 0)
+        self.assertEqual(a["decision"], "insufficient_new_shadow_data")
+
     def test_future_quote_is_rejected(self):
         r = self.race()
         r["trifecta_market_at_lock"]["updated_at"] = "2026-11-22T12:01:00+09:00"
