@@ -1,0 +1,50 @@
+name: NAR hypothetical win ROI audit
+on:
+  workflow_dispatch:
+    inputs:
+      month:
+        description: "Official archive month YYYY-MM"
+        required: true
+        default: "2026-11"
+permissions:
+  contents: read
+jobs:
+  simulate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Unit tests
+        run: python -m unittest discover -s tests -p 'nar_hypothetical_win_roi_test.py'
+      - name: Simulate 100-yen top-pick win bets using official payouts
+        env:
+          MONTH: ${{ inputs.month }}
+        run: python scripts/audit_nar_hypothetical_win_roi.py --month "$MONTH"
+      - name: Publish hypothetical result
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          r=json.loads(Path("nar-win-hypothetical-roi.json").read_text(encoding="utf-8"))
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a",encoding="utf-8") as f:
+              f.write("# NAR ◎単勝100円・仮想検証\n\n")
+              for label,key in [
+                  ("対象月","month"),("照合可能レース","eligible_races"),
+                  ("仮想購入額（円）","hypothetical_stake_yen"),
+                  ("公式払戻合計（円）","official_payout_sum_yen"),
+                  ("仮想的中数","winning_selections"),
+                  ("仮想的中率（%）","hypothetical_win_rate_percent"),
+                  ("仮想回収率（%）","hypothetical_return_rate_percent"),
+                  ("仮想収支（円）","hypothetical_profit_yen")]:
+                  f.write(f"- {label}: {r[key]}\n")
+              f.write("\n除外理由: "+json.dumps(r["excluded"],ensure_ascii=False)+"\n\n")
+              f.write("**実際の馬券購入履歴ではありません。対象は事前オッズ時刻の条件を満たした予想のみ。**\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nar-win-hypothetical-roi
+          path: nar-win-hypothetical-roi.json
+          retention-days: 30
