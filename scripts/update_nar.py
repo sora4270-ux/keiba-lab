@@ -347,7 +347,9 @@ def observed_feature_shadow(race):
                      "coverage": len(factors)})
     ranked = sorted((r for r in rows if r["score"] is not None),
                     key=lambda r: (-r["score"], r["no"]))
-    return {"version": "observed_features_v1", "ranking": rows,
+    coverage = {key: sum(key in row["factors"] for row in rows) for key in ("recent_time_corner", "distance", "venue", "jockey", "overall")}
+    coverage.update({key: sum(h.get(key) is not None for h in race["horses"]) for key in ("running_style", "track_condition", "carried_weight")})
+    return {"version": "observed_features_v1", "coverage_counts": coverage, "horse_count": len(rows), "ranking": rows,
             "top_no": ranked[0]["no"] if len(ranked) >= 3 else None,
             "missing": ["running_style", "track_condition", "carried_weight"],
             "note": "近走時計差・4角位置、距離・競馬場・騎手・全成績を利用。脚質・馬場・斤量は未取得のため評価対象外。学習済み確率ではない。"}
