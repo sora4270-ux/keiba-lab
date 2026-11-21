@@ -397,7 +397,7 @@ def is_banei_venue(venue):
     return "帯広" in str(venue) or "ばんえい" in str(venue)
 
 
-def forecast(race, timestamp, market=None, calibration=None, trio_market=None, market_observed_at=None, trifecta_market=None):
+def forecast(race, timestamp, market=None, calibration=None, trio_market=None, market_observed_at=None, trifecta_market=None, trifecta_observed_at=None):
     deadline = race["start"] - FORECAST_LOCK_BEFORE_START
     if timestamp >= deadline:
         raise ValueError("発走15分前以降のレースの予想は新規作成しません")
@@ -453,7 +453,7 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
             "candidate_mass": plan["candidate_mass"],
             "covered_mass": round(sum(probability for probability, _ in chosen), 6),
         }
-    trifecta_shadow = trifecta_value_shadow(ordered, trifecta_market, timestamp, market_observed_at)
+    # Independent observation time: fresh trifecta CSV quotes must not inherit a missing win-market timestamp.\n    trifecta_shadow = trifecta_value_shadow(ordered, trifecta_market, timestamp, trifecta_observed_at or market_observed_at)
     if banei and not market_p:
         trifecta_shadow = {"policy": "prelock_trifecta_value_shadow_v1", "status": "skip",
                            "tickets": [], "stake_yen": 0, "reason": "banei_market_missing"}
@@ -482,7 +482,7 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
         "trio_value": value,
         "strategy_v5": shadow,
         "trifecta_plan": plan,
-        "trifecta_value_shadow": trifecta_shadow,
+        "trifecta_value_shadow": trifecta_shadow,\n        "trifecta_purchase_decision": {"action": "skip", "reason": "shadow_not_validated",\n                                        "production_tickets_unchanged": True},
         "banei_validation": {"is_banei": banei, "dedicated_model_validated": False,
                              "market_only_baseline": bool(banei and market_p)},
         "result": None, "settled_at": None, "hits": None
@@ -798,7 +798,7 @@ def update_data(races, now, previous, paybacks=None, odds_index=None, trio_index
                              and dt.timedelta(0) <= now - dt.datetime.fromisoformat(observed) <= MAX_FORECAST_ODDS_AGE
                              and market_probabilities(race["horses"], prior_quotes))
                 proposal = forecast(race, now, prior_quotes if use_prior else market, calibration,
-                                    official_trios, observed if use_prior else None, trifecta_index.get(market_key))
+                                    official_trios, observed if use_prior else None, trifecta_index.get(market_key),\n                                    now.isoformat(timespec="seconds") if trifecta_index.get(market_key) else None)
                 visible = display_market(race, market, prior, now)
                 if visible:
                     proposal["market"] = visible
