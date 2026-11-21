@@ -1,5 +1,11 @@
 name: NAR daily trifecta shadow audit
 on:
+  push:
+    paths:
+      - 'scripts/audit_trifecta_banei.py'
+      - 'tests/trifecta_audit_test.py'
+      - 'tests/trifecta_value_banei_test.py'
+      - '.github/workflows/nar-trifecta-daily.yml'
   schedule:
     - cron: '25 15 * * *'
   workflow_dispatch:
@@ -33,6 +39,8 @@ jobs:
               f"- Legacy comparable races: {old['races']}; ROI: {old['roi_percent']}%; profit: {old['profit_yen']} yen",
               f"- Shadow records: {new['recorded']}; evaluated candidates: {new.get('evaluated_candidates',0)}; ROI: {new.get('roi_percent')}",
               f"- Decision: {r['decision']}",
+              f"- Maximum hypothetical drawdown (old/shadow): {r['risk']['old_max_drawdown_yen']} / {r['risk']['shadow_max_drawdown_yen']} yen",
+              f"- Grade coverage: {', '.join(sorted(r['by_grade'])) or 'none'}",
               "- Warning: hypothetical backtest only; no automatic purchases.",
           ]
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
