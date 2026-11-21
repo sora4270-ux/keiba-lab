@@ -58,6 +58,8 @@ jobs:
         run: python scripts/audit_nar_strategy_matrix.py --month 2026-11 --official-zip /tmp/nar-monthly-official.zip --output nar-strategy-matrix.json
       - name: Simulate EV and fractional Kelly allocations without placing wagers
         run: python scripts/audit_nar_ev_staking_shadow.py --month 2026-11 --output nar-ev-staking-shadow.json
+      - name: Audit prelock odds readiness and probability calibration bins
+        run: python scripts/audit_nar_ev_readiness.py --month 2026-11 --official-zip /tmp/nar-monthly-official.zip --output nar-ev-readiness.json
       - name: Multi-month official confidence calibration audit
         run: python scripts/audit_nar_confidence_multimonth.py --months 2026-10 2026-11 --output nar-confidence-multimonth.json
       - name: Official NAR monthly field-coverage probe
@@ -70,13 +72,15 @@ jobs:
           from pathlib import Path
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as f:
               f.write('# NAR comprehensive audit\n\n')
-              for name in ('nar-stake-backtest.json','nar-feature-availability.json','nar-confidence-wide-audit.json','nar-confidence-multimonth.json','nar-selective-wide.json','nar-strategy-matrix.json','nar-ev-staking-shadow.json'):
+              for name in ('nar-stake-backtest.json','nar-feature-availability.json','nar-confidence-wide-audit.json','nar-confidence-multimonth.json','nar-selective-wide.json','nar-strategy-matrix.json','nar-ev-staking-shadow.json','nar-ev-readiness.json'):
                   path=Path(name)
                   if not path.exists():
                       f.write(f'- {name}: UNAVAILABLE (not proven)\n')
                       continue
                   x=json.loads(path.read_text(encoding='utf-8'))
                   f.write(f'- {name}: {x.get("status", "unknown")}\n')
+                  if name == 'nar-ev-readiness.json':
+                      f.write(f'  - odds coverage: {x["counts"]}; calibration: {x["all"]}; later: {x["later_dates"]}\n')
                   if name == 'nar-ev-staking-shadow.json':
                       f.write(f'  - races {x["races"]}; shadow candidates {x["shadow_candidates"]}; reasons {x["reasons"]}\n')
                   if name == 'nar-strategy-matrix.json':
@@ -113,5 +117,6 @@ jobs:
             nar-selective-wide.json
             nar-strategy-matrix.json
             nar-ev-staking-shadow.json
+            nar-ev-readiness.json
           if-no-files-found: warn
           retention-days: 30
