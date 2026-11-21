@@ -1279,39 +1279,17 @@ function forecastExtraCandidatesHtml(rows,top,trio,trifecta){
  return '<p class="pick-extra"><b>買い目に含む追加候補（印外）</b>：'+extra.map(no=>esc(no)+'番 '+esc(names.get(no)||'')).join(' ／ ')+'</p>';
 }
 function betDecisionGuide(rows,top,market=null){
- const ranking=Array.isArray(rows)?rows:[],selected=Array.isArray(top)?top:[];
+ const ranking=Array.isArray(rows)?rows:[];
  const confidence=predictionConfidence(ranking,false);
- const numbers=wideBoxNumbers(selected).length===5?wideBoxNumbers(selected):wideBoxNumbers(ranking);
- const first=numbers[0],runner=ranking.find(h=>Number(h.no)===first);
- const probs=ranking.map(h=>Number(h.win_probability));
- const valid=confidence&&probs.every(p=>Number.isFinite(p)&&p>=0&&p<=1);
- const snapshot=market?.horses;
- const quotes=Array.isArray(snapshot)?snapshot:ranking;
- const observed=quotes.find(h=>Number(h.no)===first);
- const odd=Number(observed?.odds);
- const hasOdds=Number.isFinite(odd)&&odd>=1&&odd<=10000;
- const hasSnapshot=!market||Boolean(market.updated_at);
- const ev=valid&&runner&&hasOdds&&hasSnapshot?runner.win_probability*odd:null;
- const grade=confidence?.grade||'C';
- let recommendation='見送り（確率・予想上位5頭の確認が必要）',tickets=[];
- if(valid&&numbers.length===5){
-  if(grade==='C')recommendation='見送り（信頼度C）';
-  else if(!runner||!hasOdds)recommendation='見送り（本命の予想確率・単勝オッズ未取得）';
-  else if(market&&(!market.updated_at||!Number.isFinite(Date.parse(market.updated_at))))recommendation='見送り（予想時オッズの取得時刻不明）';
-  else if(ev!==null&&ev<1.05)recommendation='見送り（本命単勝の期待回収倍率が1.05未満）';
-  else if(grade==='S'||grade==='A'){
-   recommendation='ワイド◎軸4点を比較検討（各250円）';
-   tickets=numbers.slice(1).map(n=>[first,n]);
-  }else{
-   recommendation='ワイド上位3頭3点を比較検討（400円・300円・300円）';
-   tickets=[[numbers[0],numbers[1]],[numbers[0],numbers[2]],[numbers[1],numbers[2]]];
-  }
- }
- const estimate=ev===null?'未算出（確定前の有効な単勝オッズが必要）':(ev*100).toFixed(1)+'%';
- const caution='単勝の期待値はモデル推定勝率×単勝オッズの参考値。ワイドの期待値ではありません。ワイド配当未取得時は有利さを判定できません。実際の購入指示ではありません。';
- return '<div class="roi-mini" aria-label="信頼度と参考買い目の判断"><b>買い方の参考判定：</b>'+esc(recommendation)+
-  '<div class="tiny">信頼度 '+esc(grade)+' ／ ◎単勝の推定期待回収率 '+esc(estimate)+
-  (tickets.length?' ／ 候補 '+esc(tickets.map(t=>t.join('－')).join('、')):'')+'</div>'+
+ const grade=confidence?.grade||'未判定';
+ const tickets=confidenceWideTickets(ranking,confidence);
+ const valid=tickets.length===10;
+ const recommendation=valid?'ワイド信頼度別5頭BOXを参考表示（10点×100円）':'見送り（信頼度未判定または6位までの予想不足）';
+ const detail=grade==='S'?'予想1～5位':grade==='未判定'?'対象馬未確定':'予想2～6位';
+ const caution='信頼度は本命の1着確率の目安であり、ワイドの期待回収率を保証しません。過去成績の比較は仮想購入であり、実購入指示ではありません。';
+ return '<div class="roi-mini" aria-label="信頼度別ワイドBOXの参考買い目"><b>参考買い方：</b>'+esc(recommendation)+
+  '<div class="tiny">信頼度 '+esc(grade)+' ／ 対象 '+esc(detail)+
+  (valid?' ／ 組み合わせ '+esc(tickets.map(t=>t.join('－')).join('、')):'')+'</div>'+
   '<p class="tiny muted">'+esc(caution)+'</p></div>';
 }
 function compactBetsHtml(rows,top,trio,trifecta,raceId,showWideBox=false,market=null){
