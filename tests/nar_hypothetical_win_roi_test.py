@@ -28,6 +28,7 @@ class WinSimulationTests(unittest.TestCase):
         self.assertEqual(report["hypothetical_stake_yen"], 200)
         self.assertEqual(report["official_payout_sum_yen"], 450)
         self.assertEqual(report["hypothetical_return_rate_percent"], 225)
+        self.assertEqual(sum(b["stake_yen"] for b in report["by_prelock_odds_band"].values()), 200)
         self.assertEqual(report["excluded"]["prelock_missing_or_invalid_timestamps"], 1)
 
     @patch("audit_nar_hypothetical_win_roi.extract", return_value=([], {}))
