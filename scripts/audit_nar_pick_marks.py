@@ -20,6 +20,22 @@ def evaluate(data):
             skipped += 1
             continue
         ranking, result = race.get("ranking"), race.get("result")
+        # Ambiguous dead heats have multiple valid finish orders; exclude them
+        # rather than assigning a potentially false single winner.
+        alternatives = race.get("result_alternatives") or []
+        if alternatives:
+            if not isinstance(alternatives, list) or len(alternatives) != 1:
+                skipped += 1
+                continue
+            try:
+                alternative = [int(no) for no in alternatives[0][:3]]
+                primary = [int(no) for no in result[:3]]
+            except (TypeError, ValueError, IndexError):
+                skipped += 1
+                continue
+            if alternative != primary:
+                skipped += 1
+                continue
         if (not isinstance(ranking, list) or not isinstance(result, list)
                 or len(result) < 3 or len(set(map(str, result[:3]))) != 3):
             skipped += 1
