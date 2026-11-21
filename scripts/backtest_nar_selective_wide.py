@@ -28,7 +28,7 @@ def wager(info, ranked, grade, plan, venue):
     elif plan=="selective_s_a_flat":
         nos,stake=(ranked[:3],900) if grade=="S" and flat else ((ranked[1:4],600) if grade=="A" and flat else ([],0))
     else:
-        nos,stake=(ranked[:5],500) if grade=="S" else ((ranked[1:6],300) if grade=="A" else ((ranked[1:6],100) if grade=="B" else ([],0)))
+        nos,stake=(ranked[:3],600) if grade=="S" else ((ranked[1:4],300) if grade=="A" else ((ranked[1:3],100) if grade=="B" else ([],0)))
     pairs=list(itertools.combinations(sorted(nos),2))
     # If budget does not cover all pairs, do not pretend a 10-point BOX was purchased.
     if stake < 100*len(pairs):
