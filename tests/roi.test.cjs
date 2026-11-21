@@ -10,6 +10,7 @@ function snippet(start,end) {
   return html.slice(a,b);
 }
 const source=[
+  'function narForecastConfidence(){return {grade:"S"};}',
   snippet('function resultMatches(rec){','function optionalPayout(v,label){'),
   snippet('function payoutValue(r,key){','function recordResult(rec,top,payouts={})'),
   snippet('function savedTrioList(r){','function trioTokens(tickets){'),
