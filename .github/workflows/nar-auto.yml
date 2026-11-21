@@ -5,6 +5,8 @@ on:
     paths:
       - 'scripts/update_nar.py'
       - 'scripts/refresh_nar.py'
+      - 'scripts/record_nar_frozen_ledger.py'
+      - 'tests/nar_frozen_ledger_test.py'
       - 'tests/refresh_health_test.py'
       - 'scripts/recent_form.py'
       - 'scripts/odds_encoding.py'
@@ -94,6 +96,7 @@ jobs:
           python -m unittest discover -s tests -p 'nar_history_integrity_test.py'
           python -m unittest discover -s tests -p 'nar_history_inspection_test.py'
           python -m unittest discover -s tests -p 'nar_frozen_history_guard_test.py'
+          python -m unittest discover -s tests -p 'nar_frozen_ledger_test.py'
           python -m unittest discover -s tests -p 'nar_pick_marks_test.py'
           python scripts/update_nar.py --selftest
           python -m unittest discover -s tests -p 'odds_encoding_test.py'
@@ -142,7 +145,8 @@ jobs:
             fi
             echo "NAR history metadata after refresh:"
             python scripts/inspect_nar_history.py
-            git add data/auto/nar_predictions.json data/auto/nar_health.json
+            python scripts/record_nar_frozen_ledger.py
+            git add data/auto/nar_predictions.json data/auto/nar_health.json data/auto/nar_frozen_ledger.json
             if ! git diff --cached --quiet; then
               git commit -m "Update NAR forecasts and refresh health"
               git pull --rebase
