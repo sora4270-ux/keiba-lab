@@ -24,6 +24,18 @@ def simulate(forecasts, tables, month):
     duplicates = collections.Counter((r["race_id"], r["horse_no"]) for r in checked)
     excluded = collections.Counter()
     stake, returned, wins = 0, 0, 0
+    bands = {k: {"races": 0, "stake_yen": 0, "payout_yen": 0, "wins": 0}
+             for k in ("1.0-1.9", "2.0-2.9", "3.0-4.9", "5.0-9.9", "10.0+", "unknown")}
+    def odds_band(raw):
+        try:
+            value = float(raw)
+        except (ValueError, TypeError):
+            return "unknown"
+        if value < 2: return "1.0-1.9"
+        if value < 3: return "2.0-2.9"
+        if value < 5: return "3.0-4.9"
+        if value < 10: return "5.0-9.9"
+        return "10.0+"
     month_prefix = "nar-" + month.replace("-", "")
     for row in checked:
         if not row["race_id"].startswith(month_prefix):
@@ -39,13 +51,23 @@ def simulate(forecasts, tables, month):
             stake += 100
             returned += payouts[key]
             wins += payouts[key] > 0
+            bucket = bands[odds_band(row.get("odds"))]
+            bucket["races"] += 1
+            bucket["stake_yen"] += 100
+            bucket["payout_yen"] += payouts[key]
+            bucket["wins"] += payouts[key] > 0
     eligible = stake // 100
+    for bucket in bands.values():
+        n = bucket["races"]
+        bucket["win_rate_percent"] = round(100 * bucket["wins"] / n, 2) if n else None
+        bucket["return_rate_percent"] = round(100 * bucket["payout_yen"] / bucket["stake_yen"], 2) if n else None
     return {"month": month, "eligible_races": eligible,
             "hypothetical_stake_yen": stake, "official_payout_sum_yen": returned,
             "winning_selections": wins,
             "hypothetical_win_rate_percent": round(wins / eligible * 100, 2) if eligible else None,
             "hypothetical_return_rate_percent": round(returned / stake * 100, 2) if stake else None,
             "hypothetical_profit_yen": returned - stake,
+            "by_prelock_odds_band": bands,
             "excluded": dict(sorted(excluded.items())),
             "payout_export_skipped": skipped,
             "warning": "Hypothetical 100-yen win bets on frozen top-ranked picks only. Not actual bets, authenticated betting records, or forward-looking expected returns."}
