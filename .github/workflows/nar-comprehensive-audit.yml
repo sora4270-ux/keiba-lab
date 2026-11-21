@@ -69,7 +69,7 @@ jobs:
                       continue
                   x=json.loads(path.read_text(encoding='utf-8'))
                   f.write(f'- {name}: {x.get("status", "unknown")}\n')
-                  if 'eligible_races' in x:
+                  if 'plans' in x:
                       f.write(f'  - eligible: {x["eligible_races"]}; excluded: {x["excluded"]}\n')
                       for plan,values in x['plans'].items():
                           v=values['all']
