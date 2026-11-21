@@ -81,7 +81,7 @@ for(const race of publicData.races) {
   if(result.races)assert.ok(Number.isFinite(result.stats.rate));
 }
 
-const wideRecord={...nar,top5:[1,2,3,4,5].map(no=>({no})),wide_payouts:{
+const wideRecord={...nar,ranking:[1,2,3,4,5].map(no=>({no})),top5:[1,2,3,4,5].map(no=>({no})),wide_payouts:{
   '1-2':360,'1-3':540,'2-3':680
 }};
 assert.equal(api.narWideBoxTickets(wideRecord).length,10);
