@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from audit_nar_feature_availability import coverage
-from backtest_nar_stake_allocation import backtest, eligible, settle_one, PLANS
+from backtest_nar_stake_allocation import backtest, eligible, settle_one, PLANS, official_market_index, official_settlement
 
 
 def fake(day="2026-11-19", result=None):
@@ -80,6 +80,31 @@ class AllocationTests(unittest.TestCase):
         self.assertEqual(left[0],5000)
         self.assertEqual(right[0],5000)
         self.assertNotEqual(left[1],right[1])
+    def test_official_join_is_independent_and_checks_winning_numbers(self):
+        f = fake()
+        raw = [""]*54
+        raw[0:3] = ["大井","20261119","1"]
+        for i,v in {4:1,5:500,32:1,33:2,34:220,36:1,37:3,38:330,
+                    40:2,41:3,42:450,44:1,45:2,46:3,47:1400,
+                    49:1,50:2,51:3,52:8500}.items():
+            raw[i]=str(v)
+        market = official_market_index({"payback":[(raw,{})]})
+        values, reason = official_settlement(f, market)
+        self.assertIsNone(reason)
+        self.assertEqual(values["payouts"]["trio"],1400)
+        original=dict(f)
+        original.pop("payouts")
+        original.pop("wide_payouts")
+        report=backtest([original],official_tables={"payback":[(raw,{})]})
+        self.assertEqual(report["eligible_races"],1)
+        self.assertEqual(report["plans"]["balanced"]["all"]["stake_yen"],5000)
+        self.assertNotIn("payouts",original)
+        bad=raw.copy()
+        bad[49]="3"
+        report=backtest([f],official_tables={"payback":[(bad,{})]})
+        self.assertEqual(report["eligible_races"],0)
+        self.assertEqual(report["excluded"]["official_result_mismatch"],1)
+
     def test_no_false_profit_when_zero_valid(self):
         report=backtest([{"status":"draft"}])
         self.assertEqual(report["eligible_races"],0)
