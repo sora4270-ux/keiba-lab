@@ -20,6 +20,8 @@ on:
       - 'tests/odds_encoding_test.py'
       - 'scripts/inspect_nar_history.py'
       - 'scripts/audit_nar_roi_coverage.py'
+      - 'scripts/audit_nar_pick_marks.py'
+      - 'tests/nar_pick_marks_test.py'
       - 'tests/nar_history_integrity_test.py'
       - 'tests/nar_history_inspection_test.py'
       - 'tests/nar_frozen_history_guard_test.py'
@@ -92,6 +94,7 @@ jobs:
           python -m unittest discover -s tests -p 'nar_history_integrity_test.py'
           python -m unittest discover -s tests -p 'nar_history_inspection_test.py'
           python -m unittest discover -s tests -p 'nar_frozen_history_guard_test.py'
+          python -m unittest discover -s tests -p 'nar_pick_marks_test.py'
           python scripts/update_nar.py --selftest
           python -m unittest discover -s tests -p 'odds_encoding_test.py'
           python scripts/trio_strategy.py --selftest
