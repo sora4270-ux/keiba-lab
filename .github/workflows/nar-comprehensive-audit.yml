@@ -52,6 +52,8 @@ jobs:
         run: python scripts/backtest_nar_stake_allocation.py --month 2026-11 --official-zip /tmp/nar-monthly-official.zip --output nar-stake-backtest.json
       - name: Paired confidence-wide BOX comparison with official payouts
         run: python scripts/audit_nar_confidence_wide.py --month 2026-11 --official-zip /tmp/nar-monthly-official.zip --output nar-confidence-wide-audit.json
+      - name: Selective wide and grade-based allocation comparison
+        run: python scripts/backtest_nar_selective_wide.py --month 2026-11 --official-zip /tmp/nar-monthly-official.zip --output nar-selective-wide.json
       - name: Multi-month official confidence calibration audit
         run: python scripts/audit_nar_confidence_multimonth.py --months 2026-10 2026-11 --output nar-confidence-multimonth.json
       - name: Official NAR monthly field-coverage probe
@@ -64,14 +66,18 @@ jobs:
           from pathlib import Path
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as f:
               f.write('# NAR comprehensive audit\n\n')
-              for name in ('nar-stake-backtest.json','nar-feature-availability.json','nar-confidence-wide-audit.json','nar-confidence-multimonth.json'):
+              for name in ('nar-stake-backtest.json','nar-feature-availability.json','nar-confidence-wide-audit.json','nar-confidence-multimonth.json','nar-selective-wide.json'):
                   path=Path(name)
                   if not path.exists():
                       f.write(f'- {name}: UNAVAILABLE (not proven)\n')
                       continue
                   x=json.loads(path.read_text(encoding='utf-8'))
                   f.write(f'- {name}: {x.get("status", "unknown")}\n')
-                  if 'plans' in x:
+                  if name == 'nar-selective-wide.json':
+                      for plan,values in x['plans'].items():
+                          v=values['all']
+                          f.write(f'  - {plan}: purchased {values["purchased_races"]}, stake ¥{v["stake_yen"]}, payout ¥{v["payout_yen"]}, ROI {v["roi_percent"]}%, net ¥{v["net_yen"]}, later ROI {values["later_dates"]["roi_percent"]}%\n')
+                  if name == 'nar-stake-backtest.json':
                       f.write(f'  - eligible: {x["eligible_races"]}; excluded: {x["excluded"]}\n')
                       for plan,values in x['plans'].items():
                           v=values['all']
@@ -93,5 +99,6 @@ jobs:
             nar-feature-availability.json
             nar-confidence-wide-audit.json
             nar-confidence-multimonth.json
+            nar-selective-wide.json
           if-no-files-found: warn
           retention-days: 30
