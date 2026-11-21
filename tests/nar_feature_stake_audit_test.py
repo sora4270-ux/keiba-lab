@@ -13,7 +13,7 @@ def fake(day="2026-11-19", result=None):
     rank = list(range(1, 7))
     actual = result or [1, 2, 3]
     return {
-        "id": "nar-"+day.replace("-", "")+"-大井-01", "date": day, "venue": "大井",
+        "id": "nar-"+day.replace("-", "")+"-大井-01", "date": day, "venue": "大井", "race_no": 1,
         "start_at": day+"T12:00+09:00", "cutoff_at": day+"T11:45+09:00",
         "locked_at": day+"T11:43+09:00", "predicted_at": day+"T11:42+09:00",
         "result": actual, "ranking": [{"no": n} for n in rank],
