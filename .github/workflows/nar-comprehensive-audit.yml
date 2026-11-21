@@ -50,6 +50,8 @@ jobs:
           PY
       - name: Independent official-payout same-cohort portfolio comparison
         run: python scripts/backtest_nar_stake_allocation.py --month 2026-11 --official-zip /tmp/nar-monthly-official.zip --output nar-stake-backtest.json
+      - name: Paired confidence-wide BOX comparison with official payouts
+        run: python scripts/audit_nar_confidence_wide.py --month 2026-11 --official-zip /tmp/nar-monthly-official.zip --output nar-confidence-wide-audit.json
       - name: Official NAR monthly field-coverage probe
         run: python scripts/audit_nar_feature_availability.py --zip /tmp/nar-monthly-official.zip --output nar-feature-availability.json
       - name: Add auditable summary
@@ -60,7 +62,7 @@ jobs:
           from pathlib import Path
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as f:
               f.write('# NAR comprehensive audit\n\n')
-              for name in ('nar-stake-backtest.json','nar-feature-availability.json'):
+              for name in ('nar-stake-backtest.json','nar-feature-availability.json','nar-confidence-wide-audit.json'):
                   path=Path(name)
                   if not path.exists():
                       f.write(f'- {name}: UNAVAILABLE (not proven)\n')
@@ -72,6 +74,8 @@ jobs:
                       for plan,values in x['plans'].items():
                           v=values['all']
                           f.write(f'  - {plan}: {v["races"]} races, stake ¥{v["stake_yen"]}, payout ¥{v["payout_yen"]}, ROI {v["roi_percent"]}%\n')
+                  if 'paired_return_difference_yen' in x.get('all',{}):
+                      f.write(f'  - wide paired: {x["eligible_races"]} races; old ROI {x["all"]["baseline"]["roi_percent"]}%; confidence ROI {x["all"]["confidence"]["roi_percent"]}%; difference ¥{x["all"]["paired_return_difference_yen"]}\n')
                   if 'race_track_condition_present' in x:
                       f.write(f'  - track: {x["race_track_condition_present"]}/{x["races"]}, weight: {x["carried_weight_present"]}/{x["runner_rows"]}, corner-order: {x["past_race_corner_order_present"]}/{x["races"]}\n')
               f.write('\nAll stake amounts are hypothetical; payouts were joined to the NAR monthly official file, but frozen predictions are not independently authenticated.\n')
@@ -83,5 +87,6 @@ jobs:
           path: |
             nar-stake-backtest.json
             nar-feature-availability.json
+            nar-confidence-wide-audit.json
           if-no-files-found: warn
           retention-days: 30
