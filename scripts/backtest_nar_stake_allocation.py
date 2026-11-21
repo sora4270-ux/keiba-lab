@@ -12,6 +12,8 @@ import itertools
 import json
 from pathlib import Path
 
+from update_nar import as_int, load_zip_tables, row_key
+
 TICKET_UNITS = 50
 # Fixed ex ante alternatives, no fitting to winning outcomes.
 PLANS = {
@@ -31,6 +33,53 @@ def valid_ticket(value, size, ordered):
     return tuple(value) if ordered else tuple(sorted(value))
 
 
+def official_market_index(tables):
+    """Only unique official payback rows; multiple rows may mean dead heat."""
+    grouped = collections.defaultdict(list)
+    for item in tables.get("payback", []):
+        key = row_key(item, ())
+        if key is not None:
+            grouped[key].append(item[0])
+    return grouped
+
+
+def official_settlement(record, market):
+    """Join saved result to independently downloaded official payback row."""
+    try:
+        key = (record["venue"], record["date"].replace("-", ""), int(record["race_no"]))
+        rows = market.get(key, [])
+        if len(rows) != 1:
+            return None, "official_row_missing_or_dead_heat"
+        raw = rows[0]
+        def at(index):
+            return as_int(raw[index]) if len(raw) > index else None
+        result = tuple(record["result"])
+        if len(result) != 3 or any(type(n) is not int or n < 1 for n in result):
+            return None, "invalid_record_result"
+        if (at(4) != result[0] or tuple(sorted(at(i) for i in (44, 45, 46))) != tuple(sorted(result))
+                or tuple(at(i) for i in (49, 50, 51)) != result):
+            return None, "official_result_mismatch"
+        payouts = {"win": at(5), "trio": at(47), "trifecta": at(52)}
+        if any(v is None or v < 100 for v in payouts.values()):
+            return None, "official_payout_missing"
+        wide = {}
+        for x, y, amount in ((32, 33, 34), (36, 37, 38), (40, 41, 42)):
+            left, right, yen = at(x), at(y), at(amount)
+            if left is None or right is None or left == right or yen is None or yen < 100:
+                return None, "official_wide_incomplete"
+            pair = tuple(sorted((left, right)))
+            if pair in wide:
+                return None, "official_wide_duplicated"
+            wide[pair] = yen
+        if set(wide) != set(itertools.combinations(sorted(result), 2)):
+            return None, "official_wide_mismatch"
+        return {"payouts": payouts, "wide_payouts": {
+            "-".join(map(str, k)): v for k, v in wide.items()
+        }}, None
+    except (KeyError, TypeError, ValueError):
+        return None, "official_join_malformed"
+
+
 def eligible(r):
     if not isinstance(r, dict) or r.get("status") == "draft" or r.get("result_alternatives"):
         return None, "unsettled_or_dead_heat"
@@ -41,7 +90,7 @@ def eligible(r):
         predicted = dt.datetime.fromisoformat(r["predicted_at"])
         if not all(v.tzinfo is not None for v in (start, cutoff, lock, predicted)):
             return None, "naive_timestamp"
-        if not (predicted <= lock <= cutoff == start - dt.timedelta(minutes=15)):
+        if not (predicted <= lock < cutoff == start - dt.timedelta(minutes=15)):
             return None, "late_or_inconsistent_lock"
         result = valid_ticket(r["result"], 3, True)
         ranked = r["ranking"]
@@ -136,13 +185,22 @@ def metrics(rows):
             "max_drawdown_yen": drawdown, "by_type": by_type}
 
 
-def backtest(records, month=None):
+def backtest(records, month=None, official_tables=None):
     skipped = collections.Counter()
+    market = official_market_index(official_tables) if official_tables is not None else None
     accepted = []
     ids = set()
     for r in records:
         if month and (not isinstance(r, dict) or not str(r.get("date", "")).startswith(month)):
             continue
+        if market is not None and isinstance(r, dict):
+            official, reason = official_settlement(r, market)
+            if reason:
+                skipped[reason] += 1
+                continue
+            # Never modify archival forecast rows. These amounts are independent
+            # official payouts; rank, tickets and all pre-race fields stay frozen.
+            r = {**r, **official}
         info, reason = eligible(r)
         if reason:
             skipped[reason] += 1
@@ -158,7 +216,8 @@ def backtest(records, month=None):
     # A time split with no test days must not be portrayed as out-of-sample.
     n_train = max(1, int(len(dates)*.7)) if len(dates) > 1 else len(dates)
     train_dates = set(dates[:n_train])
-    out = {"status": "saved_payouts_unverified_external_reconciliation",
+    out = {"status": "official_monthly_payouts_reconciled_prelock_not_authenticated" if market is not None else "saved_payouts_unverified_external_reconciliation",
+           "official_market_count": len(market) if market is not None else 0,
            "month": month or "all", "eligible_races": len(accepted), "excluded": dict(sorted(skipped.items())),
            "stake_per_race_yen": TICKET_UNITS*100,
            "train_dates": len(train_dates), "holdout_dates": len(dates)-len(train_dates),
@@ -177,7 +236,7 @@ def backtest(records, month=None):
                       if ("帯広" in r.get("venue", "") or "ばんえい" in r.get("venue", "")) == (category == "banei")]
             out["by_course_type"].setdefault(category, {})[name] = metrics(subset)
     out["notes"] = [
-        "Historical diagnostic only. Not real wagers and not independently reauthenticated official payouts.",
+        "Historical diagnostic only. Not real wagers. Independent official payout join only when official_tables supplied; pre-lock snapshots not independently authenticated.",
         "All allocations use the same qualified races and identical 5000-yen budget.",
         "Ticket order and ranking are saved before start; late/future and dead-heat records are excluded.",
         "When a type budget cannot cover every frozen ticket, only its earliest saved tickets are hypothetically staked.",
@@ -191,11 +250,15 @@ def main():
     parser.add_argument("--input", type=Path, default=Path("data/auto/nar_predictions.json"))
     parser.add_argument("--month", default=None)
     parser.add_argument("--output", type=Path, default=Path("nar-stake-backtest.json"))
+    parser.add_argument("--official-zip", type=Path, default=None, help="NAR monthly race ZIP for official payout reconciliation")
     a = parser.parse_args()
     raw = json.loads(a.input.read_text(encoding="utf-8"))
     if not isinstance(raw, dict) or not isinstance(raw.get("races"), list):
         parser.error("Input must have races array")
-    result = backtest(raw["races"], a.month)
+    official_tables = load_zip_tables(a.official_zip.read_bytes()) if a.official_zip else None
+    if official_tables is not None and "payback" not in official_tables:
+        parser.error("Official ZIP is missing payback.csv")
+    result = backtest(raw["races"], a.month, official_tables)
     a.output.parent.mkdir(parents=True, exist_ok=True)
     a.output.write_text(json.dumps(result, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
     print(json.dumps({k: v for k, v in result.items() if k not in ("plans", "by_course_type")}, ensure_ascii=False))
