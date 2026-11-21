@@ -1,0 +1,45 @@
+name: NAR daily trifecta shadow audit
+on:
+  schedule:
+    - cron: '25 15 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -p '*_test.py' -v
+      - name: Generate immutable-ledger audit
+        run: python scripts/audit_trifecta_banei.py --input data/auto/nar_predictions.json --output trifecta-banei-daily.json
+      - name: Add daily summary
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          r=json.load(open("trifecta-banei-daily.json", encoding="utf-8"))
+          old=r["old_comparable"]
+          new=r["new_shadow"]
+          lines=[
+              "## NAR daily trifecta audit",
+              f"- Settled races: {r['settled']}",
+              f"- Prelock odds records: {r['prelock_trifecta_quotes']}",
+              f"- Legacy comparable races: {old['races']}; ROI: {old['roi_percent']}%; profit: {old['profit_yen']} yen",
+              f"- Shadow records: {new['recorded']}; evaluated candidates: {new.get('evaluated_candidates',0)}; ROI: {new.get('roi_percent')}",
+              f"- Decision: {r['decision']}",
+              "- Warning: hypothetical backtest only; no automatic purchases.",
+          ]
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
+              f.write("\n".join(lines)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trifecta-banei-daily-report
+          path: trifecta-banei-daily.json
+          retention-days: 30
