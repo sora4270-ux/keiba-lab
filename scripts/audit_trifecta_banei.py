@@ -31,6 +31,8 @@ def audit(records):
             out["new_shadow"]["recorded"] += 1
             if shadow.get("status") == "candidate":
                 out["new_shadow"]["candidate"] += 1
+            if shadow.get("status") == "skip":
+                out["new_shadow"]["skipped"] = out["new_shadow"].get("skipped", 0) + 1
         snap = r.get("trifecta_market_at_lock")
         try:
             observed = dt.datetime.fromisoformat(snap["updated_at"])
@@ -63,21 +65,41 @@ def audit(records):
         v["return_yen"] += ret
         if isinstance(shadow, dict) and shadow.get("status") in ("skip", "candidate"):
             out["new_shadow"]["settled_comparable"] += 1
+            new = out["new_shadow"]
+            new["stake_yen"] = new.get("stake_yen", 0)
+            new["return_yen"] = new.get("return_yen", 0)
+            new["hits"] = new.get("hits", 0)
+            if shadow.get("status") == "candidate":
+                shadow_tickets = shadow.get("tickets") or []
+                shadow_stake = shadow.get("stake_yen")
+                if (isinstance(shadow_stake, int) and shadow_stake == 100 * len(shadow_tickets)
+                        and 0 < len(shadow_tickets) <= 6
+                        and all(isinstance(t, list) and len(t) == 3 for t in shadow_tickets)):
+                    shadow_hit = any(t == result for t in shadow_tickets)
+                    new["stake_yen"] += shadow_stake
+                    new["return_yen"] += payout if shadow_hit else 0
+                    new["hits"] += int(shadow_hit)
+                    new["evaluated_candidates"] = new.get("evaluated_candidates", 0) + 1
+
     for name, group in groups.items():
         n = group["races"]
         out[name] = {"races": n, "top1_wins": group["top1_wins"],
                      "top1_podium": group["top1_podium"],
                      "win_rate_percent": round(group["top1_wins"]*100/n, 2) if n else None,
                      "podium_rate_percent": round(group["top1_podium"]*100/n, 2) if n else None}
+    new = out["new_shadow"]
+    new["roi_percent"] = (round(new.get("return_yen", 0)*100/new["stake_yen"], 2)
+                          if new.get("stake_yen", 0) else None)
+    new["profit_yen"] = new.get("return_yen", 0)-new.get("stake_yen", 0)
     old = out["old_comparable"]
     old["roi_percent"] = round(old["return_yen"]*100/old["stake_yen"], 2) if old["stake_yen"] else None
     old["profit_yen"] = old["return_yen"]-old["stake_yen"]
     for row in out["by_venue"].values():
         row["roi_percent"] = round(row["return_yen"]*100/row["stake_yen"], 2) if row["stake_yen"] else None
-    out["decision"] = ("insufficient_new_shadow_data" if not out["new_shadow"]["settled_comparable"]
+    out["decision"] = ("insufficient_new_shadow_data" if not out["new_shadow"].get("evaluated_candidates", 0)
                        else "compare_only_after_prelock_shadow_results")
-    out["note"] = ("Old strategy is hypothetical 100-yen-per-ticket. New strategy has no settled "
-                   "immutable pre-race shadow records yet; no new ROI or improvement claim is valid. "
+    out["note"] = ("Old and new strategies are hypothetical 100-yen-per-ticket. New strategy requires settled "
+                   "immutable pre-race shadow records; no improvement claim is valid without a sufficient prospective sample. "
                    "Banei results belong to the prior model, not the new provisional baseline.")
     return out
 
