@@ -92,7 +92,7 @@ assert.equal(wide.hits.length,3);
 for(const mode of ['box','axis','select']){
  const wager=api.narWideStrategyWager(wideRecord,mode);
  assert.equal(wager.spent,1000);
- assert.equal(wager.returned,mode==='box'?1580:mode==='axis'?2250:mode==='select'?5100);
+ assert.equal(wager.returned,mode==='box'?1580:mode==='axis'?2250:5100);
 }
 assert.equal(api.narWideStrategyWager({...wideRecord,wide_payouts:{'1-2':360}},'axis'),null);
 assert.equal(api.narWideStrategyWager({...wideRecord,result:null},'select'),null);
