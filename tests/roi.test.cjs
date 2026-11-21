@@ -107,11 +107,11 @@ const oneWide={...wideRecord,result:[1,2,7],wide_payouts:{
 }};
 assert.equal(api.narWideBoxWager(oneWide).returned,360);
 assert.equal(api.narWideBoxWager(oneWide).profit,-640);
-assert.equal(api.narWideBoxWager({...wideRecord,top5:[4,5,6,7,8].map(no=>({no}))}).returned,0);
+assert.equal(api.narWideBoxWager({...wideRecord,ranking:[4,5,6,7,8].map(no=>({no}))}).returned,0);
 assert.equal(api.narWideBoxWager({...wideRecord,wide_payouts:{'1-2':360,'1-3':540}}),null,
   'Do not treat an unknown winning pair as a zero-yen payout');
 assert.equal(api.narWideBoxWager({...wideRecord,result:null}),null);
-assert.equal(api.narWideBoxWager({...wideRecord,top5:[{no:1},{no:2}]}),null);
+assert.equal(api.narWideBoxWager({...wideRecord,ranking:[{no:1},{no:2}]}),null);
 const tiedWide={...wideRecord,result_alternatives:[[1,2,3],[1,2,4]],wide_payouts:{
   '1-2':360,'1-3':540,'2-3':680,'1-4':590,'2-4':740
 }};
