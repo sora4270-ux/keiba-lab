@@ -416,8 +416,8 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
         [(1-w)*p + w*market_p[i] if market_p else p for i, p in enumerate(form)])
     ranked = sorted(range(len(horses)), key=lambda i: (-probs[i], horses[i]["no"]))
     order_config = {**cfg, "trio_market_calibration": None}
-    ordered, podium_trios = ticket_ranking(horses, probs, form, market_p, order_config)
-    place, show = position_weights(form, market_p, cfg)
+    ordered, podium_trios = ticket_ranking(horses, probs, market_p if banei and market_p else form, market_p, order_config)
+    place, show = position_weights(market_p if banei and market_p else form, market_p, cfg)
     podium = {horse["no"]: 0. for horse in horses}
     for probability, ticket in ordered:
         for no in ticket:
@@ -514,10 +514,10 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
         output["recent_trio"] = trial
     if trifecta_market:
         quotes = {"-".join(map(str, ticket)): trifecta_market[tuple(ticket)]
-                  for ticket in tickets if tuple(ticket) in trifecta_market}
+                  for ticket in (tickets + trifecta_shadow.get("tickets", [])) if tuple(ticket) in trifecta_market}
         if quotes:
             output["trifecta_market_at_lock"] = {
-                "odds": quotes, "updated_at": timestamp.isoformat(timespec="seconds")}
+                "odds": quotes, "updated_at": trifecta_observed_at or timestamp.isoformat(timespec="seconds")}
     # Display verified official quotes even in preliminary forecasts. These
     # are observations, not model guesses, and can be incomplete.
     if isinstance(market, dict) and market:
