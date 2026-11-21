@@ -352,6 +352,51 @@ def observed_feature_shadow(race):
             "missing": ["running_style", "track_condition", "carried_weight"],
             "note": "近走時計差・4角位置、距離・競馬場・騎手・全成績を利用。脚質・馬場・斤量は未取得のため評価対象外。学習済み確率ではない。"}
 
+def trifecta_value_shadow(ordered, trifecta_market, timestamp, market_observed_at=None):
+    """Conservative diagnostic only: never rewrite immutable production tickets."""
+    result = {"policy": "prelock_trifecta_value_shadow_v1", "status": "skip",
+              "tickets": [], "stake_yen": 0, "expected_return_ratio": None}
+    if not isinstance(trifecta_market, dict) or not trifecta_market:
+        result["reason"] = "official_trifecta_odds_missing"
+        return result
+    try:
+        observed = dt.datetime.fromisoformat(market_observed_at) if market_observed_at else None
+        if observed is None or observed.tzinfo is None or timestamp - observed > MAX_FORECAST_ODDS_AGE or observed > timestamp:
+            result["reason"] = "official_trifecta_odds_stale"
+            return result
+    except (TypeError, ValueError):
+        result["reason"] = "official_trifecta_odds_time_invalid"
+        return result
+    candidates = []
+    for probability, ticket in ordered:
+        try:
+            quote = float(trifecta_market[tuple(ticket)])
+            p = float(probability)
+        except (KeyError, ValueError, TypeError, OverflowError):
+            continue
+        if not (math.isfinite(quote) and 1 < quote < 1000000 and math.isfinite(p) and 0 < p < 1):
+            continue
+        # Require a 25% modeled margin to allow for probability estimation error.
+        ev = p * quote
+        if ev >= 1.25:
+            candidates.append((ev, tuple(ticket)))
+    candidates.sort(key=lambda x: (-x[0], x[1]))
+    # Limit downside exposure: no more than 6 distinct 100-yen combinations.
+    selected = candidates[:6]
+    if not selected:
+        result["reason"] = "no_positive_margin_tickets"
+        return result
+    result.update(status="candidate", tickets=[list(t) for _, t in selected],
+                  stake_yen=100*len(selected),
+                  expected_return_ratio=round(sum(ev for ev, _ in selected)/len(selected), 4),
+                  reason="model_estimate_not_guaranteed")
+    return result
+
+
+def is_banei_venue(venue):
+    return "帯広" in str(venue) or "ばんえい" in str(venue)
+
+
 def forecast(race, timestamp, market=None, calibration=None, trio_market=None, market_observed_at=None, trifecta_market=None):
     deadline = race["start"] - FORECAST_LOCK_BEFORE_START
     if timestamp >= deadline:
@@ -363,7 +408,12 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
     form = normalized([p ** cfg["form_alpha"] for p in original_form])
     market_p = market_probabilities(horses, market)
     w = cfg["market_weight"] if market_p else 0.
-    probs = [(1-w)*p + w*market_p[i] if market_p else p for i, p in enumerate(form)]
+    # Banei uses a different racing mechanism; use a separate, market-only
+    # provisional baseline when complete pre-race quotes exist. Never treat
+    # conventional distance/jockey form calibration as Banei-trained.
+    banei = is_banei_venue(race["venue"])
+    probs = list(market_p) if banei and market_p else (
+        [(1-w)*p + w*market_p[i] if market_p else p for i, p in enumerate(form)])
     ranked = sorted(range(len(horses)), key=lambda i: (-probs[i], horses[i]["no"]))
     order_config = {**cfg, "trio_market_calibration": None}
     ordered, podium_trios = ticket_ranking(horses, probs, form, market_p, order_config)
@@ -403,6 +453,10 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
             "candidate_mass": plan["candidate_mass"],
             "covered_mass": round(sum(probability for probability, _ in chosen), 6),
         }
+    trifecta_shadow = trifecta_value_shadow(ordered, trifecta_market, timestamp, market_observed_at)
+    if banei and not market_p:
+        trifecta_shadow = {"policy": "prelock_trifecta_value_shadow_v1", "status": "skip",
+                           "tickets": [], "stake_yen": 0, "reason": "banei_market_missing"}
     value = value_selection(podium_trios, trio_market, timestamp.isoformat(timespec="seconds"))
     shadow = build_shadow_plan(
         ranking, ordered, podium_trios, trio_market,
@@ -416,7 +470,7 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
         "predicted_at": timestamp.isoformat(timespec="seconds"),
         "locked_at": timestamp.isoformat(timespec="seconds"),
         "cutoff_at": deadline.isoformat(timespec="minutes"),
-        "model": "form_market_v5_adaptive" if market_p else "form_v5_adaptive_no_odds",
+        "model": ("banei_market_only_provisional_v1" if market_p else "banei_unvalidated_form_fallback_v1") if banei else ("form_market_v5_adaptive" if market_p else "form_v5_adaptive_no_odds"),
         "calibration": {k: cfg.get(k) for k in ("form_alpha", "market_weight",
                   "form_training_races", "market_training_races", "place_market_weight",
                   "show_market_weight", "podium_training_races", "trio_market_calibration")},
@@ -428,6 +482,9 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
         "trio_value": value,
         "strategy_v5": shadow,
         "trifecta_plan": plan,
+        "trifecta_value_shadow": trifecta_shadow,
+        "banei_validation": {"is_banei": banei, "dedicated_model_validated": False,
+                             "market_only_baseline": bool(banei and market_p)},
         "result": None, "settled_at": None, "hits": None
     }
     if field_trios:
