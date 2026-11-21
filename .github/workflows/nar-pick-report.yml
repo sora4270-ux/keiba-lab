@@ -1,0 +1,45 @@
+name: NAR frozen pick-mark accuracy report
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'data/auto/nar_predictions.json'
+      - 'scripts/audit_nar_pick_marks.py'
+      - 'tests/nar_pick_marks_test.py'
+      - '.github/workflows/nar-pick-report.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate audit logic
+        run: python -m unittest discover -s tests -p 'nar_pick_marks_test.py'
+      - name: Evaluate saved frozen rankings against known results
+        run: |
+          python scripts/inspect_nar_history.py
+          python scripts/audit_nar_pick_marks.py --output nar-pick-marks-report.json
+      - name: Publish readable summary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("nar-pick-marks-report.json").read_text(encoding="utf-8"))
+          with open(__import__("os").environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as out:
+              out.write("# NAR確定予想・印別的中率\n\n")
+              out.write(f"保存済み: {report['frozen_forecasts']}件 / 結果確認済み: {report['settled_with_valid_result']}件 / 除外: {report['skipped_unsettled_or_invalid']}件\n\n")
+              out.write("| 印 | 対象 | 1着 | 3着内 | 1着率 | 3着内率 |\n|---|---:|---:|---:|---:|---:|\n")
+              for row in report["by_rank_mark"]:
+                  out.write(f"| {row['mark']} | {row['eligible']} | {row['wins']} | {row['top3']} | {row['win_rate_percent']} | {row['top3_rate_percent']} |\n")
+              out.write("\n※順位を印に対応させた事後検証。実際の購入実績・回収率ではありません。\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nar-pick-marks-report
+          path: nar-pick-marks-report.json
+          retention-days: 30
