@@ -1,0 +1,54 @@
+name: NAR rolling confidence evidence
+on:
+  schedule:
+    - cron: '43 20 * * 1'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/audit_nar_confidence_multimonth.py'
+      - 'scripts/audit_nar_confidence_wide.py'
+      - 'tests/nar_confidence_multimonth_test.py'
+      - '.github/workflows/nar-confidence-rolling.yml'
+permissions:
+  contents: read
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test confidence evidence and official reconciliation
+        run: |
+          python -m unittest discover -s tests -p 'nar_confidence_multimonth_test.py' -v
+          python -m unittest discover -s tests -p 'nar_confidence_wide_audit_test.py' -v
+      - name: Audit rolling three JST months
+        run: python scripts/audit_nar_confidence_multimonth.py --rolling-count 3 --output nar-confidence-rolling.json
+      - name: Publish evidence status
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=Path('nar-confidence-rolling.json')
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('## Rolling NAR confidence audit\n\n')
+              if not p.exists():
+                  f.write('Audit failed; no verified data.\n')
+              else:
+                  x=json.loads(p.read_text())
+                  f.write(f'Officially verified months: {x["verified_month_count"]}; multi-month: {x["multi_month_validated"]}\n\n')
+                  for month,v in x['months'].items():
+                      f.write(f'- {month}: {v["status"]}; eligible races: {v.get("paired_wide",{}).get("eligible_races",0)}\n')
+                  f.write('\nRead-only historical diagnostics; no wagering changes.\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nar-confidence-rolling-evidence
+          path: nar-confidence-rolling.json
+          if-no-files-found: warn
+          retention-days: 90
