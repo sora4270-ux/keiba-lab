@@ -183,7 +183,21 @@ async function run() {
     assert.equal(await page.locator('#nar-view-number').inputValue(),'all','reset race-number filter');
     assert.equal(await page.locator('#nar-view-date').inputValue(),'today','reset race date');
 
-    await page.locator('.mobile-dock [data-jump="jra"][data-display="results"]').click();
+    const jraDock = page.locator('.mobile-dock [data-jump="jra"][data-display="results"]');
+    const dockDiagnostic = await jraDock.evaluate(el=>{
+      const box=el.getBoundingClientRect(),dock=el.closest('.mobile-dock');
+      const center=[box.left+box.width/2,box.top+box.height/2];
+      const over=document.elementFromPoint(...center);
+      const style=getComputedStyle(dock);
+      return {box:{x:box.x,y:box.y,w:box.width,h:box.height},
+        center,over:over?.outerHTML?.slice(0,180),
+        dock:{position:style.position,zIndex:style.zIndex,display:style.display,
+          bottom:style.bottom,transform:style.transform},
+        viewport:{w:innerWidth,h:innerHeight,scrollY},
+        nearest:over?.closest?.('.mobile-dock')!==null};
+    });
+    console.log('Mobile dock hit-target diagnostics:',JSON.stringify(dockDiagnostic));
+    await jraDock.click();
     assert.equal(await page.locator('#jra-view-mode').inputValue(),'results','JRA result mode');
     assert.equal(await page.locator('.mobile-dock [data-jump="jra"][data-display="results"]').getAttribute('aria-current'),'page','JRA result active menu');
     await page.locator('[data-mode-select="jra-view-mode"] [data-mode="predictions"]').click();
