@@ -83,7 +83,7 @@ def analyze(records, race_date):
         if result is None or len(result) != 3:
             excluded["missing_or_invalid_result"] += 1
             continue
-        if ranking is None or len(ranking) < 5 or not set(result).issubset(ranking):
+        if ranking is None or len(ranking) < 5:
             excluded["missing_or_invalid_ranking"] += 1
             continue
         if not _prelock(record):
@@ -103,6 +103,9 @@ def analyze(records, race_date):
         if set(result).issubset(ranking[:5]):
             counted["podium_inside_top5"] += 1
             venues[venue]["podium_inside_top5"] += 1
+        if not set(result).issubset(ranking):
+            counted["podium_horse_outside_ranking"] += 1
+            venues[venue]["podium_horse_outside_ranking"] += 1
         if result[0] not in ranking[:5]:
             counted["winner_outside_top5"] += 1
         for field, scores, ordered in (
@@ -121,6 +124,7 @@ def analyze(records, race_date):
         "top2_both_in_podium": counted["top2_both_in_podium"],
         "podium_inside_top5": counted["podium_inside_top5"],
         "winner_outside_top5": counted["winner_outside_top5"],
+        "podium_horse_outside_ranking": counted["podium_horse_outside_ranking"],
         "trio": {k: trio[k] for k in ("hit", "candidate_missing", "combination_missing", "unrecorded")},
         "trifecta": {k: trifecta[k] for k in ("hit", "candidate_missing", "order_mismatch", "combination_missing", "unrecorded")},
         "venues": {k: dict(sorted(v.items())) for k, v in sorted(venues.items())},
@@ -129,6 +133,7 @@ def analyze(records, race_date):
             "Saved timestamps are consistency checks only, not independently authenticated pre-race proof.",
             "Ticket counts and returns are NOT inferred; no betting occurred in this audit.",
             "Results are excluded where dead heat, missing data, or T-15 consistency prevent fair evaluation.",
+            "A podium finisher absent from the frozen ranking is counted as a miss, never dropped from the denominator.",
         ],
     }
 
