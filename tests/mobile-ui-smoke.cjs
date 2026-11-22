@@ -208,6 +208,9 @@ async function run() {
         }).filter(x=>x.right>window.screen.width+30&&x.w>200).sort((a,b)=>b.w-a.w).slice(0,12),
         nearest:over?.closest?.('.mobile-dock')!==null};
     });
+    assert.ok(dockDiagnostic.viewport.scrollWidth <= dockDiagnostic.viewport.docWidth + 2,
+      'Mobile layouts must scroll wide payout tables inside .scroll rather than widening the entire page');
+    assert.ok(dockDiagnostic.nearest,'Mobile dock remains physically clickable above result tables');
     console.log('Mobile dock hit-target diagnostics:',JSON.stringify(dockDiagnostic));
     await jraDock.click();
     assert.equal(await page.locator('#jra-view-mode').inputValue(),'results','JRA result mode');
