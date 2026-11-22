@@ -50,6 +50,8 @@ jobs:
           PY
       - name: Independent official-payout same-cohort portfolio comparison
         run: python scripts/backtest_nar_stake_allocation.py --month 2026-11 --official-zip /tmp/nar-monthly-official.zip --output nar-stake-backtest.json
+      - name: Paired trio axis1 axis2 BOX5 official-payout comparison
+        run: python scripts/audit_nar_trio_strategies.py --official-zip /tmp/nar-monthly-official.zip --output nar-trio-strategy-audit.json
       - name: Paired confidence-wide BOX comparison with official payouts
         run: python scripts/audit_nar_confidence_wide.py --month 2026-11 --official-zip /tmp/nar-monthly-official.zip --output nar-confidence-wide-audit.json
       - name: Selective wide and grade-based allocation comparison
@@ -74,7 +76,7 @@ jobs:
           from pathlib import Path
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as f:
               f.write('# NAR comprehensive audit\n\n')
-              for name in ('nar-stake-backtest.json','nar-feature-availability.json','nar-confidence-wide-audit.json','nar-confidence-multimonth.json','nar-selective-wide.json','nar-strategy-matrix.json','nar-ev-staking-shadow.json','nar-ev-readiness.json','nar-ev-readiness-gates.json'):
+              for name in ('nar-stake-backtest.json','nar-trio-strategy-audit.json','nar-feature-availability.json','nar-confidence-wide-audit.json','nar-confidence-multimonth.json','nar-selective-wide.json','nar-strategy-matrix.json','nar-ev-staking-shadow.json','nar-ev-readiness.json','nar-ev-readiness-gates.json'):
                   path=Path(name)
                   if not path.exists():
                       f.write(f'- {name}: UNAVAILABLE (not proven)\n')
@@ -96,6 +98,11 @@ jobs:
                       for plan,values in x['plans'].items():
                           v=values['all']
                           f.write(f'  - {plan}: purchased {values["purchased_races"]}, stake ¥{v["stake_yen"]}, payout ¥{v["payout_yen"]}, ROI {v["roi_percent"]}%, net ¥{v["net_yen"]}, later ROI {values["later_dates"]["roi_percent"]}%\n')
+                  if name == 'nar-trio-strategy-audit.json':
+                      o=x['official_settlement']
+                      f.write(f'  - coverage {x["eligible_races"]}R; officially reconciled {o["verified_races"]}R; excluded {o["excluded"]}\\n')
+                      for method, v in o['per_strategy'].items():
+                          f.write(f'  - {method}: stake ¥{v["stake_yen"]}, paid ¥{v["payout_yen"]}, ROI {v["roi_percent"]}%\\n')
                   if name == 'nar-stake-backtest.json':
                       f.write(f'  - eligible: {x["eligible_races"]}; excluded: {x["excluded"]}\n')
                       for plan,values in x['plans'].items():
@@ -115,6 +122,7 @@ jobs:
           name: nar-comprehensive-audit
           path: |
             nar-stake-backtest.json
+            nar-trio-strategy-audit.json
             nar-feature-availability.json
             nar-confidence-wide-audit.json
             nar-confidence-multimonth.json
