@@ -193,7 +193,19 @@ async function run() {
         center,over:over?.outerHTML?.slice(0,180),
         dock:{position:style.position,zIndex:style.zIndex,display:style.display,
           bottom:style.bottom,transform:style.transform},
-        viewport:{w:innerWidth,h:innerHeight,scrollY},
+        viewport:{w:innerWidth,h:innerHeight,scrollY,
+          docWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth,
+          visual:window.visualViewport ? {w:visualViewport.width,h:visualViewport.height,scale:visualViewport.scale,
+            top:visualViewport.offsetTop,left:visualViewport.offsetLeft} : null,
+          screen:{w:screen.width,h:screen.height},
+          meta:document.querySelector('meta[name=viewport]')?.content,
+          active:document.activeElement?.outerHTML?.slice(0,140)},
+        overflowing:[...document.body.querySelectorAll('*')].map(el=>{
+           const b=el.getBoundingClientRect();
+           return {tag:el.tagName.toLowerCase(),id:el.id,cls:typeof el.className==='string'?el.className.slice(0,55):'',
+              x:Math.round(b.left),right:Math.round(b.right),w:Math.round(b.width),
+              scrollW:el.scrollWidth,clientW:el.clientWidth};
+        }).filter(x=>x.right>window.screen.width+30&&x.w>200).sort((a,b)=>b.w-a.w).slice(0,12),
         nearest:over?.closest?.('.mobile-dock')!==null};
     });
     console.log('Mobile dock hit-target diagnostics:',JSON.stringify(dockDiagnostic));
