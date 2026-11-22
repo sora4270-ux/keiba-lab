@@ -53,6 +53,31 @@ class DailyAxesTest(unittest.TestCase):
         self.assertEqual(x["excluded"]["missing_or_duplicate_id"], 1)
         self.assertEqual(x["trio"]["unrecorded"], 1)
 
+    def test_unranked_podium_horse_is_a_miss_not_excluded(self):
+        # Previous audit silently dropped exactly this kind of surprise result.
+        row = race("surprise", [1,2,3,4,5], [8,2,3],
+                   [[1,2,3]], [[1,2,3]])
+        frozen = copy.deepcopy(row)
+        x = analyze([row], "2026-11-22")
+        self.assertEqual(row, frozen)
+        self.assertEqual(x["settled_eligible"], 1)
+        self.assertEqual(x["excluded"], {})
+        self.assertEqual(x["top1_win"], 0)
+        self.assertEqual(x["podium_inside_top5"], 0)
+        self.assertEqual(x["winner_outside_top5"], 1)
+        self.assertEqual(x["podium_horse_outside_ranking"], 1)
+        self.assertEqual(x["trio"]["candidate_missing"], 1)
+        self.assertEqual(x["trifecta"]["candidate_missing"], 1)
+
+    def test_unranked_third_finisher_counts_as_axis_success_only(self):
+        row = race("third", [1,2,3,4,5], [1,2,8])
+        x = analyze([row], "2026-11-22")
+        self.assertEqual(x["settled_eligible"], 1)
+        self.assertEqual(x["top1_win"], 1)
+        self.assertEqual(x["top2_both_in_podium"], 1)
+        self.assertEqual(x["podium_inside_top5"], 0)
+        self.assertEqual(x["podium_horse_outside_ranking"], 1)
+
     def test_other_date_and_invalid_schema(self):
         r = race("x", [1,2,3,4,5], [1,2,3])
         self.assertEqual(analyze([r], "2026-11-21")["settled_eligible"], 0)
