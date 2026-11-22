@@ -1,0 +1,53 @@
+name: NAR daily fixed-axis retrospective (read only)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/audit_nar_daily_axes.py'
+      - 'tests/nar_daily_axes_test.py'
+      - '.github/workflows/nar-daily-axes.yml'
+  schedule:
+    # 00:25 JST next day; audit the fully completed previous JST date.
+    - cron: '25 15 * * *'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test retrospective logic
+        run: python -m unittest discover -s tests -p nar_daily_axes_test.py -v
+      - name: Audit today's or yesterday's settled frozen records
+        shell: bash
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [[ "$EVENT" == "schedule" ]]; then
+            day=$(TZ=Asia/Tokyo date -d yesterday +%F)
+          else
+            day=$(TZ=Asia/Tokyo date +%F)
+          fi
+          python scripts/audit_nar_daily_axes.py --date "$day" --output nar-daily-axes.json
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          x=json.loads(Path("nar-daily-axes.json").read_text(encoding="utf-8"))
+          n=x["settled_eligible"]
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a",encoding="utf-8") as f:
+              f.write(f'# NAR {x["date"]} 軸・買い目の振り返り\n\n')
+              f.write(f'保存 {x["races_on_date"]}R／集計可能 {n}R／除外 {x["excluded"]}\n\n')
+              for k in ("top1_win","top1_in_podium","top2_both_in_podium","podium_inside_top5","winner_outside_top5"):
+                  f.write(f'- {k}: {x[k]}/{n}R\n')
+              f.write(f'\n三連複: {x["trio"]}\n\n三連単: {x["trifecta"]}\n\n')
+              f.write('※保存済み記録による参考集計。実投票・実収支ではなく、予想の事前記録の独立証明でもありません。\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nar-daily-axes
+          path: nar-daily-axes.json
+          retention-days: 30
