@@ -97,6 +97,20 @@ function raceInsightHtml(record, source = 'NAR') {
     oddsSorted.map(x => '<tr><td>' + (x.popularity === null ? '—' : esc(x.popularity) + '人気') + '</td><td>' + esc(x.no) +
       ' ' + esc(x.name) + '</td><td>' + x.predictedRank + '位</td><td>' +
       esc(x.odd.toFixed(1)) + '倍' + (x.retained ? '（保存値）' : '') + '</td></tr>').join('') + '</tbody></table></details>' : '';
+  // Win probability and market popularity are NOT calibrated top-3 odds.
+  // Never treat a leading ranked pair as a guaranteed two-horse axis.
+  const placeBasis = runners.slice(0, 2).length === 2 &&
+    runners.slice(0, 2).every(h => typeof h.top3_probability === 'number' &&
+      Number.isFinite(h.top3_probability) && h.top3_probability >= 0 && h.top3_probability <= 1);
+  const overseasNeedsReview = source === 'JRA' && runners.some(h =>
+    h.foreign_trained === true && h.overseas_form_verified !== true);
+  const axisCaution = source === 'input' ? '' :
+    '<p class="pace-note"><b>軸固定の確認：</b>' + esc(
+      (placeBasis ? '3着内推定確率は参考値です。固定軸の校正・期待値は別途検証が必要です。' :
+        '保存データに軸候補の3着内確率がないため、勝率推定や人気順だけで2頭軸の安全性を判断できません。') +
+      (overseasNeedsReview ? ' 海外調教馬の実績が未検証のため、国内戦績不足を弱さとみなさず評価保留してください。' : '') +
+      ' 見送りも選択肢です。'
+    ) + '</p>';
   const savedAt = observedMarket?.updated_at ? new Date(observedMarket.updated_at).toLocaleString('ja-JP', {timeZone:'Asia/Tokyo'}) : '予想保存・入力時点';
   const label = source === 'NAR'
     ? ('地方競馬公式の単勝オッズ' + (observedMarket.snapshotOnly ? '（予想時点の保存値）' : '')) :
@@ -104,7 +118,7 @@ function raceInsightHtml(record, source = 'NAR') {
   return '<div class="race-intel"><div class="race-intel-head"><span>🏁 展開予想・単勝オッズ・人気順</span><span class="pace-tag">' +
     esc(pace) + '</span></div><p class="pace-note">' + esc(paceText + topGap) +
     '<small>脚質からの簡易判断。騎手の作戦や実際のペースを予測できるとは限りません。</small></p>' +
-    '<div class="intel-cols"><div class="intel-col"><h4>◎ 予想上位</h4>' + predicted +
+    axisCaution + '<div class="intel-cols"><div class="intel-col"><h4>◎ 予想上位</h4>' + predicted +
     '</div><div class="intel-col"><h4>★ 人気順</h4>' + popular + '</div></div>' + complete +
     '<div class="intel-foot">' + esc(label + ' ／ ' + savedAt) +
     '。オッズは変動します。保存済みの予想や買い目には反映しません。</div></div>';
