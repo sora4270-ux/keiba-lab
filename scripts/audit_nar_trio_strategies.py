@@ -8,6 +8,8 @@ import json
 from pathlib import Path
 
 from audit_nar_daily_axes import _horse_numbers, _prelock
+from backtest_nar_stake_allocation import official_market_index, official_settlement
+from update_nar import load_zip_tables
 
 STAKE_YEN = 1000
 
@@ -23,7 +25,7 @@ def strategies(ranking):
     }
 
 
-def analyze(records, date=None):
+def analyze(records, date=None, official_tables=None):
     if not isinstance(records, list):
         raise ValueError("races must be a list")
     exclusions = Counter()
@@ -31,6 +33,10 @@ def analyze(records, date=None):
     matched = 0
     seen = set()
     by_day = {}
+    market = official_market_index(official_tables) if official_tables is not None else None
+    paid = Counter()
+    payout_verified = 0
+    payout_excluded = Counter()
     for r in records:
         if not isinstance(r, dict) or (date and r.get("date") != date):
             continue
@@ -60,12 +66,21 @@ def analyze(records, date=None):
             exclusions["missing_date"] += 1
             continue
         matched += 1
+        official = None
+        if market is not None:
+            official, error = official_settlement(r, market)
+            if error:
+                payout_excluded[error] += 1
+            else:
+                payout_verified += 1
         if day not in by_day:
             by_day[day] = {"races": 0, "hits": {name: 0 for name in picks}}
         by_day[day]["races"] += 1
         for name, tickets in picks.items():
             if target in tickets:
                 hits[name] += 1
+                if official is not None:
+                    paid[name] += official["payouts"]["trio"] * (STAKE_YEN // len(tickets)) // 100
                 by_day[day]["hits"][name] += 1
     return {
         "date": date or "all",
@@ -84,12 +99,26 @@ def analyze(records, date=None):
             for name, count in (("axis1", 10), ("axis2", 5), ("box5", 10))
         },
         "by_day": dict(sorted(by_day.items())),
+        "official_settlement": {
+            "status": "official_payouts_reconciled_prelock_not_authenticated" if market is not None else "not_supplied",
+            "verified_races": payout_verified,
+            "excluded": dict(sorted(payout_excluded.items())),
+            "per_strategy": {
+                name: {
+                    "stake_yen": payout_verified * STAKE_YEN,
+                    "payout_yen": paid[name],
+                    "net_yen": paid[name] - payout_verified * STAKE_YEN,
+                    "roi_percent": round(paid[name] * 100 / (payout_verified * STAKE_YEN), 2) if payout_verified else None,
+                }
+                for name in ("axis1", "axis2", "box5")
+            },
+        },
         "notes": [
             "All methods use the same races and hypothetical 1000 yen each per race.",
             "Axis1: #1 fixed + 2 of ranks #2-#6 (10 tickets x 100 yen).",
             "Axis2: #1 and #2 fixed + 1 of ranks #3-#7 (5 tickets x 200 yen).",
             "Box5: ranks #1-#5 (10 tickets x 100 yen).",
-            "Hit rates are not return on investment. Official payout reconciliation is needed for ROI.",
+            "ROI is shown only on the common subset of races independently joined to official payout rows; never mix with the full hit-rate denominator.",
             "Frozen timestamps are consistency checks, not independent pre-race proof.",
             "No production betting policy, rankings, records, or real wagers are changed.",
         ],
@@ -100,12 +129,16 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--input", type=Path, default=Path("data/auto/nar_predictions.json"))
     p.add_argument("--date", default=None)
+    p.add_argument("--official-zip", type=Path, default=None)
     p.add_argument("--output", type=Path, default=Path("nar-trio-strategy-audit.json"))
     args = p.parse_args()
     if args.date and datetime.strptime(args.date, "%Y-%m-%d").strftime("%Y-%m-%d") != args.date:
         p.error("invalid date")
     raw = json.loads(args.input.read_text(encoding="utf-8"))
-    result = analyze(raw["races"], args.date)
+    tables = load_zip_tables(args.official_zip.read_bytes()) if args.official_zip else None
+    if tables is not None and "payback" not in tables:
+        p.error("Official ZIP is missing payback.csv")
+    result = analyze(raw["races"], args.date, tables)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, ensure_ascii=False))
