@@ -53,8 +53,8 @@ class TrioStrategiesTest(unittest.TestCase):
             if row["id"] == "verified":
                 return {"payouts": {"trio": 1500}}, None
             return None, "official_row_missing_or_dead_heat"
-        with patch("audit_nar_trio_strategies.official_market_index", return_value={}), \\
-             patch("audit_nar_trio_strategies.official_settlement", side_effect=settlement):
+        with (patch("audit_nar_trio_strategies.official_market_index", return_value={}),
+      patch("audit_nar_trio_strategies.official_settlement", side_effect=settlement)):
             out = analyze(rows, "2026-11-22", {"payback":[]})
         self.assertEqual(out["eligible_races"], 2)
         official = out["official_settlement"]
