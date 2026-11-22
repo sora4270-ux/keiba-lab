@@ -6,6 +6,8 @@ on:
     paths:
       - 'scripts/audit_nar_daily_axes.py'
       - 'tests/nar_daily_axes_test.py'
+      - 'scripts/audit_nar_trio_strategies.py'
+      - 'tests/nar_trio_strategies_test.py'
       - '.github/workflows/nar-daily-axes.yml'
   schedule:
     # 00:25 JST next day; audit the fully completed previous JST date.
@@ -22,6 +24,8 @@ jobs:
           python-version: '3.12'
       - name: Test retrospective logic
         run: python -m unittest discover -s tests -p nar_daily_axes_test.py -v
+      - name: Test paired trio strategy logic
+        run: python -m unittest discover -s tests -p nar_trio_strategies_test.py -v
       - name: Audit today's or yesterday's settled frozen records
         shell: bash
         env:
@@ -33,10 +37,12 @@ jobs:
             day=$(TZ=Asia/Tokyo date +%F)
           fi
           python scripts/audit_nar_daily_axes.py --date "$day" --output nar-daily-axes.json
+          python scripts/audit_nar_trio_strategies.py --date "$day" --output nar-trio-strategy-audit.json
           python - <<'PY'
           import json,os
           from pathlib import Path
           x=json.loads(Path("nar-daily-axes.json").read_text(encoding="utf-8"))
+          trio=json.loads(Path("nar-trio-strategy-audit.json").read_text(encoding="utf-8"))
           n=x["settled_eligible"]
           with open(os.environ["GITHUB_STEP_SUMMARY"],"a",encoding="utf-8") as f:
               f.write(f'# NAR {x["date"]} 軸・買い目の振り返り\n\n')
@@ -49,5 +55,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: nar-daily-axes
-          path: nar-daily-axes.json
+          path: |
+            nar-daily-axes.json
+            nar-trio-strategy-audit.json
           retention-days: 30
