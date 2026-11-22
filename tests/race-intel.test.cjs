@@ -102,4 +102,23 @@ assert.deepEqual([...parseJraOddsPaste('１番　２．６倍\n2,38.6',knownNumb
 assert.throws(()=>parseJraOddsPaste('4 2.6',knownNumbers),/保存済み出走馬/);
 assert.throws(()=>parseJraOddsPaste('1 2.6\n1 3.4',knownNumbers),/重複/);
 assert.throws(()=>parseJraOddsPaste('1 0.5',knownNumbers),/1\.0/);
+// Risk notices distinguish uncalibrated win probability from top-3 probability.
+assert.match(nar, /軸固定の確認/);
+assert.match(nar, /勝率推定や人気順だけで2頭軸/);
+const foreignUnverified = render({runners:[
+  {no:1,name:'海外馬',win_probability:.6,foreign_trained:true},
+  {no:2,name:'国内馬',win_probability:.4}
+]}, 'JRA');
+assert.match(foreignUnverified,/海外調教馬の実績が未検証/);
+const foreignVerified = render({runners:[
+  {no:1,name:'海外馬',win_probability:.6,foreign_trained:true,overseas_form_verified:true},
+  {no:2,name:'国内馬',win_probability:.4}
+]}, 'JRA');
+assert.doesNotMatch(foreignVerified,/海外調教馬の実績が未検証/);
+const calibrated = render({ranking:[
+  {no:1,name:'A',win_probability:.6,top3_probability:.8},
+  {no:2,name:'B',win_probability:.4,top3_probability:.7}
+]}, 'NAR');
+assert.match(calibrated,/固定軸の校正・期待値は別途検証/);
+
 console.log('PASS: race pace, predictions, win odds, market popularity and XSS');
