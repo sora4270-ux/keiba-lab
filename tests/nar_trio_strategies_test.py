@@ -1,6 +1,7 @@
 import copy
 import sys
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
@@ -45,6 +46,29 @@ class TrioStrategiesTest(unittest.TestCase):
         for item in out["strategies"].values():
             self.assertEqual(item["hypothetical_total_stake_yen"], 4000)
             self.assertEqual(item["tickets"] * item["yen_per_ticket"], 1000)
+
+    def test_official_roi_uses_only_verified_common_cohort(self):
+        rows = [race("verified", [1,2,3]), race("unverified", [1,2,3])]
+        def settlement(row, market):
+            if row["id"] == "verified":
+                return {"payouts": {"trio": 1500}}, None
+            return None, "official_row_missing_or_dead_heat"
+        with patch("audit_nar_trio_strategies.official_market_index", return_value={}), \\
+             patch("audit_nar_trio_strategies.official_settlement", side_effect=settlement):
+            out = analyze(rows, "2026-11-22", {"payback":[]})
+        self.assertEqual(out["eligible_races"], 2)
+        official = out["official_settlement"]
+        self.assertEqual(official["verified_races"], 1)
+        self.assertEqual(official["excluded"]["official_row_missing_or_dead_heat"], 1)
+        self.assertEqual(official["per_strategy"]["axis1"]["stake_yen"], 1000)
+        self.assertEqual(official["per_strategy"]["axis1"]["payout_yen"], 1500)
+        self.assertEqual(official["per_strategy"]["axis2"]["payout_yen"], 3000)
+        self.assertEqual(official["per_strategy"]["box5"]["roi_percent"], 150.0)
+
+    def test_no_official_zip_does_not_invent_roi(self):
+        out = analyze([race("a", [1,2,3])])
+        self.assertEqual(out["official_settlement"]["verified_races"], 0)
+        self.assertIsNone(out["official_settlement"]["per_strategy"]["axis1"]["roi_percent"])
 
     def test_exclusions(self):
         good = race("good",[1,2,3])
