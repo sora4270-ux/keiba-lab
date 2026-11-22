@@ -8,6 +8,7 @@ on:
       - 'tests/nar_daily_axes_test.py'
       - 'scripts/audit_nar_trio_strategies.py'
       - 'tests/nar_trio_strategies_test.py'
+      - 'scripts/backtest_nar_stake_allocation.py'
       - '.github/workflows/nar-daily-axes.yml'
   schedule:
     # 00:25 JST next day; audit the fully completed previous JST date.
