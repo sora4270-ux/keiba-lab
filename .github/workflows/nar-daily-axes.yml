@@ -41,7 +41,7 @@ jobs:
           with open(os.environ["GITHUB_STEP_SUMMARY"],"a",encoding="utf-8") as f:
               f.write(f'# NAR {x["date"]} 軸・買い目の振り返り\n\n')
               f.write(f'保存 {x["races_on_date"]}R／集計可能 {n}R／除外 {x["excluded"]}\n\n')
-              for k in ("top1_win","top1_in_podium","top2_both_in_podium","podium_inside_top5","winner_outside_top5"):
+              for k in ("top1_win","top1_in_podium","top2_both_in_podium","podium_inside_top5","winner_outside_top5","podium_horse_outside_ranking"):
                   f.write(f'- {k}: {x[k]}/{n}R\n')
               f.write(f'\n三連複: {x["trio"]}\n\n三連単: {x["trifecta"]}\n\n')
               f.write('※保存済み記録による参考集計。実投票・実収支ではなく、予想の事前記録の独立証明でもありません。\n')
