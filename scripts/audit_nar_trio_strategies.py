@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only, equal-budget trio strategy coverage audit. No payouts or wagers."""
+"""Read-only equal-budget trio comparison with optional official payout checks."""
 import argparse
 from collections import Counter
 from datetime import datetime, timedelta
@@ -100,7 +100,10 @@ def analyze(records, date=None, official_tables=None):
         },
         "by_day": dict(sorted(by_day.items())),
         "official_settlement": {
-            "status": "official_payouts_reconciled_prelock_not_authenticated" if market is not None else "not_supplied",
+            "status": ("not_supplied" if market is None else
+                       "official_payouts_unavailable" if not payout_verified else
+                       "official_payouts_partially_reconciled_prelock_not_authenticated" if payout_verified < matched else
+                       "official_payouts_reconciled_prelock_not_authenticated"),
             "verified_races": payout_verified,
             "excluded": dict(sorted(payout_excluded.items())),
             "per_strategy": {

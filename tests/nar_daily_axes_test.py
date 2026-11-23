@@ -78,6 +78,23 @@ class DailyAxesTest(unittest.TestCase):
         self.assertEqual(x["podium_inside_top5"], 0)
         self.assertEqual(x["podium_horse_outside_ranking"], 1)
 
+    def test_venue_misses_and_banei_are_separate_and_reconcile(self):
+        rows = [race("flat", [1,2,3,4,5,6], [1,2,3], [[1,2,3]], [[1,3,2]]),
+                {**race("banei", [1,2,3,4,5,6], [6,2,3], [[1,2,3]], [[1,2,3]]),
+                 "venue": "帯広ば"}]
+        before = copy.deepcopy(rows)
+        x = analyze(rows, "2026-11-22")
+        self.assertEqual(rows, before)
+        self.assertEqual(x["disciplines"]["flat"]["trifecta_order_mismatch"], 1)
+        self.assertEqual(x["disciplines"]["banei"]["trio_candidate_missing"], 1)
+        self.assertEqual(x["venues"]["帯広ば"]["winner_outside_top5"], 1)
+        self.assertEqual(len(x["race_details"]), x["settled_eligible"])
+        self.assertEqual(sum(v["settled"] for v in x["disciplines"].values()), x["settled_eligible"])
+        for kind in ("trio", "trifecta"):
+            for reason, count in x[kind].items():
+                self.assertEqual(sum(v.get(f"{kind}_{reason}", 0) for v in x["venues"].values()), count)
+                self.assertEqual(sum(d[kind] == reason for d in x["race_details"]), count)
+
     def test_other_date_and_invalid_schema(self):
         r = race("x", [1,2,3,4,5], [1,2,3])
         self.assertEqual(analyze([r], "2026-11-21")["settled_eligible"], 0)

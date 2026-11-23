@@ -66,6 +66,8 @@ def analyze(records, race_date):
     venues = defaultdict(Counter)
     seen = set()
     examined = 0
+    race_details = []
+    disciplines = defaultdict(Counter)
     for record in records:
         if not isinstance(record, dict) or record.get("date") != race_date:
             continue
@@ -90,6 +92,31 @@ def analyze(records, race_date):
             excluded["prelock_not_verifiable"] += 1
             continue
         venue = str(record.get("venue") or "不明")
+        discipline = "banei" if venue == "帯広ば" else "flat"
+        diagnostics = {
+            "top1_win": ranking[0] == result[0],
+            "top1_in_podium": ranking[0] in result,
+            "top2_both_in_podium": set(ranking[:2]).issubset(result),
+            "podium_inside_top5": set(result).issubset(ranking[:5]),
+            "winner_outside_top5": result[0] not in ranking[:5],
+            "podium_horse_outside_ranking": not set(result).issubset(ranking),
+        }
+        ticket_diagnostics = {
+            "trio": _ticket_result(record, "trio_tickets", result, False),
+            "trifecta": _ticket_result(record, "tickets", result, True),
+        }
+        race_details.append({"id": race_id, "venue": venue, "discipline": discipline,
+                             "ranking": ranking, "result": result,
+                             **diagnostics, **ticket_diagnostics})
+        disciplines[discipline]["settled"] += 1
+        for metric, success in diagnostics.items():
+            disciplines[discipline][metric] += int(success)
+        for kind, reason in ticket_diagnostics.items():
+            venues[venue][f"{kind}_{reason}"] += 1
+            disciplines[discipline][f"{kind}_{reason}"] += 1
+        # Existing venue counters below already cover the other metrics.
+        venues[venue]["top1_in_podium"] += int(diagnostics["top1_in_podium"])
+        venues[venue]["winner_outside_top5"] += int(diagnostics["winner_outside_top5"])
         counted["settled"] += 1
         venues[venue]["settled"] += 1
         if ranking[0] == result[0]:
@@ -128,6 +155,8 @@ def analyze(records, race_date):
         "trio": {k: trio[k] for k in ("hit", "candidate_missing", "combination_missing", "unrecorded")},
         "trifecta": {k: trifecta[k] for k in ("hit", "candidate_missing", "order_mismatch", "combination_missing", "unrecorded")},
         "venues": {k: dict(sorted(v.items())) for k, v in sorted(venues.items())},
+        "disciplines": {k: dict(sorted(v.items())) for k, v in sorted(disciplines.items())},
+        "race_details": race_details,
         "notes": [
             "Historical top-2 podium inclusion is NOT evidence of future 2-axis profitability.",
             "Saved timestamps are consistency checks only, not independently authenticated pre-race proof.",

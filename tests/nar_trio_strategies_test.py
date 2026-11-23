@@ -58,6 +58,7 @@ class TrioStrategiesTest(unittest.TestCase):
             out = analyze(rows, "2026-11-22", {"payback":[]})
         self.assertEqual(out["eligible_races"], 2)
         official = out["official_settlement"]
+        self.assertEqual(official["status"], "official_payouts_partially_reconciled_prelock_not_authenticated")
         self.assertEqual(official["verified_races"], 1)
         self.assertEqual(official["excluded"]["official_row_missing_or_dead_heat"], 1)
         self.assertEqual(official["per_strategy"]["axis1"]["stake_yen"], 1000)
@@ -69,6 +70,21 @@ class TrioStrategiesTest(unittest.TestCase):
         out = analyze([race("a", [1,2,3])])
         self.assertEqual(out["official_settlement"]["verified_races"], 0)
         self.assertIsNone(out["official_settlement"]["per_strategy"]["axis1"]["roi_percent"])
+
+    def test_supplied_archive_without_matching_day_is_unavailable(self):
+        out = analyze([race("today", [1,2,3])], official_tables={"payback": []})
+        official = out["official_settlement"]
+        self.assertEqual(official["status"], "official_payouts_unavailable")
+        self.assertEqual(official["verified_races"], 0)
+        self.assertIsNone(official["per_strategy"]["box5"]["roi_percent"])
+
+    def test_complete_official_cohort_status(self):
+        with (patch("audit_nar_trio_strategies.official_market_index", return_value={}),
+              patch("audit_nar_trio_strategies.official_settlement",
+                    return_value=({"payouts": {"trio": 1500}}, None))):
+            out = analyze([race("verified", [1,2,3])], official_tables={"payback": []})
+        self.assertEqual(out["official_settlement"]["status"],
+                         "official_payouts_reconciled_prelock_not_authenticated")
 
     def test_exclusions(self):
         good = race("good",[1,2,3])

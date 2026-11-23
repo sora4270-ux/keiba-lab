@@ -50,6 +50,11 @@ jobs:
               f.write(f'保存 {x["races_on_date"]}R／集計可能 {n}R／除外 {x["excluded"]}\n\n')
               for k in ("top1_win","top1_in_podium","top2_both_in_podium","podium_inside_top5","winner_outside_top5","podium_horse_outside_ranking"):
                   f.write(f'- {k}: {x[k]}/{n}R\n')
+              f.write('\n|競馬場|対象|◎3着内|三連複的中|三連単的中|\n|---|---:|---:|---:|---:|\n')
+              for venue,v in x["venues"].items():
+                  f.write(f'|{venue}|{v["settled"]}|{v.get("top1_in_podium",0)}|{v.get("trio_hit",0)}|{v.get("trifecta_hit",0)}|\n')
+              f.write(f'\n平地・ばんえい別: {x["disciplines"]}\n')
+              f.write('\nレース別の候補不足・組合せ漏れ・着順違いはJSONのrace_detailsを参照。\n')
               f.write(f'\n三連複: {x["trio"]}\n\n三連単: {x["trifecta"]}\n\n')
               f.write('※保存済み記録による参考集計。実投票・実収支ではなく、予想の事前記録の独立証明でもありません。\n')
           PY
