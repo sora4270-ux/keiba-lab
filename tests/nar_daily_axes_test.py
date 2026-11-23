@@ -95,6 +95,33 @@ class DailyAxesTest(unittest.TestCase):
                 self.assertEqual(sum(v.get(f"{kind}_{reason}", 0) for v in x["venues"].values()), count)
                 self.assertEqual(sum(d[kind] == reason for d in x["race_details"]), count)
 
+    def test_daily_winner_rank_distribution_and_review(self):
+        surprising = race("surprise", [1,2,3,4,5,6], [8,2,3],
+                          [[1,2,3]], [[1,2,3]])
+        sixth = race("sixth", [1,2,3,4,5,6], [6,2,3],
+                     [[1,2,3]], [[1,2,3]])
+        normal = race("normal", [1,2,3,4,5,6], [1,2,3],
+                      [[1,2,3]], [[1,2,3]])
+        normal["finish_order"] = [{"no": 1},{"no": 2},{"no": 3}]
+        x = analyze([surprising, sixth, normal], "2026-11-22")
+        self.assertEqual(x["winner_predicted_rank_distribution"],
+                         {"1": 1, "6plus": 1, "not_in_ranking": 1})
+        self.assertEqual(x["finish_order_quality_flags"]["ranked_horses_absent_from_finish_order"], 1)
+        reviews = {item["id"]: item for item in x["race_reviews"]}
+        self.assertEqual(reviews["surprise"]["winner_predicted_rank"], None)
+        self.assertEqual(reviews["sixth"]["winner_predicted_rank"], 6)
+        self.assertEqual(reviews["surprise"]["trio_reason"], "candidate_missing")
+        self.assertEqual(reviews["normal"]["ranked_horses_absent_from_finish_order"], [4,5,6])
+
+    def test_duplicate_frozen_tickets_cannot_be_reported_as_hits(self):
+        row = race("duplicate", [1,2,3,4,5],
+                   [1,2,3], [[1,2,3],[3,2,1]], [[1,2,3],[1,2,3]])
+        x = analyze([row], "2026-11-22")
+        self.assertEqual(x["settled_eligible"], 1)
+        self.assertEqual(x["trio"]["unrecorded"], 1)
+        self.assertEqual(x["trifecta"]["unrecorded"], 1)
+        self.assertEqual(x["race_reviews"][0]["trio_reason"], "unrecorded")
+
     def test_other_date_and_invalid_schema(self):
         r = race("x", [1,2,3,4,5], [1,2,3])
         self.assertEqual(analyze([r], "2026-11-21")["settled_eligible"], 0)
