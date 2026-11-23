@@ -56,6 +56,11 @@ jobs:
               f.write(f'\n平地・ばんえい別: {x["disciplines"]}\n')
               f.write('\nレース別の候補不足・組合せ漏れ・着順違いはJSONのrace_detailsを参照。\n')
               f.write(f'\n三連複: {x["trio"]}\n\n三連単: {x["trifecta"]}\n\n')
+              f.write(f'\n勝ち馬の予想順位分布: {x.get("winner_predicted_rank_distribution", {})}\n')
+              f.write(f'出走情報の要確認: {x.get("finish_order_quality_flags", {})}\n')
+              f.write('\n## 要見直しレース（最大30件）\n')
+              for row in x.get("race_reviews", [])[:30]:
+                  f.write(f'- {row["venue"]} {row["race_no"]}R: 勝ち馬の予想順位 {row["winner_predicted_rank"] or "対象外"}、三連複 {row["trio_reason"]}、三連単 {row["trifecta_reason"]}、着順原本の要確認馬番 {row["ranked_horses_absent_from_finish_order"]}\n')
               f.write('※保存済み記録による参考集計。実投票・実収支ではなく、予想の事前記録の独立証明でもありません。\n')
           PY
       - uses: actions/upload-artifact@v4
