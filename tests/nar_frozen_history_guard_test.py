@@ -54,6 +54,12 @@ class FrozenHistoryGuardTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "frozen market_at_lock"):
             verify_history_preserved(old, new)
 
+    def test_frozen_entry_context_change_rejected(self):
+        old = {"races":[{"id":"race","entry_context_at_lock":{"track_condition":"良"}}]}
+        new = {"races":[{"id":"race","entry_context_at_lock":{"track_condition":"重"}}]}
+        with self.assertRaisesRegex(RuntimeError,"frozen entry_context_at_lock"):
+            verify_history_preserved(old,new)
+
     def test_mutable_display_market_allowed(self):
         old = {"races": [{"id": "race", "market": {"horses": []}}]}
         new = {"races": [{"id": "race", "market": {"horses": [{"no": 1}]}}]}

@@ -146,7 +146,12 @@ def parse_races(tables):
         start = parse_start(key[1], cell(row, fields, "発走時刻", idx=3))
         if start is None:
             continue
-        race_info[key] = {"start": start, "name": f"{key[0]} {key[2]}R"}
+        race_info[key] = {"start": start, "name": f"{key[0]} {key[2]}R",
+                          "entry_context": {
+                              "distance_m": as_int(cell(row, fields, "距離", idx=23)),
+                              "weather": cell(row, fields, "天候", idx=24),
+                              "track_condition": cell(row, fields, "馬場", "馬場状態", idx=25),
+                          }}
     for item in tables["horselist"]:
         key = row_key(item, TRACK_FIELDS)
         if key is None:
@@ -165,6 +170,7 @@ def parse_races(tables):
             "venue": stats(cell(row, fields, "当競馬場成績", idx=27)),
             "distance": stats(cell(row, fields, "うち当距離成績", idx=28)),
             "jockey": stats(cell(row, fields, "騎手成績", idx=17)),
+            "entry_weight_text": cell(row, fields, "負担重量", idx=16),
             "rank": as_int(cell(row, fields, "着順", idx=31))
         }
         horse_rows.setdefault(key, []).append(horse)
@@ -178,7 +184,8 @@ def parse_races(tables):
             "id": f"nar-{key[1]}-{key[0]}-{key[2]:02d}",
             "date": f"{key[1][:4]}-{key[1][4:6]}-{key[1][6:]}",
             "venue": key[0], "race_no": key[2], "name": meta["name"],
-            "start": meta["start"], "horses": horses
+            "start": meta["start"], "horses": horses,
+            "entry_context": meta["entry_context"]
         })
     return sorted(out, key=lambda r: (r["start"], r["venue"]))
 
@@ -325,6 +332,55 @@ def learn_parameters(records, now):
     podium = calibration_for_podium([r for r in records if not r.get("result_alternatives")], now, alpha)
     return {"form_alpha": alpha, "market_weight": weight, **podium,
             "form_training_races": n, "market_training_races": len(prelock)}
+
+
+def prelock_context(race, predicted_at):
+    """Capture only observed entry metadata; do not consume results or alter scores."""
+    observed = race.get("entry_observed_at")
+    start = race.get("start")
+    if not isinstance(observed, dt.datetime) or not isinstance(start, dt.datetime):
+        return None
+    if any(x.tzinfo is None for x in (observed, start, predicted_at)):
+        return None
+    if not observed <= predicted_at < start - FORECAST_LOCK_BEFORE_START:
+        return None
+    if observed.astimezone(JST).date().isoformat() != race.get("date"):
+        return None
+    if any(h.get("rank") for h in race["horses"]):
+        return None
+    entry = race.get("entry_context") or {}
+    banei = is_banei_venue(race.get("venue", ""))
+    condition = str(entry.get("track_condition") or "").strip()
+    if banei:
+        try:
+            moisture = float(condition.rstrip("%"))
+            moisture = moisture if math.isfinite(moisture) and 0 <= moisture <= 100 else None
+        except (ValueError, TypeError):
+            moisture = None
+        condition = None
+    else:
+        moisture = None
+        condition = condition if condition in ("良","稍重","重","不良") else None
+    distance = entry.get("distance_m")
+    distance = distance if type(distance) is int and 100 <= distance <= 5000 else None
+    weather = str(entry.get("weather") or "").strip()
+    weather = weather if weather in ("晴","曇","雨","小雨","雪","小雪","霧") else None
+    lo, hi = (300,1200) if banei else (35,80)
+    rows = []
+    for h in race["horses"]:
+        try:
+            value = float(h.get("entry_weight_text"))
+            value = value if math.isfinite(value) and lo <= value <= hi else None
+        except (ValueError, TypeError):
+            value = None
+        rows.append({"no":h["no"],"weight_kg":value})
+    return {"version":"entry_context_v1","source":"NAR daily entry CSV",
+            "observed_at":observed.isoformat(timespec="seconds"),
+            "discipline":"banei" if banei else "flat",
+            "distance_m":distance,"weather":weather,"track_condition":condition,
+            "banei_moisture_percent":moisture,
+            "weight_kind":"loading" if banei else "carried","horses":rows,
+            "role":"diagnostic_only_not_used_in_ranking"}
 
 
 def observed_feature_shadow(race):
@@ -492,6 +548,9 @@ def forecast(race, timestamp, market=None, calibration=None, trio_market=None, m
                              "market_only_baseline": bool(banei and market_p)},
         "result": None, "settled_at": None, "hits": None
     }
+    context = prelock_context(race, timestamp)
+    if context is not None:
+        output["entry_context_at_lock"] = context
     if field_trios:
         output["trio_box_tickets"] = trio_box
     if previous_trios:
@@ -1210,7 +1269,7 @@ def verify_history_preserved(previous, updated):
         "tickets", "trio_tickets", "trio_box_tickets",
         "trio_uncalibrated_tickets", "trifecta_diversified_tickets",
         "trifecta_plan", "trio_value", "strategy_v5", "recent_trio",
-        "market_at_lock",
+        "market_at_lock", "entry_context_at_lock",
     )
     for row in before:
         current = updated_by_id[row["id"]]
@@ -1243,10 +1302,13 @@ def main():
     # Capture the clock AFTER network fetches, so a slow ZIP download cannot
     # produce forecasts timestamped before the T-15 cutoff retroactively.
     source_bytes = fetch_daily_zip()
+    entry_observed_at = dt.datetime.now(JST)
     tables = load_zip_tables(source_bytes)
     races = parse_races(tables)
     if not races:
         raise RuntimeError("有効なレースがありません。CSV形式か配信状況を確認してください")
+    for race in races:
+        race["entry_observed_at"] = entry_observed_at
     observed = dt.datetime.now(JST)
     today = observed.date().isoformat()
     vintage = (observed - dt.timedelta(hours=3)).date().isoformat()

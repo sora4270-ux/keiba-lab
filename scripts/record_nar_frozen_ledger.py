@@ -14,7 +14,7 @@ from pathlib import Path
 FORECAST = Path("data/auto/nar_predictions.json")
 LEDGER = Path("data/auto/nar_frozen_ledger.json")
 FROZEN = ("id","date","venue","race_no","start_at","cutoff_at","locked_at",
-          "predicted_at","ranking","tickets","market_at_lock","strategy_v5")
+          "predicted_at","ranking","tickets","market_at_lock","strategy_v5","entry_context_at_lock")
 
 
 def digest(record):

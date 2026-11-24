@@ -2,7 +2,9 @@ import sys
 import unittest
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from update_nar import observed_feature_shadow
+from update_nar import observed_feature_shadow, prelock_context
+import datetime as dt
+from zoneinfo import ZoneInfo
 
 class ObservedFeatureValidationTests(unittest.TestCase):
     def test_available_pre_race_fields_only(self):
@@ -26,6 +28,28 @@ class ObservedFeatureValidationTests(unittest.TestCase):
         race["horses"][0]["rank"]=3
         race["horses"][2]["rank"]=1
         self.assertEqual(first,observed_feature_shadow(race))
+
+    def test_prelock_context_only_before_cutoff_and_without_result(self):
+        jst=ZoneInfo("Asia/Tokyo")
+        start=dt.datetime(2026,11,25,12,tzinfo=jst)
+        race={"date":"2026-11-25","venue":"浦和","start":start,
+              "entry_observed_at":start-dt.timedelta(minutes=30),
+              "entry_context":{"distance_m":1400,"track_condition":"良","weather":"晴"},
+              "horses":[{"no":1,"entry_weight_text":"56.5","rank":None},
+                        {"no":2,"entry_weight_text":"650","rank":None}]}
+        p=prelock_context(race,start-dt.timedelta(minutes=20))
+        self.assertEqual(p["horses"],[{"no":1,"weight_kg":56.5},{"no":2,"weight_kg":None}])
+        self.assertEqual(p["track_condition"],"良")
+        self.assertIsNone(prelock_context(race,start-dt.timedelta(minutes=15)))
+        race["horses"][0]["rank"]=1
+        self.assertIsNone(prelock_context(race,start-dt.timedelta(minutes=20)))
+        race["horses"][0]["rank"]=None
+        race["venue"]="帯広ば"
+        race["entry_context"]["track_condition"]="2.5"
+        p=prelock_context(race,start-dt.timedelta(minutes=20))
+        self.assertEqual(p["weight_kind"],"loading")
+        self.assertEqual(p["banei_moisture_percent"],2.5)
+        self.assertEqual(p["horses"][1]["weight_kg"],650)
 
     def test_insufficient_coverage(self):
         race={"horses":[{"no":1},{"no":2}]}
