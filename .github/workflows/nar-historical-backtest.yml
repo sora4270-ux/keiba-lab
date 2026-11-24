@@ -1,6 +1,12 @@
 name: NAR historical feature backtest
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/backtest_nar_features.py'
+      - 'tests/nar_historical_backtest_test.py'
+      - '.github/workflows/nar-historical-backtest.yml'
   schedule:
     - cron: '30 16 * * *'
 permissions:
