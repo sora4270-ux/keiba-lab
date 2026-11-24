@@ -70,6 +70,8 @@ jobs:
         run: python scripts/audit_nar_feature_availability.py --zip /tmp/nar-monthly-official.zip --output nar-feature-availability.json
       - name: Prior-run early-position coverage audit
         run: python scripts/audit_nar_prior_positions.py --zip /tmp/nar-monthly-official.zip --target-month 2026-11 --fetch-prior-months --output nar-prior-position-audit.json
+      - name: Bounded official jockey profile link probe
+        run: python scripts/audit_nar_jockey_links.py --zip /tmp/nar-monthly-official.zip
       - name: Add auditable summary
         if: always()
         run: |
@@ -127,6 +129,7 @@ jobs:
             nar-trio-strategy-audit.json
             nar-feature-availability.json
             nar-prior-position-audit.json
+            nar-jockey-link-probe.json
             nar-confidence-wide-audit.json
             nar-confidence-multimonth.json
             nar-selective-wide.json
