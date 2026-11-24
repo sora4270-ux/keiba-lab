@@ -1,0 +1,38 @@
+name: NAR official daily data reconciliation
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/audit_nar_official_daily.py'
+      - 'tests/nar_official_daily_test.py'
+      - '.github/workflows/nar-official-daily.yml'
+  schedule:
+    # 03:15 JST: after the official monthly archive refresh.
+    - cron: '15 18 * * *'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s tests -p nar_official_daily_test.py -v
+      - name: Reconcile official data
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [[ "$EVENT" == "schedule" ]]; then
+            day=$(TZ=Asia/Tokyo date -d yesterday +%F)
+          else
+            day=$(TZ=Asia/Tokyo date +%F)
+          fi
+          python scripts/audit_nar_official_daily.py --date "$day"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nar-official-daily
+          path: nar-official-daily.json
+          retention-days: 30
