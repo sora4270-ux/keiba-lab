@@ -14,6 +14,7 @@ import unicodedata
 from recent_form import corner_positions, horse_key
 from update_nar import row_key, load_zip_tables, as_int, BASE_URL, fetch_daily_zip
 from urllib.parse import urlencode
+from audit_nar_context_history import context_audit
 
 UNKNOWN = "insufficient_history"
 
@@ -173,6 +174,7 @@ def main():
         merged, coverage = merge_months(archives)
         report = audit(merged,a.target_month)
         report["archive_coverage"] = coverage
+        report["context_history"] = context_audit(merged,a.target_month)
         report["required_months"] = months
         report["missing_months"] = [m for m in months if not all(coverage.get(m,{}).get(k,0)>0 for k in ("racelist","horselist"))]
         report["archive_errors"] = errors

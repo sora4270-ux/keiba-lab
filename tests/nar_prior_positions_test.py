@@ -4,7 +4,28 @@ from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"scripts"))
 from audit_nar_prior_positions import early_corner, prior_summary, audit, required_months, merge_months
 
+from audit_nar_context_history import context_audit
+
 class PriorPositionTests(unittest.TestCase):
+    def test_context_history_prior_only_and_stable_jockey(self):
+        races=[]; horses=[]
+        for d in ("20261001","20261101","20261102","20261103"):
+            b={"競馬場":"浦和","競走年月日":d,"レース番号":"1"}
+            raw=["浦和",d,"1","","","1"]
+            races.append((raw,{**b,"距離":"1400","馬場":"良"}))
+            horses.append((raw,{**b,"馬名":"テスト","生年月日":"20210101","馬番":"1",
+                                "着順":"1","騎手コード":"123"}))
+        x=context_audit({"racelist":races,"horselist":horses},"2026-11")["coverage"]
+        self.assertEqual(x["target_entries"],3)
+        self.assertEqual(x["exact_distance_with_history"],3)
+        self.assertEqual(x["same_ground_with_3plus"],1)
+        self.assertEqual(x["jockey_venue_with_3plus"],1)
+        for _,f in horses:
+            f.pop("騎手コード")
+        x=context_audit({"racelist":races,"horselist":horses},"2026-11")["coverage"]
+        self.assertEqual(x["target_jockey_id_known"],0)
+        self.assertEqual(x["same_jockey_with_history"],0)
+
     def test_required_months_and_no_overlapping_rows(self):
         self.assertEqual(required_months("2026-11"),["2026-11","2026-10","2026-09","2026-08"])
         raw=["浦和","20261101","1","","","1"]
