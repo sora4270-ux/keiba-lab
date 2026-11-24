@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/audit_nar_official_daily.py'
+      - 'scripts/nar_official_status.py'
       - 'tests/nar_official_daily_test.py'
       - '.github/workflows/nar-official-daily.yml'
   schedule:

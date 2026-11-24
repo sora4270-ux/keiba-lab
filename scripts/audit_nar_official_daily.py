@@ -12,12 +12,13 @@ from update_nar import BASE_URL, fetch_daily_zip, load_zip_tables, row_key, cell
 from audit_nar_daily_axes import analyze as daily_axes
 from audit_nar_confidence_wide import grade_from_frozen
 from backtest_nar_stake_allocation import official_market_index, official_settlement
+from nar_official_status import OfficialStatusLookup
 
 STATUS = {"取消":"withdrawn", "出走取消":"withdrawn", "除外":"excluded",
           "競走除外":"excluded", "中止":"did_not_finish", "競走中止":"did_not_finish"}
 
 
-def summarize(records, tables, day):
+def summarize(records, tables, day, lookup=None):
     audit = daily_axes(records, day)
     eligible = {r["id"]: r for r in audit["race_details"]}
     races = defaultdict(list)
@@ -73,8 +74,20 @@ def summarize(records, tables, day):
                 rank = as_int(values[0])
                 label = STATUS.get(values[0], "finished" if rank and rank > 0 else "unknown")
             statuses[str(no)] = label
-            status_counts[label] += 1
+        wanted = {int(n) for n, v in statuses.items() if v in ("unknown", "missing_or_duplicate")}
+        if wanted and lookup is not None:
+            evidence, lookup_status = lookup(key[0], day, key[2], wanted)
+            detail["status_lookup"] = lookup_status
+            detail["status_evidence"] = {}
+            for n, item in evidence.items():
+                if n in wanted and item.get("status") in STATUS.values():
+                    statuses[str(n)] = item["status"]
+                    detail["status_evidence"][str(n)] = item
+            coverage["lookup_" + lookup_status] += 1
+        status_counts.update(statuses.values())
         detail["official_runner_status"] = statuses
+        detail["unresolved_runner_numbers"] = [int(n) for n,v in statuses.items()
+                                                if v in ("unknown","missing_or_duplicate")]
         # These labels are not actual tickets or a verified refund ledger.
         detail["refund_review_required"] = any(x in ("withdrawn", "excluded", "unknown", "missing_or_duplicate") for x in statuses.values())
         if detail["refund_review_required"]:
@@ -96,7 +109,7 @@ def summarize(records, tables, day):
             "venue_ground":[{"venue":v,"ground":g,**dict(c)} for (v,g),c in sorted(groups.items())],
             "confidence":{g:dict(c) for g,c in sorted(confidence.items())},
             "race_details":details,
-            "notes":["Only exact explicit CSV status text is interpreted; missing or numeric zero is unknown.",
+            "notes":["Only explicit CSV or official result-page status text is interpreted; missing or numeric zero remains unknown unless corroborated.",
                      "Condition is the official result-time condition, not proven pre-race availability.",
                      "No real wagers, refund amounts, or ROI are inferred. Confidence is reconstructed from frozen data."]}
 
@@ -113,7 +126,8 @@ def main():
     url = BASE_URL if day == today else BASE_URL.split("?")[0] + "?" + urlencode(
         {"type":"monthly","k_year":day.year,"k_month":f"{day.month:02d}"})
     tables = load_zip_tables(a.official_zip.read_bytes() if a.official_zip else fetch_daily_zip(url))
-    report = summarize(json.loads(a.input.read_text(encoding="utf-8"))["races"], tables, a.date)
+    report = summarize(json.loads(a.input.read_text(encoding="utf-8"))["races"], tables, a.date,
+                       None if a.official_zip else OfficialStatusLookup())
     report["source"] = "supplied_zip" if a.official_zip else url
     a.output.write_text(json.dumps(report, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
     print(json.dumps({k:v for k,v in report.items() if k != "race_details"}, ensure_ascii=False))

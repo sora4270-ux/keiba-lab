@@ -4,8 +4,21 @@ from pathlib import Path
 from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from audit_nar_official_daily import summarize
+from nar_official_status import parse_statuses
 
 class OfficialDailyTest(unittest.TestCase):
+    def test_official_result_rows_only(self):
+        html = """<table><tr><td>取消</td><td>1</td><td>8</td><td>無関係</td></tr></table>
+        <table><tr><th>着順</th><th>枠番</th><th>馬番</th><th>馬名</th></tr>
+        <tr><td>取消</td><td>1</td><td>８</td><td>馬A</td></tr>
+        <tr><td>除外</td><td>1</td><td>9</td><td>馬B</td></tr>
+        <tr><td></td><td>1</td><td>10</td><td>馬C</td><td>中止</td></tr>
+        <tr><td>1</td><td>2</td><td>11</td><td>馬D</td><td>中止</td></tr>
+        <tr><td>取消</td><td>2</td><td>12</td><td>馬E</td></tr></table>"""
+        self.assertEqual(parse_statuses(html,{8,9,10,11}),
+                         {8:"withdrawn",9:"excluded",10:"did_not_finish"})
+        self.assertEqual(parse_statuses("<p>取消 8</p>",{8}),{})
+
     def test_explicit_status_and_unknown_are_distinguished(self):
         r={"id":"r","venue":"浦和","race_no":1,"date":"2026-11-24",
            "start_at":"2026-11-24T20:00:00+09:00","cutoff_at":"2026-11-24T19:45:00+09:00",
@@ -27,6 +40,10 @@ class OfficialDailyTest(unittest.TestCase):
         self.assertEqual(x["runner_status_counts"],{"finished":3,"withdrawn":1,"did_not_finish":1,"unknown":1})
         self.assertTrue(x["race_details"][0]["refund_review_required"])
         self.assertEqual(x["venue_ground"][0]["top1_win"],1)
+        z=summarize([r],tables,"2026-11-24",
+                    lookup=lambda *args: ({6:{"status":"excluded","source":"https://www.keiba.go.jp/test"}}, "matched"))
+        self.assertEqual(z["race_details"][0]["official_runner_status"]["6"],"excluded")
+        self.assertEqual(z["race_details"][0]["unresolved_runner_numbers"],[])
         y=summarize([r],tables,"2026-11-24")
         self.assertEqual(y["venue_ground"],[])
         self.assertEqual(y["coverage"]["payout_official_row_missing_or_dead_heat"],1)
