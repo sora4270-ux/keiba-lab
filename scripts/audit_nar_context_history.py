@@ -18,6 +18,24 @@ def valid_distance(n):
     return n if type(n) is int and 600 <= n <= 4000 else None
 
 
+def provisional_jockey_key(raw, fields):
+    """Official CSV name is abbreviated; this is never a person identifier."""
+    name = clean(cell(raw, fields, "騎手名", idx=14))
+    affiliation = clean(cell(raw, fields, "騎手所属", idx=15))
+    if not name or not affiliation or name in ("未定","なし","不明","-") or affiliation in ("未定","不明","-"):
+        return None
+    return (name, affiliation)
+
+
+def outcome_summary(rows):
+    n = len(rows)
+    wins = sum(r[5] == 1 for r in rows)
+    top3 = sum(1 <= r[5] <= 3 for r in rows)
+    return {"prior_completed_runs":n,"first_places":wins,"top3_finishes":top3,
+            "first_place_rate":round(wins/n,4) if n else None,
+            "top3_rate":round(top3/n,4) if n else None}
+
+
 def context_audit(tables, target_month):
     metadata = defaultdict(list)
     rows_by_race = defaultdict(list)
@@ -37,6 +55,9 @@ def context_audit(tables, target_month):
     by_jockey_venue = defaultdict(list)
     targets = []
     quality = Counter()
+    jockey_fields = Counter()
+    provisional_by_name = defaultdict(set)
+    provisional_targets = []
     for k, rows in rows_by_race.items():
         if len(metadata[k]) != 1:
             quality["duplicate_race_metadata"] += 1
@@ -51,6 +72,9 @@ def context_audit(tables, target_month):
             quality["invalid_date"] += 1
             continue
         for (raw,f),ident,no in zip(rows,ids,nos):
+            for field,value in f.items():
+                if "騎手" in field and clean(value):
+                    jockey_fields[field] += 1
             if not ident or ic[ident]!=1 or no is None or not 1<=no<=30 or nc[no]!=1:
                 quality["invalid_or_duplicate_identity"] += 1
                 continue
@@ -60,12 +84,17 @@ def context_audit(tables, target_month):
             rank = as_int(cell(raw,f,"着順",idx=31))
             rec = (day,k[0],distance,ground,jockey,rank)
             targets.append((ident,rec))
+            candidate = provisional_jockey_key(raw,f)
+            provisional_targets.append((day,candidate))
+            if candidate:
+                provisional_by_name[candidate[0]].add(candidate[1])
             if rank is not None and 1<=rank<=30:
                 by_horse[ident].append(rec)
                 if jockey:
                     by_jockey_venue[(jockey,k[0])].append(rec)
     counts = Counter()
     groups = defaultdict(Counter)
+    summaries = defaultdict(Counter)
     for ident,r in targets:
         day,venue,distance,ground,jockey,rank = r
         if target_month and day.strftime("%Y-%m") != target_month:
@@ -88,6 +117,13 @@ def context_audit(tables, target_month):
         for label,items in matches.items():
             counts[label+"_with_history"] += int(bool(items))
             counts[label+"_with_3plus"] += int(len(items)>=3)
+            outcome = outcome_summary(items)
+            if len(items) >= 3:
+                g = summaries[label]
+                g["target_entries_with_3plus"] += 1
+                g["prior_completed_runs_sum"] += outcome["prior_completed_runs"]
+                g["prior_first_places_sum"] += outcome["first_places"]
+                g["prior_top3_finishes_sum"] += outcome["top3_finishes"]
         if rank is not None and 1<=rank<=30:
             for label,value in (("distance",str(distance) if distance else "unknown"),
                                 ("ground",ground or "unknown"),
@@ -96,10 +132,24 @@ def context_audit(tables, target_month):
                 g["finished_runner_entries"]+=1
                 g["first_place_entries"]+=int(rank==1)
                 g["top3_entries"]+=int(rank<=3)
+    provisional = Counter()
+    for day,candidate in provisional_targets:
+        if target_month and day.strftime("%Y-%m") != target_month:
+            continue
+        provisional["target_entries"] += 1
+        if candidate:
+            provisional["name_affiliation_present"] += 1
+            if len(provisional_by_name[candidate[0]]) > 1:
+                provisional["name_seen_with_multiple_affiliations"] += 1
     return {"status":"descriptive_archive_context_audit","coverage":dict(counts),
             "quality":dict(quality),
+            "jockey_field_nonempty_counts":dict(jockey_fields),
+            "jockey_provisional_coverage":dict(provisional),
+            "jockey_identity_status":"stable_ids_present" if counts["target_jockey_id_known"] else "no_stable_id",
+            "prior_context_outcomes":{k:dict(v) for k,v in sorted(summaries.items())},
             "result_context":[{"dimension":k,"value":v,**dict(c)} for (k,v),c in sorted(groups.items())],
             "notes":["Prior matches use completed runs on earlier dates in a 90-day window.",
                      "Same-ground coverage uses final target condition, not a proven pre-race value.",
-                     "Jockey matching requires an explicit stable ID; names alone are not joined.",
+                     "Jockey matching requires an explicit stable ID; name-affiliation pairs are only coverage diagnostics.",
+                     "Prior outcome totals count historical runs per target entry; repeated historical runs are possible and totals are not independent samples.",
                      "Result groups are descriptive counts of runner entries, not forecasts or returns."]}

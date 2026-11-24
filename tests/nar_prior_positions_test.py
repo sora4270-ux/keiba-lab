@@ -4,9 +4,15 @@ from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"scripts"))
 from audit_nar_prior_positions import early_corner, prior_summary, audit, required_months, merge_months
 
-from audit_nar_context_history import context_audit
+from audit_nar_context_history import context_audit, provisional_jockey_key, outcome_summary
 
 class PriorPositionTests(unittest.TestCase):
+    def test_provisional_jockey_is_not_stable_id(self):
+        self.assertEqual(provisional_jockey_key([],{"騎手名":"矢野貴","騎手所属":"大井"}),("矢野貴","大井"))
+        self.assertIsNone(provisional_jockey_key([],{"騎手名":"矢野貴"}))
+        self.assertIsNone(provisional_jockey_key([],{"騎手名":"未定","騎手所属":"大井"}))
+        self.assertIsNone(outcome_summary([])["top3_rate"])
+
     def test_context_history_prior_only_and_stable_jockey(self):
         races=[]; horses=[]
         for d in ("20261001","20261101","20261102","20261103"):
@@ -22,9 +28,16 @@ class PriorPositionTests(unittest.TestCase):
         self.assertEqual(x["jockey_venue_with_3plus"],1)
         for _,f in horses:
             f.pop("騎手コード")
-        x=context_audit({"racelist":races,"horselist":horses},"2026-11")["coverage"]
+        for _,f in horses:
+            f["騎手名"]="テスト騎手"
+            f["騎手所属"]="浦和"
+        report=context_audit({"racelist":races,"horselist":horses},"2026-11")
+        x=report["coverage"]
         self.assertEqual(x["target_jockey_id_known"],0)
         self.assertEqual(x["same_jockey_with_history"],0)
+        self.assertEqual(report["jockey_provisional_coverage"]["name_affiliation_present"],3)
+        self.assertEqual(report["prior_context_outcomes"]["exact_distance"]["prior_completed_runs_sum"],3)
+        self.assertEqual(report["jockey_identity_status"],"no_stable_id")
 
     def test_required_months_and_no_overlapping_rows(self):
         self.assertEqual(required_months("2026-11"),["2026-11","2026-10","2026-09","2026-08"])
