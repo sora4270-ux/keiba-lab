@@ -34,6 +34,22 @@ class OfficialFeatureTests(unittest.TestCase):
         self.assertEqual(got["carried_weight_present"], 1)
         self.assertFalse(got["prelock_track_condition_capture_verified"])
         self.assertFalse(got["direct_running_style_field"])
+    def test_named_fourth_corner_and_weight_screening(self):
+        raw = ["大井","20261119","1"]+[""]*23
+        raw[23]="1600"
+        raw[25]="良"
+        races=[(raw,{"コーナー名称1":"4角","コーナー通過順1":"1,2,3"})]
+        horse=["大井","20261119","1","","","1"]+[""]*11
+        horse[16]="56"
+        bad=horse.copy()
+        bad[5]="2"
+        bad[16]="650"
+        x=coverage({"racelist":races,"horselist":[(horse,{}),(bad,{})]})
+        self.assertEqual(x["validated_archive_fields"]["distance_valid"],1)
+        self.assertEqual(x["validated_archive_fields"]["flat_fourth_corner_parsed"],1)
+        self.assertEqual(x["validated_archive_fields"]["flat_runner_fourth_corner_parsed"],2)
+        self.assertEqual(x["validated_archive_fields"]["weight_plausible"],1)
+        self.assertEqual(x["validated_archive_fields"]["weight_outside_screening_range"],1)
     def test_banei_weight_is_separate(self):
         raw = ["帯広ば","20261119","1"]+[""]*22+["2.3"]
         horse = ["帯広ば","20261119","1"]+[""]*13+["650"]
