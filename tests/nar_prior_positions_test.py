@@ -6,7 +6,33 @@ from audit_nar_prior_positions import early_corner, prior_summary, audit, requir
 
 from audit_nar_context_history import context_audit, provisional_jockey_key, outcome_summary
 
+from nar_jockey_evidence import evidence_index, matched_id
+
 class PriorPositionTests(unittest.TestCase):
+    def test_exact_official_profile_evidence_not_global_alias(self):
+        e={"date":"2026-11-24","venue":"名古屋","race_no":2,"no":5,
+           "abbreviation":"試験騎","affiliation":"愛知","license_no":"12345",
+           "result_source":"https://www.keiba.go.jp/KeibaWeb/TodayRaceInfo/RaceMarkTable?k_babaCode=24&k_raceDate=2026%2F11%2F24&k_raceNo=2",
+           "profile_source":"https://www.keiba.go.jp/KeibaWeb/DataRoom/RiderMark?k_riderLicenseNo=12345"}
+        index=evidence_index([e])
+        self.assertEqual(matched_id(index,("名古屋","20261124",2),5,("試験騎","愛知")),"12345")
+        self.assertIsNone(matched_id(index,("名古屋","20261123",2),5,("試験騎","愛知")))
+        self.assertIsNone(matched_id(index,("名古屋","20261124",2),5,("別人","愛知")))
+        with self.assertRaises(ValueError):
+            evidence_index([e,e])
+        with self.assertRaises(ValueError):
+            evidence_index([{**e,"license_no":"99999"}])
+        base={"競馬場":"名古屋","競走年月日":"20261124","レース番号":"2"}
+        raw=["名古屋","20261124","2","","","5"]
+        horse={**base,"馬名":"テスト","生年月日":"20210101","馬番":"5","着順":"1",
+               "騎手名":"試験騎","騎手所属":"愛知"}
+        tables={"racelist":[(raw,{**base,"距離":"1500","馬場":"良"})],"horselist":[(raw,horse)]}
+        report=context_audit(tables,"2026-11",[e])
+        self.assertEqual(report["coverage"]["target_jockey_id_known"],1)
+        self.assertEqual(report["quality"]["documented_jockey_exact_match"],1)
+        self.assertEqual(report["coverage"]["same_jockey_with_history"],0)
+
+
     def test_provisional_jockey_is_not_stable_id(self):
         self.assertEqual(provisional_jockey_key([],{"騎手名":"矢野貴","騎手所属":"大井"}),("矢野貴","大井"))
         self.assertIsNone(provisional_jockey_key([],{"騎手名":"矢野貴"}))

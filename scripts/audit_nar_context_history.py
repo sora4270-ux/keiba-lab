@@ -8,6 +8,7 @@ from datetime import date, timedelta
 import unicodedata
 from update_nar import row_key, cell, as_int
 from recent_form import horse_key
+from nar_jockey_evidence import evidence_index, matched_id
 
 
 def clean(value):
@@ -36,7 +37,8 @@ def outcome_summary(rows):
             "top3_rate":round(top3/n,4) if n else None}
 
 
-def context_audit(tables, target_month):
+def context_audit(tables, target_month, documented_jockey=None):
+    evidence = evidence_index(documented_jockey if documented_jockey is not None else [])
     metadata = defaultdict(list)
     rows_by_race = defaultdict(list)
     for item in tables.get("racelist", []):
@@ -81,10 +83,19 @@ def context_audit(tables, target_month):
             jockey = clean(cell(raw,f,"騎手コード","騎手ID"))
             # If no stable ID exists, do not silently join different people by name.
             jockey = jockey or None
+            candidate = provisional_jockey_key(raw,f)
+            documented = matched_id(evidence,k,no,candidate)
+            if documented and jockey and documented != jockey:
+                jockey = None
+                quality["jockey_id_conflict"] += 1
+            elif documented:
+                jockey = documented
+                quality["documented_jockey_exact_match"] += 1
+            elif (*k,no) in evidence:
+                quality["documented_jockey_unmatched"] += 1
             rank = as_int(cell(raw,f,"着順",idx=31))
             rec = (day,k[0],distance,ground,jockey,rank)
             targets.append((ident,rec))
-            candidate = provisional_jockey_key(raw,f)
             provisional_targets.append((day,candidate))
             if candidate:
                 provisional_by_name[candidate[0]].add(candidate[1])
@@ -145,11 +156,12 @@ def context_audit(tables, target_month):
             "quality":dict(quality),
             "jockey_field_nonempty_counts":dict(jockey_fields),
             "jockey_provisional_coverage":dict(provisional),
+            "documented_jockey_evidence_rows":len(evidence),
             "jockey_identity_status":"stable_ids_present" if counts["target_jockey_id_known"] else "no_stable_id",
             "prior_context_outcomes":{k:dict(v) for k,v in sorted(summaries.items())},
             "result_context":[{"dimension":k,"value":v,**dict(c)} for (k,v),c in sorted(groups.items())],
             "notes":["Prior matches use completed runs on earlier dates in a 90-day window.",
                      "Same-ground coverage uses final target condition, not a proven pre-race value.",
-                     "Jockey matching requires an explicit stable ID; name-affiliation pairs are only coverage diagnostics.",
+                     "Jockey matching requires an explicit stable ID or a manually documented exact-run official profile link; name-affiliation pairs alone are not used.",
                      "Prior outcome totals count historical runs per target entry; repeated historical runs are possible and totals are not independent samples.",
                      "Result groups are descriptive counts of runner entries, not forecasts or returns."]}
