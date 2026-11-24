@@ -70,6 +70,20 @@ def analyze(records, race_date):
     winner_ranks = Counter()
     quality_alerts = Counter()
     race_reviews = []
+    # Identical duplicates can be counted once; conflicting duplicates must
+    # never contribute a hit or miss based on arbitrary input order.
+    first_by_id = {}
+    conflicting_ids = set()
+    for record in records:
+        if not isinstance(record, dict) or record.get("date") != race_date:
+            continue
+        race_id = record.get("id")
+        if not isinstance(race_id, str) or not race_id:
+            continue
+        if race_id in first_by_id and first_by_id[race_id] != record:
+            conflicting_ids.add(race_id)
+        else:
+            first_by_id[race_id] = record
     seen = set()
     examined = 0
     race_details = []
@@ -79,6 +93,9 @@ def analyze(records, race_date):
             continue
         examined += 1
         race_id = record.get("id")
+        if isinstance(race_id, str) and race_id in conflicting_ids:
+            excluded["conflicting_duplicate_id"] += 1
+            continue
         if not isinstance(race_id, str) or not race_id or race_id in seen:
             excluded["missing_or_duplicate_id"] += 1
             continue

@@ -53,6 +53,19 @@ class DailyAxesTest(unittest.TestCase):
         self.assertEqual(x["excluded"]["missing_or_duplicate_id"], 1)
         self.assertEqual(x["trio"]["unrecorded"], 1)
 
+    def test_conflicting_duplicate_ids_are_order_independent(self):
+        a = race("conflict", [1,2,3,4,5], [1,2,3])
+        b = {**a, "result": [3,2,1]}
+        ok = race("valid", [1,2,3,4,5], [1,2,3])
+        for rows in ([a,b,ok], [b,a,ok]):
+            before = copy.deepcopy(rows)
+            x = analyze(rows, "2026-11-22")
+            self.assertEqual(rows, before)
+            self.assertEqual(x["races_on_date"], 3)
+            self.assertEqual(x["settled_eligible"], 1)
+            self.assertEqual(x["excluded"], {"conflicting_duplicate_id": 2})
+            self.assertEqual(x["top1_win"], 1)
+
     def test_unranked_podium_horse_is_a_miss_not_excluded(self):
         # Previous audit silently dropped exactly this kind of surprise result.
         row = race("surprise", [1,2,3,4,5], [8,2,3],
