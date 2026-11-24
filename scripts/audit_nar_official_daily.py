@@ -9,7 +9,7 @@ from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
 from update_nar import BASE_URL, fetch_daily_zip, load_zip_tables, row_key, cell, as_int
-from audit_nar_daily_axes import analyze as daily_axes
+from audit_nar_daily_axes import analyze as daily_axes, status_evidence_index
 from audit_nar_confidence_wide import grade_from_frozen
 from backtest_nar_stake_allocation import official_market_index, official_settlement
 from nar_official_status import OfficialStatusLookup
@@ -18,7 +18,8 @@ STATUS = {"取消":"withdrawn", "出走取消":"withdrawn", "除外":"excluded",
           "競走除外":"excluded", "中止":"did_not_finish", "競走中止":"did_not_finish"}
 
 
-def summarize(records, tables, day, lookup=None):
+def summarize(records, tables, day, lookup=None, documented_status=None):
+    documented = status_evidence_index(documented_status if documented_status is not None else [], day)
     audit = daily_axes(records, day)
     eligible = {r["id"]: r for r in audit["race_details"]}
     races = defaultdict(list)
@@ -75,23 +76,55 @@ def summarize(records, tables, day, lookup=None):
                 label = STATUS.get(values[0], "finished" if rank and rank > 0 else "unknown")
             statuses[str(no)] = label
         wanted = {int(n) for n, v in statuses.items() if v in ("unknown", "missing_or_duplicate")}
+        detail["status_evidence"] = {}
+        live = {}
         if wanted and lookup is not None:
-            evidence, lookup_status = lookup(key[0], day, key[2], wanted)
+            live, lookup_status = lookup(key[0], day, key[2], wanted)
             detail["status_lookup"] = lookup_status
-            detail["status_evidence"] = {}
-            for n, item in evidence.items():
-                if n in wanted and item.get("status") in STATUS.values():
-                    statuses[str(n)] = item["status"]
-                    detail["status_evidence"][str(n)] = item
             coverage["lookup_" + lookup_status] += 1
+        for n in map(int, statuses):
+            saved = documented.get((ident, n))
+            observed = live.get(n) if n in wanted else None
+            candidates = [item for item in (saved, observed)
+                          if item and item.get("status") in STATUS.values()]
+            labels = {item["status"] for item in candidates}
+            if n not in wanted:
+                labels.add(statuses[str(n)])
+            if len(labels) > 1:
+                statuses[str(n)] = "source_conflict"
+                detail["status_evidence"][str(n)] = {"origin":"conflict", "items":candidates}
+                coverage["runner_status_conflict"] += 1
+            elif candidates and n in wanted:
+                statuses[str(n)] = candidates[-1]["status"]
+                origin = "live_result_page" if observed else "documented_manual"
+                detail["status_evidence"][str(n)] = {"origin":origin, **candidates[-1]}
+                coverage["runner_status_" + origin] += 1
         status_counts.update(statuses.values())
         detail["official_runner_status"] = statuses
         detail["unresolved_runner_numbers"] = [int(n) for n,v in statuses.items()
-                                                if v in ("unknown","missing_or_duplicate")]
-        # These labels are not actual tickets or a verified refund ledger.
-        detail["refund_review_required"] = any(x in ("withdrawn", "excluded", "unknown", "missing_or_duplicate") for x in statuses.values())
+                                                if v in ("unknown","missing_or_duplicate","source_conflict")]
+        # Runner status does not establish whether any ticket was purchased.
+        # In particular, do not infer a cash refund for a cancelled runner.
+        detail["refund_review"] = {
+            "excluded_runner_numbers": [int(n) for n,v in statuses.items() if v == "excluded"],
+            "withdrawn_runner_numbers": [int(n) for n,v in statuses.items() if v == "withdrawn"],
+            "did_not_finish_runner_numbers": [int(n) for n,v in statuses.items() if v == "did_not_finish"],
+            "unresolved_runner_numbers": detail["unresolved_runner_numbers"],
+            "actual_refund_yen": None,
+            "actual_refund_status": "no_purchase_receipt_or_refund_statement",
+        }
+        detail["refund_review_required"] = bool(detail["unresolved_runner_numbers"] or
+            detail["refund_review"]["withdrawn_runner_numbers"] or detail["refund_review"]["excluded_runner_numbers"])
         if detail["refund_review_required"]:
             coverage["refund_review_required"] += 1
+        if detail["unresolved_runner_numbers"]:
+            coverage["runner_status_unresolved_races"] += 1
+        if detail["refund_review"]["excluded_runner_numbers"]:
+            coverage["excluded_runner_races"] += 1
+        if detail["refund_review"]["withdrawn_runner_numbers"]:
+            coverage["withdrawn_runner_races"] += 1
+        if detail["refund_review"]["did_not_finish_runner_numbers"]:
+            coverage["did_not_finish_runner_races"] += 1
         try:
             grade, _ = grade_from_frozen(r)
         except (TypeError, ValueError, AttributeError, KeyError):
@@ -109,7 +142,7 @@ def summarize(records, tables, day, lookup=None):
             "venue_ground":[{"venue":v,"ground":g,**dict(c)} for (v,g),c in sorted(groups.items())],
             "confidence":{g:dict(c) for g,c in sorted(confidence.items())},
             "race_details":details,
-            "notes":["Only explicit CSV or official result-page status text is interpreted; missing or numeric zero remains unknown unless corroborated.",
+            "notes":["Explicit CSV and live result-page status text are distinguished from previously documented manual evidence. Conflicts remain unresolved.",
                      "Condition is the official result-time condition, not proven pre-race availability.",
                      "No real wagers, refund amounts, or ROI are inferred. Confidence is reconstructed from frozen data."]}
 
@@ -126,8 +159,10 @@ def main():
     url = BASE_URL if day == today else BASE_URL.split("?")[0] + "?" + urlencode(
         {"type":"monthly","k_year":day.year,"k_month":f"{day.month:02d}"})
     tables = load_zip_tables(a.official_zip.read_bytes() if a.official_zip else fetch_daily_zip(url))
+    evidence_path = Path("docs/nar-status-evidence") / (a.date + ".json")
+    documented = json.loads(evidence_path.read_text(encoding="utf-8")) if evidence_path.is_file() else []
     report = summarize(json.loads(a.input.read_text(encoding="utf-8"))["races"], tables, a.date,
-                       None if a.official_zip else OfficialStatusLookup())
+                       None if a.official_zip else OfficialStatusLookup(), documented)
     report["source"] = "supplied_zip" if a.official_zip else url
     a.output.write_text(json.dumps(report, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
     print(json.dumps({k:v for k,v in report.items() if k != "race_details"}, ensure_ascii=False))

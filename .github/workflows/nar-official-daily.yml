@@ -6,6 +6,7 @@ on:
     paths:
       - 'scripts/audit_nar_official_daily.py'
       - 'scripts/nar_official_status.py'
+      - 'docs/nar-status-evidence/**'
       - 'tests/nar_official_daily_test.py'
       - '.github/workflows/nar-official-daily.yml'
   schedule:

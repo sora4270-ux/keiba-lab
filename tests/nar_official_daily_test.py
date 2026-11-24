@@ -44,6 +44,19 @@ class OfficialDailyTest(unittest.TestCase):
                     lookup=lambda *args: ({6:{"status":"excluded","source":"https://www.keiba.go.jp/test"}}, "matched"))
         self.assertEqual(z["race_details"][0]["official_runner_status"]["6"],"excluded")
         self.assertEqual(z["race_details"][0]["unresolved_runner_numbers"],[])
+        documented = [{"date":"2026-11-24","id":"r","no":6,
+                       "status":"withdrawn","source":"https://www.keiba.go.jp/example"}]
+        m=summarize([r],tables,"2026-11-24",documented_status=documented)
+        d=m["race_details"][0]
+        self.assertEqual(d["status_evidence"]["6"]["origin"],"documented_manual")
+        self.assertEqual(d["refund_review"]["withdrawn_runner_numbers"],[4,6])
+        self.assertIsNone(d["refund_review"]["actual_refund_yen"])
+        c=summarize([r],tables,"2026-11-24",
+                    lookup=lambda *args: ({6:{"status":"excluded","source":"https://www.keiba.go.jp/test"}}, "matched"),
+                    documented_status=documented)
+        self.assertEqual(c["race_details"][0]["official_runner_status"]["6"],"source_conflict")
+        self.assertEqual(c["race_details"][0]["unresolved_runner_numbers"],[6])
+        self.assertEqual(c["coverage"]["runner_status_conflict"],1)
         y=summarize([r],tables,"2026-11-24")
         self.assertEqual(y["venue_ground"],[])
         self.assertEqual(y["coverage"]["payout_official_row_missing_or_dead_heat"],1)
