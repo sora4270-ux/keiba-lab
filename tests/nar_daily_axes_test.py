@@ -126,6 +126,31 @@ class DailyAxesTest(unittest.TestCase):
         self.assertEqual(reviews["surprise"]["trio_reason"], "candidate_missing")
         self.assertEqual(reviews["normal"]["ranked_horses_absent_from_finish_order"], [4,5,6])
 
+    def test_official_evidence_explains_only_matching_absence(self):
+        row = race("status", [1,2,3,4,5], [1,2,3])
+        row["finish_order"] = [1,2,3,4]
+        evidence = [{"date":"2026-11-22", "id":"status", "no":5,
+                     "status":"withdrawn", "source":"https://www.keiba.go.jp/example"}]
+        before = copy.deepcopy(row)
+        x = analyze([row], "2026-11-22", evidence)
+        self.assertEqual(row, before)
+        self.assertEqual(x["race_details"][0]["finish_order_status"], "official_nonfinish_explained")
+        self.assertEqual(x["race_details"][0]["unexplained_runner_numbers"], [])
+        self.assertEqual(x["top1_win"], 1)
+        y = analyze([row], "2026-11-22")
+        self.assertEqual(y["race_details"][0]["finish_order_status"], "unexplained_absence")
+        self.assertEqual(y["race_details"][0]["unexplained_runner_numbers"], [5])
+        with self.assertRaises(ValueError):
+            analyze([row], "2026-11-22", evidence + evidence)
+
+    def test_missing_and_conflicting_finish_order_are_visible(self):
+        a = race("missing", [1,2,3,4,5], [1,2,3])
+        b = {**a, "id":"conflict", "finish_order":[2,1,3,4,5]}
+        x = analyze([a,b], "2026-11-22")
+        self.assertEqual(x["finish_order_quality_flags"]["finish_order_missing_or_invalid"], 1)
+        self.assertEqual(x["finish_order_quality_flags"]["finish_order_podium_conflict"], 1)
+        self.assertEqual(x["settled_eligible"], 2)
+
     def test_duplicate_frozen_tickets_cannot_be_reported_as_hits(self):
         row = race("duplicate", [1,2,3,4,5],
                    [1,2,3], [[1,2,3],[3,2,1]], [[1,2,3],[1,2,3]])

@@ -59,7 +59,27 @@ def _ticket_result(record, field, result, ordered):
     return "combination_missing"
 
 
-def analyze(records, race_date):
+def status_evidence_index(rows, race_date):
+    """Index explicit retrospective evidence; never infer status from absence."""
+    if not isinstance(rows, list):
+        raise ValueError("status evidence must be a list")
+    out = {}
+    for row in rows:
+        if (not isinstance(row, dict) or row.get("date") != race_date
+                or not isinstance(row.get("id"), str) or not row["id"]
+                or type(row.get("no")) is not int or not 1 <= row["no"] <= 30
+                or row.get("status") not in ("withdrawn", "excluded", "did_not_finish")
+                or not isinstance(row.get("source"), str)
+                or not row["source"].startswith("https://www.keiba.go.jp/")):
+            raise ValueError("invalid official status evidence")
+        key = (row["id"], row["no"])
+        if key in out:
+            raise ValueError("duplicate official status evidence")
+        out[key] = {"no": row["no"], "status": row["status"], "source": row["source"]}
+    return out
+
+
+def analyze(records, race_date, status_evidence=None):
     if not isinstance(records, list):
         raise ValueError("races must be a list")
     counted = Counter()
@@ -69,6 +89,7 @@ def analyze(records, race_date):
     venues = defaultdict(Counter)
     winner_ranks = Counter()
     quality_alerts = Counter()
+    evidence = status_evidence_index(status_evidence if status_evidence is not None else [], race_date)
     race_reviews = []
     # Identical duplicates can be counted once; conflicting duplicates must
     # never contribute a hit or miss based on arbitrary input order.
@@ -149,11 +170,31 @@ def analyze(records, race_date):
         # This is a completeness flag, NOT proof of scratch/withdrawal.
         # Some official finish-order snapshots can be incomplete.
         missing_from_finish_order = []
+        confirmed = []
+        unexplained = []
         finish_order = _horse_numbers(record.get("finish_order"))
-        if finish_order is not None and len(finish_order) >= 3 and set(result).issubset(finish_order):
+        if finish_order is None or len(finish_order) < 3:
+            finish_status = "missing_or_invalid"
+            quality_alerts["finish_order_missing_or_invalid"] += 1
+        elif finish_order[:3] != result:
+            finish_status = "podium_conflict"
+            quality_alerts["finish_order_podium_conflict"] += 1
+        else:
             missing_from_finish_order = sorted(set(ranking) - set(finish_order))
+            confirmed = [evidence[(race_id, n)] for n in missing_from_finish_order
+                         if (race_id, n) in evidence]
+            unexplained = [n for n in missing_from_finish_order if (race_id, n) not in evidence]
+            finish_status = ("unexplained_absence" if unexplained else
+                             "official_nonfinish_explained" if confirmed else "complete")
             if missing_from_finish_order:
                 quality_alerts["ranked_horses_absent_from_finish_order"] += 1
+            if confirmed:
+                quality_alerts["official_nonfinish_evidence_present"] += 1
+            if unexplained:
+                quality_alerts["unexplained_ranked_runner_absence"] += 1
+        race_details[-1].update(finish_order_status=finish_status,
+                                official_nonfinish=confirmed,
+                                unexplained_runner_numbers=unexplained)
         if ranking[0] == result[0]:
             counted["top1_win"] += 1
             venues[venue]["top1_win"] += 1
@@ -180,7 +221,7 @@ def analyze(records, race_date):
             ticket_states[field] = outcome
         if (winning_rank is None or winning_rank > 5
                 or any(outcome != "hit" for outcome in ticket_states.values())
-                or missing_from_finish_order):
+                or finish_status != "complete"):
             race_reviews.append({
                 "id": race_id, "venue": venue, "race_no": record.get("race_no"),
                 "result": result, "frozen_top5": ranking[:5],
@@ -188,6 +229,9 @@ def analyze(records, race_date):
                 "trio_reason": ticket_states["trio_tickets"],
                 "trifecta_reason": ticket_states["tickets"],
                 "ranked_horses_absent_from_finish_order": missing_from_finish_order,
+                "finish_order_status": finish_status,
+                "official_nonfinish": confirmed,
+                "unexplained_runner_numbers": unexplained,
             })
     race_reviews.sort(key=lambda item: (item["venue"], item["race_no"] or 0, item["id"]))
     return {
@@ -217,7 +261,8 @@ def analyze(records, race_date):
             "Results are excluded where dead heat, missing data, or T-15 consistency prevent fair evaluation.",
             "A podium finisher absent from the frozen ranking is counted as a miss, never dropped from the denominator.",
             "Race reviews classify prediction misses; they do not prove official payouts or financial returns.",
-            "A ranked runner missing from stored finish_order requires manual official confirmation; it is NOT automatically a scratch, refund or losing bet.",
+            "Explicit dated official status evidence can explain missing finishers, but is not a refund or a change to frozen forecasts.",
+            "No status evidence means an absence remains unexplained; missing/invalid finish orders are separately flagged.",
         ],
     }
 
@@ -231,7 +276,9 @@ def main():
     if datetime.strptime(args.date, "%Y-%m-%d").date().isoformat() != args.date:
         parser.error("date must be YYYY-MM-DD")
     data = json.loads(args.input.read_text(encoding="utf-8"))
-    report = analyze(data["races"], args.date)
+    evidence_path = Path("docs/nar-status-evidence") / (args.date + ".json")
+    evidence = json.loads(evidence_path.read_text(encoding="utf-8")) if evidence_path.is_file() else []
+    report = analyze(data["races"], args.date, evidence)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False))
 
