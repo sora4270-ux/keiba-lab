@@ -6,6 +6,8 @@ on:
     paths:
       - 'scripts/audit_nar_official_daily.py'
       - 'scripts/nar_official_status.py'
+      - 'scripts/reconcile_cash_statement.py'
+      - 'tests/nar_cash_statement_test.py'
       - 'docs/nar-status-evidence/**'
       - 'tests/nar_official_daily_test.py'
       - '.github/workflows/nar-official-daily.yml'
@@ -23,6 +25,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m unittest discover -s tests -p nar_official_daily_test.py -v
+      - run: python -m unittest discover -s tests -p nar_cash_statement_test.py -v
       - name: Reconcile official data
         env:
           EVENT: ${{ github.event_name }}
