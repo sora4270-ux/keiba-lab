@@ -2,9 +2,18 @@ import sys
 import unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"scripts"))
-from audit_nar_prior_positions import early_corner, prior_summary, audit
+from audit_nar_prior_positions import early_corner, prior_summary, audit, required_months, merge_months
 
 class PriorPositionTests(unittest.TestCase):
+    def test_required_months_and_no_overlapping_rows(self):
+        self.assertEqual(required_months("2026-11"),["2026-11","2026-10","2026-09","2026-08"])
+        raw=["浦和","20261101","1","","","1"]
+        item=(raw,{"競馬場":"浦和","競走年月日":"20261101","レース番号":"1"})
+        merged, counts=merge_months({"2026-11":{"racelist":[item],"horselist":[item]},
+                                     "2026-10":{"racelist":[item],"horselist":[item]}})
+        self.assertEqual(len(merged["racelist"]),1)
+        self.assertEqual(counts["2026-10"]["horselist"],0)
+        self.assertEqual(audit(merged,"2026-10")["windows"]["3"],{})
     def test_early_not_fourth(self):
         self.assertEqual(early_corner({"コーナー名称1":"4角","コーナー通過順1":"1,2,3"}),{})
         self.assertEqual(early_corner({"コーナー名称1":"1角","コーナー通過順1":"1,2,3"})[1],1)

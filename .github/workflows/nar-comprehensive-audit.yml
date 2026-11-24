@@ -69,7 +69,7 @@ jobs:
       - name: Official NAR monthly field-coverage probe
         run: python scripts/audit_nar_feature_availability.py --zip /tmp/nar-monthly-official.zip --output nar-feature-availability.json
       - name: Prior-run early-position coverage audit
-        run: python scripts/audit_nar_prior_positions.py --zip /tmp/nar-monthly-official.zip --output nar-prior-position-audit.json
+        run: python scripts/audit_nar_prior_positions.py --zip /tmp/nar-monthly-official.zip --target-month 2026-11 --fetch-prior-months --output nar-prior-position-audit.json
       - name: Add auditable summary
         if: always()
         run: |
