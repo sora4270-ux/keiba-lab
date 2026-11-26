@@ -39,7 +39,8 @@ def index(tables, early_corner):
             rank=as_int(cell(raw,f,"着順",idx=31))
             if rank is None or not 1 <= rank <= 30:
                 continue
-            rows.append({"no":as_int(cell(raw,f,"馬番",idx=5)),"id":horse_key(f),"rank":rank})
+            no=as_int(cell(raw,f,"馬番",idx=5))
+            rows.append({"no":no,"id":horse_key(f),"rank":rank,"actual_early_position":early.get(no)})
         if len(rows)<3 or any(not r["id"] or not r["no"] or not 1<=r["no"]<=30 for r in rows) or len({r["id"] for r in rows})!=len(rows) or len({r["no"] for r in rows})!=len(rows):
             excluded["invalid_finished_field"] += 1
             continue
@@ -123,6 +124,84 @@ def chronological_split(records):
                daily_test=[{"date":day.isoformat(),**paired_summary([r for r in test if r[0]==day],w)} for day in sorted({r[0] for r in test})])
     return out
 
+STYLE_BANDS = ("front","forward","midfield","rear","unknown")
+
+def style_band(f):
+    # Descriptive prior-position bands, not official tactical labels.
+    if f.get("early_n")!=3:
+        return "unknown"
+    p=f.get("early")
+    if type(p) not in (int,float) or not math.isfinite(p) or not -.5<=p<=.5:
+        return "unknown"
+    return "front" if p>=.3-1e-9 else "forward" if p>=.05-1e-9 else "midfield" if p>=-.25-1e-9 else "rear"
+
+def field_pressure(fs):
+    bands=Counter(style_band(f) for f in fs)
+    known=len(fs)-bands["unknown"]
+    # A pressure proxy, not a forecast of elapsed time or actual speed.
+    if not fs or known*5<len(fs)*4:
+        return "unknown",bands
+    forward=bands["front"]+bands["forward"]
+    # Missing styles could cross the boundary; abstain in that case.
+    threshold=max(3,math.ceil(len(fs)*.4))
+    low=forward<=1
+    if low and forward+bands["unknown"]<=1:
+        label="low"
+    elif forward>=threshold:
+        label="high"
+    elif forward>=2 and forward+bands["unknown"]<threshold:
+        label="medium"
+    else:
+        label="unknown"
+    return label,bands
+
+def position_audit(records):
+    counts=Counter()
+    style_counts=Counter()
+    transition=defaultdict(Counter)
+    groups=defaultdict(Counter)
+    for day,fs,rows in records:
+        label,bands=field_pressure(fs)
+        counts["races"]+=1
+        style_counts.update(bands)
+        groups[label]["races"]+=1
+        # Target-race observed positions are labels only, never features.
+        observed={r["no"]:r.get("actual_early_position") for r in rows}
+        valid=lambda p:type(p) in (int,float) and math.isfinite(p) and 0<=p<=1
+        for f,r in zip(fs,rows):
+            band=style_band(f)
+            p=observed[r["no"]]
+            if band!="unknown" and valid(p):
+                transition[band][style_band({"early_n":3,"early":p-.5})]+=1
+        if label=="unknown" or not all(valid(p) for p in observed.values()):
+            continue
+        counts["evaluable_fields"]+=1
+        g=groups[label]
+        g["evaluable_fields"]+=1
+        leaders={n for n,p in observed.items() if p==max(observed.values())}
+        known=[i for i,f in enumerate(fs) if style_band(f)!="unknown"]
+        if not known:
+            continue
+        # Accuracy of expected leading position, not race winner accuracy.
+        top=min(known,key=lambda i:(-fs[i]["early"],rows[i]["no"]))
+        hit=rows[top]["no"] in leaders
+        counts["expected_leader_hits"]+=hit
+        g["expected_leader_hits"]+=hit
+        counts["random_leader_expected_hits"]+=len(leaders)/len(rows)
+        g["random_leader_expected_hits"]+=len(leaders)/len(rows)
+    def render(c):
+        n=c["evaluable_fields"]
+        return {"races":c["races"],"evaluable_fields":n,"expected_leader_hits":c["expected_leader_hits"],
+                "leader_hit_rate":round(100*c["expected_leader_hits"]/n,2) if n else None,
+                "random_reference_rate":round(100*c["random_leader_expected_hits"]/n,2) if n else None}
+    return {"status":"descriptive_position_proxy_only","all":render(counts),
+            "style_counts":dict(style_counts),"position_transition":{k:dict(v) for k,v in transition.items()},
+            "pressure_groups":{k:render(groups[k]) for k in ("low","medium","high","unknown")},
+            "limitations":["At least three previous early positions per classified runner; at least 80% field coverage for pressure.",
+                "Pressure is historical forward-position density, not measured pace; no section times.",
+                "Target positions are validation labels only. Finished-field archive is not a verified pre-race field.",
+                "No production forecast, ranking or wager changes."]}
+
 def audit(tables,target_month,early_corner):
     races,history,excluded=index(tables,early_corner)
     tally=Counter()
@@ -167,6 +246,7 @@ def audit(tables,target_month,early_corner):
             "target_month":target_month,"coverage":dict(tally),"excluded":dict(excluded),
             "models":{m:render(c) for m,c in results.items()},
             "chronological_weight_selection":chronological_split(paired),
+            "field_position_experiment":position_audit(paired),
             "by_venue_ground":[{"venue":v,"ground":g,"models":{m:render(c) for m,c in cs.items()}} for (v,g),cs in sorted(groups.items())],
             "limitations":["Finished runners only; cancellations and incomplete fields can bias coverage.",
                 "Final target going and archive identities are not authenticated T-15 observations.",
@@ -200,6 +280,21 @@ def selftest():
     assert chronological_split(sample[:100])["status"]=="insufficient_days"
     assert chronological_split(sample[:101])["status"]=="insufficient_samples"
     print("7 chronological coefficient checks passed")
+    def fpos(p):
+        return {"early_n":3,"early":p-.5} if p is not None else {"early_n":0,"early":0.}
+    assert [style_band(fpos(p)) for p in (.9,.6,.4,.1,None)]==list(STYLE_BANDS)
+    assert field_pressure([fpos(p) for p in (.9,.8,.7,.2,.1)])[0]=="high"
+    assert field_pressure([fpos(p) for p in (.9,.2,.2,.1,.1)])[0]=="low"
+    assert field_pressure([fpos(p) for p in (.9,.8,.2,.1,.1)])[0]=="medium"
+    assert field_pressure([fpos(p) for p in (.9,.8,.2,.1,None)])[0]=="unknown"
+    assert field_pressure([fpos(p) for p in (.9,None,None,.1,.1)])[0]=="unknown"
+    ff=[fpos(p) for p in (.9,.7,.1)]
+    rr=[{"no":1,"rank":3,"actual_early_position":1.},{"no":2,"rank":1,"actual_early_position":.5},{"no":3,"rank":2,"actual_early_position":0.}]
+    report=position_audit([(day,ff,rr)])
+    assert report["all"]["expected_leader_hits"]==1
+    rr[0]["actual_early_position"]=None
+    assert position_audit([(day,ff,rr)])["all"]["evaluable_fields"]==0
+    print("8 field position checks passed")
 
 if __name__=="__main__":
     selftest()
