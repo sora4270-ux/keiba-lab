@@ -334,6 +334,23 @@ def learn_parameters(records, now):
             "form_training_races": n, "market_training_races": len(prelock)}
 
 
+def parse_entry_weight(raw, banei=False):
+    """Return (kg, reason); never impute or infer weight from another field."""
+    if raw is None or not str(raw).strip():
+        return None, "source_blank"
+    text = unicodedata.normalize("NFKC", str(raw)).strip()
+    if not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", text):
+        return None, "invalid_format"
+    try:
+        value = float(text)
+    except (ValueError, OverflowError):
+        return None, "invalid_format"
+    lo, hi = (300, 1200) if banei else (35, 80)
+    if not math.isfinite(value) or not lo <= value <= hi:
+        return None, "outside_screening_range"
+    return value, "valid"
+
+
 def prelock_context(race, predicted_at):
     """Capture only observed entry metadata; do not consume results or alter scores."""
     observed = race.get("entry_observed_at")
@@ -365,14 +382,11 @@ def prelock_context(race, predicted_at):
     distance = distance if type(distance) is int and 100 <= distance <= 5000 else None
     weather = str(entry.get("weather") or "").strip()
     weather = weather if weather in ("晴","曇","雨","小雨","雪","小雪","霧") else None
-    lo, hi = (300,1200) if banei else (35,80)
     rows = []
+    weight_quality = {k: 0 for k in ("valid", "source_blank", "invalid_format", "outside_screening_range")}
     for h in race["horses"]:
-        try:
-            value = float(h.get("entry_weight_text"))
-            value = value if math.isfinite(value) and lo <= value <= hi else None
-        except (ValueError, TypeError):
-            value = None
+        value, reason = parse_entry_weight(h.get("entry_weight_text"), banei)
+        weight_quality[reason] += 1
         rows.append({"no":h["no"],"weight_kg":value})
     return {"version":"entry_context_v1","source":"NAR daily entry CSV",
             "observed_at":observed.isoformat(timespec="seconds"),
@@ -380,6 +394,7 @@ def prelock_context(race, predicted_at):
             "distance_m":distance,"weather":weather,"track_condition":condition,
             "banei_moisture_percent":moisture,
             "weight_kind":"loading" if banei else "carried","horses":rows,
+            "weight_quality":weight_quality,
             "role":"diagnostic_only_not_used_in_ranking"}
 
 
@@ -997,6 +1012,14 @@ def monthly_features(target, vintage):
 
 
 def selftest():
+    assert parse_entry_weight("５６．５") == (56.5, "valid")
+    assert parse_entry_weight("") == (None, "source_blank")
+    assert parse_entry_weight("57kg") == (None, "invalid_format")
+    assert parse_entry_weight("650") == (None, "outside_screening_range")
+    assert parse_entry_weight("650", True) == (650.0, "valid")
+    assert parse_entry_weight("NaN") == (None, "invalid_format")
+    assert parse_entry_weight("0") == (None, "outside_screening_range")
+    assert parse_entry_weight(None) == (None, "source_blank")
     now = dt.datetime(2026, 11, 2, 15, 22, tzinfo=JST)
     horse_template = []
     for no in range(1, 9):
