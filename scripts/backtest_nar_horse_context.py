@@ -202,10 +202,61 @@ def position_audit(records):
                 "Target positions are validation labels only. Finished-field archive is not a verified pre-race field.",
                 "No production forecast, ranking or wager changes."]}
 
+def course_position_audit(records):
+    """Course/distance diagnostics on all valid finished fields, not just paired form races."""
+    groups=defaultdict(Counter)
+    for day,venue,d,fs,rows in records:
+        label,bands=field_pressure(fs)
+        known=[i for i,f in enumerate(fs) if style_band(f)!="unknown"]
+        obs=[r.get("actual_early_position") for r in rows]
+        valid=all(type(p) in (int,float) and math.isfinite(p) and 0<=p<=1 for p in obs)
+        distance_band="sprint" if d<=1400 else "middle" if d<=1800 else "long"
+        for key in (("all","all"),("venue",venue),("distance",str(d)),("distance_band",distance_band),("course",f"{venue}/{d}m")):
+            x=groups[key]
+            x["races"]+=1
+            x["runner_rows"]+=len(rows)
+            x["known_style_rows"]+=len(known)
+            x["pressure_known"]+=label!="unknown"
+            x["actual_position_complete"]+=valid
+            if not known or not valid:
+                continue
+            leaders={i for i,p in enumerate(obs) if p==max(obs)}
+            top=min(known,key=lambda i:(-fs[i]["early"],rows[i]["no"]))
+            x["leader_evaluable"]+=1
+            x["leader_hits"]+=top in leaders
+            x["random_expected"]+=len(leaders)/len(rows)
+            if len(known)*5>=len(rows)*4:
+                x["high_coverage_evaluable"]+=1
+                x["high_coverage_hits"]+=top in leaders
+            else:
+                x["low_coverage_evaluable"]+=1
+                x["low_coverage_hits"]+=top in leaders
+    def pct(x,y):
+        return round(100*x/y,2) if y else None
+    return {"status":"retrospective_course_diagnostics_only",
+            "groups":[{"dimension":k,"value":v,"races":x["races"],"runner_rows":x["runner_rows"],
+                       "style_coverage_pct":pct(x["known_style_rows"],x["runner_rows"]),
+                       "pressure_coverage_pct":pct(x["pressure_known"],x["races"]),
+                       "actual_position_complete":x["actual_position_complete"],
+                       "leader_evaluable":x["leader_evaluable"],"leader_hits":x["leader_hits"],
+                       "leader_hit_rate":pct(x["leader_hits"],x["leader_evaluable"]),
+                       "random_reference_rate":pct(x["random_expected"],x["leader_evaluable"]),
+                       "high_coverage_evaluable":x["high_coverage_evaluable"],
+                       "high_coverage_hit_rate":pct(x["high_coverage_hits"],x["high_coverage_evaluable"]),
+                       "low_coverage_evaluable":x["low_coverage_evaluable"],
+                       "low_coverage_hit_rate":pct(x["low_coverage_hits"],x["low_coverage_evaluable"]),
+                       "sample_status":"small_sample" if x["leader_evaluable"]<30 else "descriptive"}
+                      for (k,v),x in sorted(groups.items())],
+            "limitations":["Leader evaluation separated from pressure abstention; does not predict race winner.",
+                "Finished fields only; any known style is sufficient for exploratory leader comparison.",
+                "Distance bands are diagnostic conventions; groups with fewer than 30 observations flagged.",
+                "No new prediction coefficients or production changes."]}
+
 def audit(tables,target_month,early_corner):
     races,history,excluded=index(tables,early_corner)
     tally=Counter()
     paired=[]
+    course_records=[]
     results={m:Counter() for m in MODELS}
     groups=defaultdict(lambda:{m:Counter() for m in MODELS})
     for day,venue,d,g,rows in races:
@@ -214,6 +265,7 @@ def audit(tables,target_month,early_corner):
         fs=[features(history[r["id"]],day,d,g) for r in rows]
         tally["target_races"]+=1
         tally["runner_rows"]+=len(fs)
+        course_records.append((day,venue,d,fs,rows))
         for label in ("prior","distance","ground"):
             tally[label+"_history"]+=sum(f[label+"_n"]>0 for f in fs)
             tally[label+"_3plus"]+=sum(f[label+"_n"]>=3 for f in fs)
@@ -247,6 +299,7 @@ def audit(tables,target_month,early_corner):
             "models":{m:render(c) for m,c in results.items()},
             "chronological_weight_selection":chronological_split(paired),
             "field_position_experiment":position_audit(paired),
+            "course_position_experiment":course_position_audit(course_records),
             "by_venue_ground":[{"venue":v,"ground":g,"models":{m:render(c) for m,c in cs.items()}} for (v,g),cs in sorted(groups.items())],
             "limitations":["Finished runners only; cancellations and incomplete fields can bias coverage.",
                 "Final target going and archive identities are not authenticated T-15 observations.",
@@ -295,6 +348,18 @@ def selftest():
     rr[0]["actual_early_position"]=None
     assert position_audit([(day,ff,rr)])["all"]["evaluable_fields"]==0
     print("8 field position checks passed")
+    rr[0]["actual_early_position"]=1.
+    sparse=[fpos(.9),fpos(None),fpos(None)]
+    rec=[(day,"浦和",1400,ff,rr),(day,"浦和",1600,sparse,rr)]
+    result=course_position_audit(rec)["groups"]
+    allrow=next(x for x in result if x["dimension"]=="all")
+    assert allrow["races"]==2 and allrow["leader_evaluable"]==2
+    assert allrow["high_coverage_evaluable"]==1 and allrow["low_coverage_evaluable"]==1
+    assert allrow["leader_hits"]==2 and allrow["sample_status"]=="small_sample"
+    assert {x["value"] for x in result if x["dimension"]=="course"}=={"浦和/1400m","浦和/1600m"}
+    rr[0]["actual_early_position"]=None
+    assert next(x for x in course_position_audit(rec)["groups"] if x["dimension"]=="all")["leader_evaluable"]==0
+    print("5 course position checks passed")
 
 if __name__=="__main__":
     selftest()
