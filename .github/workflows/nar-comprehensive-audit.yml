@@ -37,6 +37,9 @@ jobs:
           python scripts/update_nar.py --selftest
           python scripts/update_jra.py --selftest
           python scripts/trio_strategy.py --selftest
+          node scripts/nar_priority_audit.cjs --selftest
+      - name: Audit frozen entry weight quality
+        run: node scripts/nar_priority_audit.cjs data/auto/nar_predictions.json "$GITHUB_SHA" > nar-priority-audit.json
       - name: Download NAR official monthly race archive once
         run: |
           python - <<'PY'
@@ -128,6 +131,7 @@ jobs:
             nar-stake-backtest.json
             nar-trio-strategy-audit.json
             nar-feature-availability.json
+            nar-priority-audit.json
             nar-prior-position-audit.json
             nar-jockey-link-probe.json
             nar-confidence-wide-audit.json
