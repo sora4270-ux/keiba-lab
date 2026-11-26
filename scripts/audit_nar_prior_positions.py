@@ -177,6 +177,8 @@ def main():
         evidence_path = Path("docs/nar-jockey-evidence.json")
         documented = json.loads(evidence_path.read_text(encoding="utf-8")) if evidence_path.is_file() else []
         report["context_history"] = context_audit(merged,a.target_month,documented)
+        from backtest_nar_horse_context import audit as horse_context_audit
+        report["horse_context_experiment"] = horse_context_audit(merged,a.target_month,early_corner)
         report["required_months"] = months
         report["missing_months"] = [m for m in months if not all(coverage.get(m,{}).get(k,0)>0 for k in ("racelist","horselist"))]
         report["archive_errors"] = errors

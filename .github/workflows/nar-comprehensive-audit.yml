@@ -39,6 +39,7 @@ jobs:
           python scripts/trio_strategy.py --selftest
           node scripts/nar_priority_audit.cjs --selftest
           python scripts/backtest_nar_weight_context.py --selftest
+          python scripts/backtest_nar_horse_context.py
       - name: Walk-forward weight and track model comparison
         run: python scripts/backtest_nar_weight_context.py --output nar-weight-context-backtest.json
       - name: Audit frozen entry weight quality
