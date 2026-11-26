@@ -71,9 +71,62 @@ def features(runs,day,d,g):
     return {"base":base,"distance":context(distance),"ground":context(ground),
             "early":pace,"distance_n":len(distance),"ground_n":len(ground),"early_n":len(early),"prior_n":len(prior)}
 
+# Predeclared small grid. Choose by first-place accuracy, then simpler weights.
+# These are exploratory coefficients, not production probabilities.
+WEIGHT_GRID = tuple((d,g,e) for d in (0.,.5,1.) for g in (0.,.5,1.) for e in (0.,.05,.1))
+MIN_FIT_RACES = 100
+MIN_TEST_RACES = 100
+
+def selection(features_rows, rows, weights):
+    d,g,e=weights
+    return min(range(len(rows)),key=lambda i:(-(features_rows[i]["base"]+d*features_rows[i]["distance"]+g*features_rows[i]["ground"]+e*features_rows[i]["early"]),rows[i]["no"]))
+
+def paired_summary(records, weights):
+    counts=Counter()
+    for day, fs, rows in records:
+        a=rows[selection(fs,rows,(0.,0.,0.))]["rank"]
+        b=rows[selection(fs,rows,weights)]["rank"]
+        counts["baseline_win"]+=a==1
+        counts["candidate_win"]+=b==1
+        counts["baseline_top3"]+=a<=3
+        counts["candidate_top3"]+=b<=3
+        counts["candidate_only_win"]+=b==1 and a!=1
+        counts["baseline_only_win"]+=a==1 and b!=1
+    n=len(records)
+    x,y=counts["candidate_only_win"],counts["baseline_only_win"]
+    discordant=x+y
+    # Exact two-sided sign/McNemar test, descriptive only (races may be dependent).
+    p=min(1.,2*sum(math.comb(discordant,k) for k in range(min(x,y)+1))/2**discordant) if discordant else 1.
+    return {"races":n,**dict(counts),"win_delta_pp":round(100*(counts["candidate_win"]-counts["baseline_win"])/n,4) if n else None,
+            "top3_delta_pp":round(100*(counts["candidate_top3"]-counts["baseline_top3"])/n,4) if n else None,
+            "paired_p_value_descriptive":round(p,6) if n else None}
+
+def choose_weights(records):
+    return min(WEIGHT_GRID,key=lambda w:(-sum(rows[selection(fs,rows,w)]["rank"]==1 for _,fs,rows in records),sum(v!=0 for v in w),sum(w),w))
+
+def chronological_split(records):
+    days=sorted({r[0] for r in records})
+    if len(days)<2:
+        return {"status":"insufficient_days","fit_races":len(records),"test_races":0}
+    # Whole calendar days only, fixed first 60% of dates for selection.
+    boundary=days[max(1,int(.6*len(days)))]
+    fit=[r for r in records if r[0]<boundary]
+    test=[r for r in records if r[0]>=boundary]
+    out={"status":"insufficient_samples","fit_races":len(fit),"test_races":len(test),"test_first_date":boundary.isoformat(),
+         "grid_size":len(WEIGHT_GRID),"previously_inspected_period":True,"production_changed":False}
+    if len(fit)<MIN_FIT_RACES or len(test)<MIN_TEST_RACES:
+        return out
+    w=choose_weights(fit)
+    out.update(status="retrospective_split_only",weights=dict(zip(("distance","ground","early"),w)),
+               fit=paired_summary(fit,w),test=paired_summary(test,w),
+               fixed_combined_test=paired_summary(test,(.5,.5,.1)),
+               daily_test=[{"date":day.isoformat(),**paired_summary([r for r in test if r[0]==day],w)} for day in sorted({r[0] for r in test})])
+    return out
+
 def audit(tables,target_month,early_corner):
     races,history,excluded=index(tables,early_corner)
     tally=Counter()
+    paired=[]
     results={m:Counter() for m in MODELS}
     groups=defaultdict(lambda:{m:Counter() for m in MODELS})
     for day,venue,d,g,rows in races:
@@ -94,6 +147,7 @@ def audit(tables,target_month,early_corner):
             excluded["no_context_features"]+=1
             continue
         tally["paired_races"]+=1
+        paired.append((day,fs,rows))
         scores={
             "prior_form":[f["base"] for f in fs],
             "distance":[f["base"]+f["distance"] for f in fs],
@@ -112,6 +166,7 @@ def audit(tables,target_month,early_corner):
     return {"version":"horse_context_archive_v1","status":"retrospective_exploratory_only",
             "target_month":target_month,"coverage":dict(tally),"excluded":dict(excluded),
             "models":{m:render(c) for m,c in results.items()},
+            "chronological_weight_selection":chronological_split(paired),
             "by_venue_ground":[{"venue":v,"ground":g,"models":{m:render(c) for m,c in cs.items()}} for (v,g),cs in sorted(groups.items())],
             "limitations":["Finished runners only; cancellations and incomplete fields can bias coverage.",
                 "Final target going and archive identities are not authenticated T-15 observations.",
@@ -131,6 +186,20 @@ def selftest():
     assert features(prior,day,1600,"重")["ground"]==0
     assert features(prior+[prior[0]],day,1400,"良")["prior_n"]==2
     print("7 horse-context checks passed")
+    fs=[{"base":.5,"distance":0.,"ground":0.,"early":0.},
+        {"base":.49,"distance":.15,"ground":0.,"early":0.}]
+    rows=[{"no":1,"rank":2},{"no":2,"rank":1}]
+    sample=[(day-timedelta(days=1),fs,rows)]*100+[(day,fs,rows)]*100
+    split=chronological_split(sample)
+    assert split["fit_races"]==100 and split["test_races"]==100
+    assert split["weights"]["distance"]>0 and split["weights"]["ground"]==0
+    assert split["test"]["candidate_only_win"]==100
+    assert split["test"]["baseline_only_win"]==0
+    changed=[(day,fs,[{"no":1,"rank":1},{"no":2,"rank":2}])]*100
+    assert chronological_split(sample[:100]+changed)["weights"]==split["weights"]
+    assert chronological_split(sample[:100])["status"]=="insufficient_days"
+    assert chronological_split(sample[:101])["status"]=="insufficient_samples"
+    print("7 chronological coefficient checks passed")
 
 if __name__=="__main__":
     selftest()
