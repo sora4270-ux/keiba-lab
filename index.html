@@ -267,6 +267,7 @@
   <div id="quick-next-race" class="quick-next" aria-live="polite"><span>次の発走予定を確認しています…</span></div>
   <div class="quick-bottom"><button type="button" id="quick-refresh" class="btn sm">↻ 最新データを再取得</button><span>中央競馬の自動取得は許諾済みデータが接続された場合に利用できます。</span></div>
  </section>
+ <section class="panel" id="nar-release-panel" aria-label="実用化判定と損失上限"><p>実資金投入不可：判定を確認中</p></section>
  <section id="nar-automated" class="panel" aria-label="地方競馬の自動予想と的中率">
    <div class="hrow"><h2>🏇 地方競馬・全レース自動予想</h2><span class="pill">NAR 自動予想</span></div>
    <p class="intro" style="margin-top:10px">地方競馬の公式配布CSVを使い、発走前の予想を保存・結果確定後に照合します。中央競馬（JRA）の入力予想は下の専用欄をご利用ください。</p>
@@ -2733,6 +2734,8 @@ if('serviceWorker' in navigator && (location.protocol==='https:'||['localhost','
 }
 })();
 </script>
+<script src="./risk-control.js?v=1"></script>
+<script src="./release-panel.js?v=1"></script>
 </body>
 </html>
 

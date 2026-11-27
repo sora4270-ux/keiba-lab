@@ -22,7 +22,18 @@ def valid_quote(r):
         horses=snap["horses"]
         if not isinstance(horses,list):
             return None,"invalid_market"
-        quotes={h["no"]:h["odds"] for h in horses if isinstance(h,dict) and type(h.get("no")) is int and type(h.get("odds")) in (int,float) and math.isfinite(h["odds"]) and h["odds"]>1}
+        quotes={}
+        for h in horses:
+            if (not isinstance(h,dict) or type(h.get("no")) is not int or h["no"] < 1
+                    or type(h.get("odds")) not in (int,float)
+                    or not math.isfinite(h["odds"]) or h["odds"] < 1):
+                return None,"invalid_market"
+            if h["no"] in quotes:
+                return None,"duplicate_market_horse"
+            quotes[h["no"]]=h["odds"]
+        ranking=r.get("ranking") or []
+        if not quotes or any(h.get("no") not in quotes for h in ranking):
+            return None,"incomplete_market"
         return quotes,None
     except (KeyError,TypeError,ValueError,AttributeError):
         return None,"market_missing_or_malformed"

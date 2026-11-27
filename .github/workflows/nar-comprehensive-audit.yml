@@ -55,6 +55,8 @@ jobs:
           url=BASE_URL.split("?",1)[0]+"?"+urlencode({"type":"monthly","k_year":2026,"k_month":"11"})
           Path("/tmp/nar-monthly-official.zip").write_bytes(fetch_daily_zip(url))
           PY
+      - name: Fail-closed release decision and risk audit
+        run: python scripts/audit_nar_release.py --official-zip /tmp/nar-monthly-official.zip --output nar-release-audit.json
       - name: Independent official-payout same-cohort portfolio comparison
         run: python scripts/backtest_nar_stake_allocation.py --month 2026-11 --official-zip /tmp/nar-monthly-official.zip --output nar-stake-backtest.json
       - name: Paired trio axis1 axis2 BOX5 official-payout comparison
@@ -132,6 +134,7 @@ jobs:
         with:
           name: nar-comprehensive-audit
           path: |
+            nar-release-audit.json
             nar-stake-backtest.json
             nar-trio-strategy-audit.json
             nar-feature-availability.json
